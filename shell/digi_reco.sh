@@ -10,5 +10,5 @@ NEV=10
 # mkdir -p ${DATA}/sim/${TWO}
 
 cp ${CODE}/SteeringMacros/k4Reco/steer_reco.py steer_reco.py
-k4run steer_reco.py -n ${NEV} --TypeEvent ${TWO} --InFileName ${ONE} --enableBIB --enableIP --skipReco --code ${CODE} --data ${DATA}
+k4run steer_reco.py -n ${NEV} --TypeEvent ${TWO} --InFileName ${ONE} --enableBIB --enableIP --skipReco --skipTrackerConing --code ${CODE} --data ${DATA}
 # --enableIP
