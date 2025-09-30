@@ -1,7 +1,9 @@
+CODE=/ceph/users/atuna/work/maia
+
 rm -f output_gen.slcio
-python ../mucoll-benchmarks/generation/pgun/pgun_lcio.py \
+python ${CODE}/mucoll-benchmarks/generation/pgun/pgun_lcio.py \
     -s 12345 \
-    -e 1000 \
+    -e 100 \
     --pdg 13 \
     --pdg -13 \
     --p 10 \
