@@ -1,5 +1,6 @@
 #
 # Run as root user within a muoncollider docker image
+#   Then do `su mucoll` to enjoy the fruits of your labor
 #
 dnf install -y \
     firefox \
