@@ -1,9 +1,10 @@
 CODE=/ceph/users/atuna/work/maia
+EVENTS=100
 
 rm -f output_gen.slcio
 python ${CODE}/mucoll-benchmarks/generation/pgun/pgun_lcio.py \
     -s 12345 \
-    -e 100 \
+    -e ${EVENTS} \
     --pdg 13 \
     --pdg -13 \
     --p 10 \
