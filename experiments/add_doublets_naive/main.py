@@ -1,9 +1,6 @@
 import argparse
 import os
 
-GEN = True
-SIM = True
-EVENTS = 1000
 CODE = "/ceph/users/atuna/work/maia"
 COMPACT = f"{CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
 
@@ -17,24 +14,24 @@ def args():
 def main():
     args = args()
     if args.gen:
-        gen()
+        gen(args.events)
     if args.sim:
-        sim()
+        sim(args.events)
 
 def run(cmd):
     print(cmd)
     os.system(cmd)
 
-def gen():
-    run(gen_command())
+def gen(events: int):
+    run(gen_command(events))
 
-def sim():
-    run(sim_command())
+def sim(events: int):
+    run(sim_command(events))
 
-def gen_command():
+def gen_command(events: int):
     cmd = f"python {CODE}/mucoll-benchmarks/generation/pgun/pgun_lcio.py \
     -s 12345 \
-    -e {EVENTS} \
+    -e {events} \
     --pdg 13 \
     --pdg -13 \
     --p 10 \
@@ -43,7 +40,7 @@ def gen_command():
     -- output_gen.slcio"
     return cmd
 
-def sim_command():
+def sim_command(events: int):
     INPUT = "output_gen.slcio"
     STEER = f"{CODE}/SteeringMacros/Sim/sim_steer_GEN_CONDOR.py"
 
@@ -51,7 +48,7 @@ def sim_command():
         --inputFile {INPUT} \
         --steeringFile {STEER} \
         --compactFile {COMPACT} \
-        --numberOfEvents {EVENTS} \
+        --numberOfEvents {events} \
         --outputFile output_sim.slcio"
     return cmd
 
