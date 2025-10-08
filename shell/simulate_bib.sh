@@ -46,7 +46,7 @@ for INVERT_Z in 0 1; do
     sed -i 's/OUTFILENAME/"BIB_sim.slcio"/g' sim_EVENT.py
 
     time ddsim --steeringFile sim_EVENT.py --inputFiles ${BIBINPUT} --compactFile ${COMPACT}
-    rm -f ${BIBINPUT}
+    rm -f ${BIBINPUT} sim_EVENT.py
     mv -f BIB_sim.slcio ${LABEL}_BIB_sim_${1}.slcio
 
 done
