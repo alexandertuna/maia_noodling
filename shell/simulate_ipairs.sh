@@ -13,11 +13,16 @@ INPUT="${DATA}/IPairs/gen/pairs_cycle${NUM}.slcio"
 STEER="${CODE}/SteeringMacros/Sim/sim_steer_BIB_CONDOR.py"
 COMPACT="${CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
 OUTPUT="sim_pairs_cycle${NUM}.slcio"
+LOCAL="sim_${NUM}.py"
 
 echo $OUTPUT
 
+cp ${STEER} ${LOCAL}
+sed -i 's/OUTFILENAME/"dummy"/g' ${LOCAL}
+
 rm -f ${OUTPUT}
 ddsim --inputFile ${INPUT} \
-      --steeringFile ${STEER} \
+      --outputFile ${OUTPUT} \
       --compactFile ${COMPACT} \
-      --outputFile ${OUTPUT}
+      --steeringFile ${LOCAL}
+# rm -f ${LOCAL}
