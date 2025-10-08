@@ -16,12 +16,11 @@ ls ./
 TWO="42.64"
 CODE=/ceph/users/atuna/work/maia
 DATAMUC=/ceph/users/atuna/work/maia/data
-COMPACT=/ceph/users/atuna/work/maia/detector-simulation/geometries/MAIA_v0/MAIA_v0.xml
-WORKDIR=/ceph/users/atuna/work/maia/maia_noodling/condor/bib_2025_09_23_17h25m21s
+# COMPACT=${CODE}/detector-simulation/geometries/MAIA_v0/MAIA_v0.xml
+COMPACT=${CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml
 echo "CODE=${CODE}"
 echo "DATAMUC=${DATAMUC}"
 echo "COMPACT=${COMPACT}"
-echo "WORKDIR=${WORKDIR}"
 
 # env
 # it would be cool if setup_mucoll existed out-of-the-box
