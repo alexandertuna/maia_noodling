@@ -12,18 +12,18 @@ rcParams.update({'font.size': 16})
 
 
 TRACKERS = [
-    "VertexBarrelCollection",
+    # "VertexBarrelCollection",
     # "VertexEndcapCollection",
     # "InnerTrackerBarrelCollection",
     # "InnerTrackerEndcapCollection",
-    # "OuterTrackerBarrelCollection",
+    "OuterTrackerBarrelCollection",
     # "OuterTrackerEndcapCollection",
 ]
 
 
 def options():
     parser = argparse.ArgumentParser(usage=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-i", type=str, default="/ceph/users/atuna/work/maia/run/output_sim.slcio",
+    parser.add_argument("-i", type=str, default="output_sim.slcio",
                         help="Path to the input slcio file")
     return parser.parse_args()
 
