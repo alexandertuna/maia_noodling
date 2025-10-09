@@ -4,7 +4,6 @@ import os
 from typing import TextIO
 
 import ROOT
-from maia_noodling.experiments.add_doublets_naive.main import args
 TGEOMANAGER_NAME = "default"
 
 def options():
