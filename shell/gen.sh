@@ -1,13 +1,15 @@
 CODE=/ceph/users/atuna/work/maia
-EVENTS=100
+EVENTS=10
+SEED=${1:-12345}
+# use command-line arg or default to 12345
 
 rm -f output_gen.slcio
 python ${CODE}/mucoll-benchmarks/generation/pgun/pgun_lcio.py \
-    -s 12345 \
+    -s ${SEED} \
     -e ${EVENTS} \
     --pdg 13 \
     --pdg -13 \
-    --p 10 \
+    --pt 0 10 \
     --particles 10 \
     --theta 10 170 \
     -- output_gen.slcio
