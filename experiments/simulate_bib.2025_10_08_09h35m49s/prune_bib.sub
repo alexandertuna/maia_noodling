@@ -1,0 +1,17 @@
+# container
++SingularityImage = "/cvmfs/unpacked.cern.ch/ghcr.io/muoncollidersoft/mucoll-sim-alma9:v2.9.8-amd64"
+
+executable = ../../shell/prune_bib.sh
+arguments  = $(FILENUM)
+output     = logs/prune_bib_$(FILENUM).$(ClusterId).$(ProcId).out
+error      = logs/prune_bib_$(FILENUM).$(ClusterId).$(ProcId).err
+log        = logs/condor.$(ClusterId).$(ProcId).log
+
+# resources
+request_cpus   = 2
+request_memory = 4096MB
+request_disk   = 5GB
++DESIRED_Sites = "T2_US_UCSD"
+
+# launch
+queue FILENUM from prune_bib.filenums.txt
