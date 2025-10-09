@@ -5,6 +5,7 @@ from typing import TextIO
 
 import ROOT
 TGEOMANAGER_NAME = "default"
+WORLD = "world_volume_1"
 
 def options():
     parser = argparse.ArgumentParser(usage=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -39,8 +40,9 @@ def write_module_id_and_corners(fname: str, output: TextIO) -> None:
     detectors = world_volume.GetNdaughters()
     for i_detector in range(detectors):
         detector = world_volume.GetDaughter(i_detector)
-        print(f"Detector {i_detector}/{detectors-1}: {detector.GetName()}")
-        if not any(trk in detector.GetName() for trk in TRACKERS):
+        detector_name = detector.GetName()
+        print(f"Detector {i_detector}/{detectors-1}: {detector_name}")
+        if not any(trk in detector_name for trk in TRACKERS):
             continue
 
         assemblies = detector.GetNdaughters()
@@ -61,71 +63,81 @@ def write_module_id_and_corners(fname: str, output: TextIO) -> None:
 
                 modules = layer.GetNdaughters()
                 for i_module in range(modules):
-                    # if i_module > 1:
-                    #     break
                     module = layer.GetDaughter(i_module)
-                    # print(f"   Module {i_module}/{modules-1}: {module.GetName()}")
                     module_name = module.GetName()
                     module_id = int(module_name.split("_")[-1])
                     if i_module != module_id:
                         raise Exception(f"Module id mismatch: {i_module} vs {module_id}")
 
-                    vol = module.GetVolume()
-                    shape = vol.GetShape()
-                    # print("Here:", module.GetName(), " volume:", vol.GetName(), " shape:", shape.ClassName())
-                    if shape.ClassName() != "TGeoBBox":
-                        raise Exception(f"Unexpected shape class: {shape.ClassName()} in {module.GetName()}")
+                    # # get the volume and shape
+                    # vol = module.GetVolume()
+                    # shape = vol.GetShape()
+                    # if shape.ClassName() != "TGeoBBox":
+                    #     raise Exception(f"Unexpected shape class: {shape.ClassName()} in {module.GetName()}")
 
-                    # get local corners
-                    dx, dy = shape.GetDX(), shape.GetDY()
-                    local_corners = [
-                        array("d", [ dx,  dy, 0]),
-                        array("d", [ dx, -dy, 0]),
-                        array("d", [-dx,  dy, 0]),
-                        array("d", [-dx, -dy, 0]),
-                    ]
+                    # # get local corners
+                    # dx, dy = shape.GetDX(), shape.GetDY()
+                    # local_corners = [
+                    #     array("d", [ dx,  dy, 0]),
+                    #     array("d", [ dx, -dy, 0]),
+                    #     array("d", [-dx,  dy, 0]),
+                    #     array("d", [-dx, -dy, 0]),
+                    # ]
 
-                    # get global corners
-                    global_corners = []
-                    for local in local_corners:
-                        globl = array("d", [0.0, 0.0, 0.0])
-                        module.LocalToMaster(local, globl)
-                        global_corners.append(globl)
+                    # # get global corners
+                    # global_corners = []
+                    # for local in local_corners:
+                    #     globl = array("d", [0.0, 0.0, 0.0])
+                    #     module.LocalToMaster(local, globl)
+                    #     global_corners.append(globl)
 
-                    # write to output
-                    line = f"{assembly_name} {layer_name} {module_id:>6}"
-                    for (gx, gy, gz) in global_corners:
-                        line += f" {gx:10.5f} {gy:10.5f} {gz:10.5f}"
-                    output.write(line + "\n")
+                    # # write to output
+                    # line = f"{assembly_name} {layer_name} {module_id:>6}"
+                    # for (gx, gy, gz) in global_corners:
+                    #     line += f" {gx:10.5f} {gy:10.5f} {gz:10.5f}"
+                    # output.write(line + "\n")
 
 
-                    # sensors = module.GetNdaughters()
-                    # for i_sensor in range(sensors):
-                    #     sensor = module.GetDaughter(i_sensor)
-                    #     if SENSOR not in sensor.GetName():
-                    #         continue
+                    sensors = module.GetNdaughters()
+                    for i_sensor in range(sensors):
+                        sensor = module.GetDaughter(i_sensor)
+                        sensor_name = sensor.GetName()
+                        if SENSOR not in sensor_name:
+                            continue
                         # print(f"    Sensor {i_sensor}/{sensors-1}: {sensor.GetName()}")
 
-                        # vol = sensor.GetVolume()
-                        # shape = vol.GetShape()
-                        # # print("Here:", sensor.GetName(), " volume:", vol.GetName(), " shape:", shape.ClassName())
-                        # if shape.ClassName() != "TGeoBBox":
-                        #     raise Exception(f"Unexpected shape class: {shape.ClassName()} in {sensor.GetName()}")
-                        # dx, dy, dz = shape.GetDX(), shape.GetDY(), shape.GetDZ()
-                        # local_corners = [
-                        #     array("d", [ dx,  dy, 0]),
-                        #     array("d", [ dx, -dy, 0]),
-                        #     array("d", [-dx,  dy, 0]),
-                        #     array("d", [-dx, -dy, 0]),
-                        # ]
+#    sensor_path = "world_volume_1/OuterTrackers_9/OuterTrackerBarrel_assembly_0/layer0_0/OuterTrackerBarrelModule_In_2/sensor8_8"
 
-                        # # get global corners
-                        # line = f"{assembly_name} {layer_name} {module_id}"
-                        # for local in local_corners:
-                        #     globl = array("d", [0.0, 0.0, 0.0])
-                        #     sensor.LocalToMaster(local, globl)
-                        #     line += f" {globl[0]:.6f} {globl[1]:.6f} {globl[2]:.6f}"
-                        # output.write(line + "\n")
+
+                        sensor_path = f"{WORLD}/{detector_name}/{assembly_name}/{layer_name}/{module_name}/{sensor_name}"
+                        # print(sensor_path)
+                        assert geo.CheckPath(sensor_path)
+                        assert geo.cd(sensor_path)
+
+                        vol = sensor.GetVolume()
+                        shape = vol.GetShape()
+                        if shape.ClassName() != "TGeoBBox":
+                            raise Exception(f"Unexpected shape class: {shape.ClassName()} in {sensor_name}")
+                        dx, dy = shape.GetDX(), shape.GetDY()
+                        local_corners = [
+                            array("d", [ dx,  dy, 0]),
+                            array("d", [ dx, -dy, 0]),
+                            array("d", [-dx,  dy, 0]),
+                            array("d", [-dx, -dy, 0]),
+                        ]
+
+                        # get global corners
+                        global_corners = []
+                        for local in local_corners:
+                            globl = array("d", [0.0, 0.0, 0.0])
+                            geo.LocalToMaster(local, globl)
+                            global_corners.append(globl)
+
+                        # write to output
+                        line = f"{assembly_name} {layer_name} {module_id:>6}"
+                        for (gx, gy, gz) in global_corners:
+                            line += f" {gx:10.5f} {gy:10.5f} {gz:10.5f}"
+                        output.write(line + "\n")
 
 
                     # vol = module.GetVolume()
