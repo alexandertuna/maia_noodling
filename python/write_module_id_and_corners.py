@@ -11,7 +11,7 @@ def options():
     parser = argparse.ArgumentParser(usage=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-i", type=str, default="MAIA_LST_v0.root",
                         help="Path to the input root geometry file")
-    parser.add_argument("-o", type=str, default="output.txt",
+    parser.add_argument("-o", type=str, default="MAIA_LST_v0.modules.txt",
                         help="Path to the output text file")
     return parser.parse_args()
 
