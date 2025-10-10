@@ -209,3 +209,4 @@ __marimo__/
 # Other
 *.pdf
 *.slcio
+.gwms-user-job-wrapper.sh
