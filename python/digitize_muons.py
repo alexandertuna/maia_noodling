@@ -135,7 +135,7 @@ def write_local_digi_steer(local_filename: str):
     steer_text = steer_text.replace(r"{the_args.data}/recoBIB/{the_args.TypeEvent}/", "./")
     steer_text = steer_text.replace("_reco_", "_digi_")
     steer_text = steer_text.replace("detector-simulation/geometries", "k4geo/MuColl/MAIA/compact")
-    # steer_text = steer_text.replace("1666", "16")
+    steer_text = steer_text.replace("1666", "16")
 
     # write the local steering file
     local_path = Path(local_filename)
