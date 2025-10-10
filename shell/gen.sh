@@ -1,5 +1,5 @@
 CODE=/ceph/users/atuna/work/maia
-EVENTS=10
+EVENTS=1
 SEED=${1:-12345}
 # use command-line arg or default to 12345
 

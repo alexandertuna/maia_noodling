@@ -5,7 +5,7 @@ INPUT="output_gen.slcio"
 STEER=${CODE}/SteeringMacros/Sim/sim_steer_GEN_CONDOR.py
 # COMPACT=${CODE}/detector-simulation/geometries/MAIA_v0/MAIA_v0.xml
 COMPACT=${CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml
-EVENTS=10
+EVENTS=1
 
 rm -f output_sim.slcio
 ddsim --inputFile ${INPUT} \

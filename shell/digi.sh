@@ -1,7 +1,7 @@
 CODE=/ceph/users/atuna/work/maia
 # DATA=/ceph/users/atuna/work/maia/data
 DATA=/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2025_10_08_09h35m49s
-NEV=10
+NEV=1
 NOW=$(date +%Y_%m_%d_%Hh%Mm%Ss)
 STEER=steer_reco_${1}_${2}.py
 LOG=log_${NOW}.txt
