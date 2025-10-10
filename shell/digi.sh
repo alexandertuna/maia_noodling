@@ -11,7 +11,7 @@ sed -i 's|{the_args.data}/sim/{the_args.TypeEvent}/|./|g' ${STEER}
 sed -i 's|{the_args.data}/recoBIB/{the_args.TypeEvent}/|./|g' ${STEER}
 sed -i 's|_reco_|_digi_|g' ${STEER}
 sed -i 's|detector-simulation/geometries|k4geo/MuColl/MAIA/compact|g' ${STEER}
-sed -i 's|1666|16|g' ${STEER}
+# sed -i 's|1666|16|g' ${STEER}
 
 k4run ${STEER} -n ${NEV} --TypeEvent ${1} --InFileName ${2} --enableBIB --skipReco --skipTrackerConing --code ${CODE} --data ${DATA} # | tee ${LOG}
 # --enableIP
