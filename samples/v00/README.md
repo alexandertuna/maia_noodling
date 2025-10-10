@@ -1,0 +1,5 @@
+- Geometry: https://github.com/alexandertuna/k4geo/commit/3994d96e31e508ad74f57197f7e221f0605d759c
+- Sample: muonGun_pT_0_10
+- Repo: experiments/simulate_bib.2025_10_08_09h35m49s
+- Gen, sim, digi
+- 100% BIB, no incoherent ee pairs
