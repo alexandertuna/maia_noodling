@@ -1,24 +1,9 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-# preamble
-echo "SHELL=$SHELL"
-echo "PWD=$PWD"
-echo "HOST=$(hostname)"
-which python || true
-python --version || true
-echo "env"
-env
-echo "ls ./"
-ls ./
-
-# constants
+# paths
 CODE=/ceph/users/atuna/work/maia
-TYPEEVENT="muonGun_pT_0_10"
-NUM=${1}
-echo "CODE=${CODE}"
-echo "TYPEEVENT=${TYPEEVENT}"
-echo "NUM=${NUM}"
+DATA=/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2025_10_08_09h35m49s
 
 # env
 # it would be cool if setup_mucoll existed out-of-the-box
@@ -27,8 +12,4 @@ source /opt/spack/opt/spack/__spack_path_placeholder__/__spack_path_placeholder_
 export MARLIN_DLL=$(readlink -e ${CODE}/MyBIBUtils/build/lib/libMyBIBUtils.so):${MARLIN_DLL}
 
 # run
-time source ${CODE}/maia_noodling/shell/gen.sh ${NUM}
-time source ${CODE}/maia_noodling/shell/sim.sh
-mv output_sim.slcio ${TYPEEVENT}_sim_${NUM}.slcio
-time source ${CODE}/maia_noodling/shell/digi.sh ${TYPEEVENT} ${NUM}
-rm -f output_gen.slcio
+time python ${CODE}/maia_noodling/python/digitize_muons.py --gen --sim --digi --num ${1} --data ${DATA}
