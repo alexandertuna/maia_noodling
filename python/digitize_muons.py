@@ -34,11 +34,14 @@ STEER_SIM = f"{CODE}/SteeringMacros/Sim/sim_steer_GEN_CONDOR.py"
 STEER_RECO = f"{CODE}/SteeringMacros/k4Reco/steer_reco.py"
 
 
+
 def arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("--gen", action="store_true", help="Generate events")
     parser.add_argument("--sim", action="store_true", help="Simulate events")
     parser.add_argument("--digi", action="store_true", help="Digitize events")
+    parser.add_argument("--bib", action="store_true", help="Overlay beam-induced background (BIB) at digitization")
+    parser.add_argument("--ip", action="store_true", help="Overlay incoherent pairs (IP) at digitization")
     parser.add_argument("--num", type=int, default=0, help="Job index")
     parser.add_argument("--events", type=int, default=1, help="Number of events")
     parser.add_argument("--typeevent", type=str, default="muonGun_pT_0_10", help="Type of event")
@@ -48,22 +51,24 @@ def arguments():
 def main():
     args = arguments()
     if args.gen:
-        gen(args.events,
-            args.num,
-            args.typeevent,
+        gen(events=args.events,
+            num=args.num,
+            typeevent=args.typeevent,
             )
     if args.sim:
-        sim(args.events,
-            args.num,
-            args.typeevent,
+        sim(events=args.events,
+            num=args.num,
+            typeevent=args.typeevent,
             )
     if args.digi:
         if not os.path.isdir(args.data):
             raise ValueError(f"Data directory {args.data} does not exist.")
-        digi(args.events,
-             args.num,
-             args.typeevent,
-             args.data
+        digi(events=args.events,
+             num=args.num,
+             typeevent=args.typeevent,
+             data=args.data,
+             bib=args.bib,
+             ip=args.ip,
              )
 
 
@@ -73,27 +78,39 @@ def run(cmd):
 
 
 def gen(events: int, num: int, typeevent: str):
-    run(gen_command(events, num, typeevent))
+    cmd = gen_command(events, num, typeevent)
+    run(cmd)
 
 
 def sim(events: int, num: int, typeevent: str):
-    run(sim_command(events, num, typeevent))
+    cmd = sim_command(events, num, typeevent)
+    run(cmd)
 
 
-def digi(events: int, num: int, typeevent: str, data: str):
+def digi(events: int, num: int, typeevent: str, data: str, bib: bool, ip: bool):
     steer = f"{typeevent}_steer_digi_{num}.py"
     write_local_digi_steer(steer)
-    run(digi_command(events, num, typeevent, steer, data))
+    cmd = digi_command(events=events,
+                       num=num,
+                       typeevent=typeevent,
+                       steer=steer,
+                       data=data,
+                       bib=bib,
+                       ip=ip,
+                       )
+    run(cmd)
 
 
 def gen_command(events: int, num: int, typeevent: str):
+    pdg = "-13" if num % 2 == 0 else "13"
+    pt = "0 10"
+    particles = "1"
     cmd = f"python {CODE}/mucoll-benchmarks/generation/pgun/pgun_lcio.py \
     -s {num} \
     -e {events} \
-    --pdg 13 \
-    --pdg -13 \
-    --pt 0 10 \
-    --particles 10 \
+    --pdg {pdg} \
+    --pt {pt} \
+    --particles {particles} \
     --theta 10 170 \
     -- {typeevent}_gen_{num}.slcio"
     return cmd
@@ -110,13 +127,16 @@ def sim_command(events: int, num: int, typeevent: str):
     return cmd
 
 
-def digi_command(events: int, num: int, typeevent: str, steer: str, data: str):
+def digi_command(events: int, num: int, typeevent: str, steer: str, data: str, bib: bool, ip: bool):
+    enable_bib = "--enableBIB" if bib else ""
+    enable_ip = "--enableIP" if ip else ""
     cmd = f"k4run \
         {steer} \
+        {enable_bib} \
+        {enable_ip} \
         -n {events} \
         --TypeEvent {typeevent} \
         --InFileName {num} \
-        --enableBIB \
         --skipReco \
         --skipTrackerConing \
         --code {CODE} \
@@ -132,6 +152,7 @@ def write_local_digi_steer(local_filename: str):
 
     # apply substitutions
     steer_text = steer_text.replace(r"{the_args.data}/sim/{the_args.TypeEvent}/", "./")
+    steer_text = steer_text.replace(r"{the_args.data}/reco/{the_args.TypeEvent}/", "./")
     steer_text = steer_text.replace(r"{the_args.data}/recoBIB/{the_args.TypeEvent}/", "./")
     steer_text = steer_text.replace("_reco_", "_digi_")
     steer_text = steer_text.replace("detector-simulation/geometries", "k4geo/MuColl/MAIA/compact")
