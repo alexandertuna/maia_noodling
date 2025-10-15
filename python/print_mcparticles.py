@@ -42,37 +42,11 @@ def print_mcparticles(fname: str):
         col = event.getCollection(MCPARTICLE)
         n_mc = col.getNumberOfElements()
         print(f"{fname=} {i_event=} {n_mc=}")
-
-
-def get_hits(fnames: list[str]):
-
-    hits = []
-
-    for fname in fnames:
-
-        print(f"Reading {fname} ...")
-        reader = pyLCIO.IOIMPL.LCFactory.getInstance().createLCReader()
-        reader.open(fname)
-    
-        for i_event, event in enumerate(tqdm(reader)):
-
-            # print(i_event, event.getCollectionNames())
-            for colname in TRACKERS:
-
-                col = event.getCollection(colname)
-
-                for i_hit, hit in enumerate(col):
-
-                    hits.append( [
-                        hit.getPositionVec().X(),
-                        hit.getPositionVec().Y(),
-                        hit.getPositionVec().Z(),
-                        hit.getEDep(),
-                    ] )
-
-    return pd.DataFrame(np.array(hits), columns=["x", "y", "z", "e"])
-
-
+        for i_part, part in enumerate(col):
+            pdgid, energy, mom = part.getPDG(), part.getEnergy(), part.getMomentum()
+            px, py, pz = mom[0], mom[1], mom[2]
+            pt = np.sqrt(px**2 + py**2)
+            print(f"{i_event=} {i_part=} {pdgid=} {energy=:7.3f} {px=:7.3f} {py=:7.3f} {pz=:7.3f} {pt=:7.3f}")
 
 
 if __name__ == "__main__":
