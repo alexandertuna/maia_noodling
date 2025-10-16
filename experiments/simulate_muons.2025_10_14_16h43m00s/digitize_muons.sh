@@ -12,4 +12,4 @@ source /opt/spack/opt/spack/__spack_path_placeholder__/__spack_path_placeholder_
 export MARLIN_DLL=$(readlink -e ${CODE}/MyBIBUtils/build/lib/libMyBIBUtils.so):${MARLIN_DLL}
 
 # run
-time python ${DATA}/digitize_muons.py --events 1000 --gen --sim --digi --num ${1} --data ${DATA}
+time python ${DATA}/digitize_muons.py --events 10000 --gen --sim --digi --num ${1} --data ${DATA}
