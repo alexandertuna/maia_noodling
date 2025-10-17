@@ -9,7 +9,7 @@ log        = logs/condor.$(ClusterId).$(ProcId).log
 
 # resources
 request_cpus   = 2
-request_memory = 4096MB
+request_memory = 5GB
 request_disk   = 5GB
 +DESIRED_Sites = "T2_US_UCSD"
 
