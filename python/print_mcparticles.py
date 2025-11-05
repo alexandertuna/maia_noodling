@@ -43,10 +43,12 @@ def print_mcparticles(fname: str):
         n_mc = col.getNumberOfElements()
         print(f"{fname=} {i_event=} {n_mc=}")
         for i_part, part in enumerate(col):
+            gen_status = part.getGeneratorStatus()
+            is_sim = part.isCreatedInSimulation()
             pdgid, energy, mom = part.getPDG(), part.getEnergy(), part.getMomentum()
             px, py, pz = mom[0], mom[1], mom[2]
             pt = np.sqrt(px**2 + py**2)
-            print(f"{i_event=} {i_part=} {pdgid=} {energy=:7.3f} {px=:7.3f} {py=:7.3f} {pz=:7.3f} {pt=:7.3f}")
+            print(f"{i_event=} {i_part=} {gen_status=} {is_sim=} {pdgid=} {energy=:7.3f} {px=:7.3f} {py=:7.3f} {pz=:7.3f} {pt=:7.3f}")
 
 
 if __name__ == "__main__":
