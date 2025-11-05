@@ -14,9 +14,9 @@ rcParams.update({'font.size': 16})
 TRACKERS = [
     # "VertexBarrelCollection",
     # "VertexEndcapCollection",
-    # "InnerTrackerBarrelCollection",
+    "InnerTrackerBarrelCollection",
     # "InnerTrackerEndcapCollection",
-    "OuterTrackerBarrelCollection",
+    # "OuterTrackerBarrelCollection",
     # "OuterTrackerEndcapCollection",
 ]
 
@@ -60,14 +60,24 @@ def get_hits(fnames: list[str]) -> pd.DataFrame:
         reader = pyLCIO.IOIMPL.LCFactory.getInstance().createLCReader()
         reader.open(fname)
     
-        for i_event, event in enumerate(tqdm(reader)):
+        # for i_event, event in enumerate(tqdm(reader)):
+        for i_event, event in enumerate(reader):
+
+            print(f"Processing event {i_event}")
+            # event_of_interest = 1
+            # if i_event > event_of_interest:
+            #     break
+            # elif i_event < event_of_interest:
+            #     continue
 
             # print(i_event, event.getCollectionNames())
             for colname in TRACKERS:
 
                 col = event.getCollection(colname)
 
-                for i_hit, hit in enumerate(col):
+                for i_hit, hit in enumerate(tqdm(col)):
+                    # if i_hit > 1e6:
+                    #     break
 
                     hits.append( [
                         hit.getPositionVec().X(),
@@ -83,8 +93,17 @@ def make_plots(df: pd.DataFrame, pdf: PdfPages) -> None:
     rmax = df["r"].max() * 1.1
 
     # xy plot
+    hist = True
     fig, ax = plt.subplots(figsize=(8, 8))
-    ax.scatter(df["x"], df["y"], color=get_color(), s=1)
+    if hist:
+        _, _, _, im = ax.hist2d(df["x"],
+                                df["y"],
+                                bins=np.linspace(-rmax, rmax, 501),
+                                cmin=0.5,
+        )
+        fig.colorbar(im, ax=ax, label="")
+    else:
+        ax.scatter(df["x"], df["y"], color=get_color(), s=1)
     ax.tick_params(top=True, right=True, direction="in")
     ax.set_xlabel("Sim. hit x [mm]")
     ax.set_ylabel("Sim. hit y [mm]")
