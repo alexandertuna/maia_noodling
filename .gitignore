@@ -210,3 +210,14 @@ __marimo__/
 *.pdf
 *.slcio
 .gwms-user-job-wrapper.sh
+
+# HEP / WHIZARD
+*.root
+*.mod
+*.smod
+*.o
+*.lo
+*.la
+*.vg
+*.f90
+*.phs
