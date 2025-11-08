@@ -1,4 +1,5 @@
 import argparse
+import pandas as pd
 from slcio_to_hits_dataframe import SlcioToHitsDataFrame
 
 # FNAME = "/ceph/users/atuna/work/maia/maia_noodling/samples/v00/muonGun_pT_0_10_nobib/muonGun_pT_0_10_digi_0.slcio"
@@ -16,6 +17,11 @@ def main():
     converter = SlcioToHitsDataFrame(ops.i.split(","))
     hits_df = converter.convert()
     print(hits_df)
+    # with pd.option_context("display.min_rows", 100,
+    #                        "display.max_rows", 100,
+    #                        ):
+    #     print(hits_df)
+    hits_df.to_parquet("hits_dataframe.parquet")
 
 
 if __name__ == "__main__":
