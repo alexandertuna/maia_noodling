@@ -1,6 +1,7 @@
 import argparse
 import pandas as pd
 from slcio_to_hits_dataframe import SlcioToHitsDataFrame
+from plotter import Plotter
 
 # FNAME = "/ceph/users/atuna/work/maia/maia_noodling/samples/v00/muonGun_pT_0_10_nobib/muonGun_pT_0_10_digi_0.slcio"
 FNAME = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_11_06_21h31m00s/muonGun_pT_0_10_digi_0.slcio"
@@ -22,6 +23,9 @@ def main():
     #                        ):
     #     print(hits_df)
     hits_df.to_parquet("hits_dataframe.parquet")
+
+    plotter = Plotter(hits_df)
+    plotter.plot("plots.pdf")
 
 
 if __name__ == "__main__":
