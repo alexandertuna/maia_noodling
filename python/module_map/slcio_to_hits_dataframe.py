@@ -51,11 +51,11 @@ class SlcioToHitsDataFrame:
         for i_event, event in enumerate(reader):
 
             # preamble: cellid decoding
-            if i_event == 0:
-                for collection in TRACKER_COLLECTIONS:
-                    col = event.getCollection(collection)
-                    enc = col.getParameters().getStringVal(pyLCIO.EVENT.LCIO.CellIDEncoding)
-                    print(f"CellID encoding for {collection}: {enc}")
+            # if i_event == 0:
+            #     for collection in TRACKER_COLLECTIONS:
+            #         col = event.getCollection(collection)
+            #         enc = col.getParameters().getStringVal(pyLCIO.EVENT.LCIO.CellIDEncoding)
+            #         print(f"CellID encoding for {collection}: {enc}")
 
             # get mcparticle info
             mcparticles = list(event.getCollection(MCPARTICLES))
@@ -121,7 +121,7 @@ class SlcioToHitsDataFrame:
         df['hit_sensor'] = np.right_shift(df['hit_cellid0'], 24) & 0b1111_1111
 
         # remove redundant columns
-        df = df.drop(columns=['hit_cellid0', 'hit_cellid1', 'sim_p', 'sim_px', 'sim_py'])
+        df = df.drop(columns=['hit_cellid0', 'hit_cellid1', 'sim_p', 'sim_px', 'sim_py', 'sim_theta'])
 
         # sort columns alphabetically
         return df[sorted(df.columns)]
