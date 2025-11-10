@@ -12,6 +12,7 @@ from tqdm import tqdm
 import os
 import multiprocessing as mp
 
+from constants import MINIMUM_PT
 from constants import MCPARTICLES, TRACKER_COLLECTIONS, TRACKER_RELATIONS
 from constants import IT_BARREL, OT_BARREL
 
@@ -141,11 +142,16 @@ class SlcioToHitsDataFrame:
 
     def filter_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
         print("Filtering DataFrame ...")
+
+        subset = (df['sim_pt'] > MINIMUM_PT)
+        df = df[subset]
+
         if self.barrel_only:
             subset = (
                 (df['hit_system'] == IT_BARREL) |
                 (df['hit_system'] == OT_BARREL)
             )
             df = df[subset]
+
         return df
 
