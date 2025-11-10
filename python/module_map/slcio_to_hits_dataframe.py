@@ -13,17 +13,21 @@ import os
 import multiprocessing as mp
 
 from constants import MCPARTICLES, TRACKER_COLLECTIONS, TRACKER_RELATIONS
+from constants import IT_BARREL, OT_BARREL
+
 
 class SlcioToHitsDataFrame:
 
-    def __init__(self, slcio_file_paths):
+    def __init__(self, slcio_file_paths, barrel_only):
         self.slcio_file_paths = slcio_file_paths
+        self.barrel_only = barrel_only
 
 
     def convert(self) -> pd.DataFrame:
         df = self.convert_all_files()
         df = self.postprocess_dataframe(df)
         df = self.sort_dataframe(df)
+        df = self.filter_dataframe(df)
         return df
 
 
@@ -63,6 +67,7 @@ class SlcioToHitsDataFrame:
             sim_py = [mcp.getMomentum()[1] for mcp in mcparticles]
             sim_pz = [mcp.getMomentum()[2] for mcp in mcparticles]
             sim_m = [mcp.getMass() for mcp in mcparticles]
+            sim_q = [mcp.getCharge() for mcp in mcparticles]
 
             # inspect all tracking detectors
             for collection in TRACKER_RELATIONS:
@@ -91,6 +96,7 @@ class SlcioToHitsDataFrame:
                         'sim_py': sim_py[i_sim],
                         'sim_pz': sim_pz[i_sim],
                         'sim_m': sim_m[i_sim],
+                        'sim_q': sim_q[i_sim],
                         'hit_x': hit.getPosition()[0],
                         'hit_y': hit.getPosition()[1],
                         'hit_z': hit.getPosition()[2],
@@ -113,6 +119,7 @@ class SlcioToHitsDataFrame:
         df['sim_theta'] = np.arctan2(df['sim_pt'], df['sim_pz'])
         df['sim_eta'] = -np.log(np.tan(df['sim_theta'] / 2))
         df['sim_phi'] = np.arctan2(df['sim_py'], df['sim_px'])
+        df['hit_r'] = np.sqrt(df['hit_x']**2 + df['hit_y']**2)
         df['hit_R'] = np.sqrt(df['hit_x']**2 + df['hit_y']**2 + df['hit_z']**2)
         df['hit_system'] = np.right_shift(df['hit_cellid0'], 0) & 0b1_1111
         df['hit_side'] = np.right_shift(df['hit_cellid0'], 5) & 0b11
@@ -131,3 +138,14 @@ class SlcioToHitsDataFrame:
         print("Sorting DataFrame ...")
         df = df.sort_values(by=['file', 'i_event', 'i_sim', 'hit_R']).reset_index(drop=True)
         return df
+
+    def filter_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
+        print("Filtering DataFrame ...")
+        if self.barrel_only:
+            subset = (
+                (df['hit_system'] == IT_BARREL) |
+                (df['hit_system'] == OT_BARREL)
+            )
+            df = df[subset]
+        return df
+
