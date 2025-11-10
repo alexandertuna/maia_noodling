@@ -198,26 +198,34 @@ class Plotter:
             np.linspace(-19, 19, 200),
         ]
 
-        for sensor in range(0, 10):
-
-            layer, module, side, system, sensor = 0, 0, 0, 3, sensor  # barrel example
-            print(f"Plotting System {system} Side {side} Layer {layer} Module {module} Sensor {sensor} ...")
-
-            mask = (
+        layer, module, side, system = 1, 0, 0, 3  # barrel example
+        mask_layer_module_side_system = (
                 (self.mmdf["hit_layer"] == layer) &
                 (self.mmdf["hit_module"] == module) &
                 (self.mmdf["hit_side"] == side) &
-                (self.mmdf["hit_system"] == system) &
-                (self.mmdf["hit_sensor"] == sensor)
+                (self.mmdf["hit_system"] == system)
             )
+
+        for sensor in range(0, 5):
+
+            print(f"Plotting System {system} Side {side} Layer {layer} Module {module} Sensor {sensor} ...")
+
+            mask = mask_layer_module_side_system & (self.mmdf["hit_sensor"] == sensor)
+
+            all_x = pd.concat([self.mmdf[mask]["hit_x"], self.mmdf[mask]["next_hit_x"]])
+            all_y = pd.concat([self.mmdf[mask]["hit_y"], self.mmdf[mask]["next_hit_y"]])
+            xlim = (all_x.min() - 5, all_x.max() + 5)
+            ylim = (all_y.min() - 5, all_y.max() + 5)
+            bins = [
+                np.linspace(xlim[0], xlim[1], 200),
+                np.linspace(ylim[0], ylim[1], 200),
+            ]
 
             for hit in ["hit", "next_hit"]:
                 fig, ax = plt.subplots(figsize=(8,8))
                 _, _, _, im = ax.hist2d(
                     self.mmdf[mask][f"{hit}_x"],
                     self.mmdf[mask][f"{hit}_y"],
-                    # pd.concat([self.mmdf[mask]["hit_x"], self.mmdf[mask]["next_hit_x"]]),
-                    # pd.concat([self.mmdf[mask]["hit_y"], self.mmdf[mask]["next_hit_y"]]),
                     bins=bins,
                     vmin=0,
                     cmin=0.5,
