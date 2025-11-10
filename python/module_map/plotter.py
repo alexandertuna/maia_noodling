@@ -27,7 +27,7 @@ class Plotter:
             self.plot_hit_z(pdf)
             self.plot_hit_sensor(pdf)
             self.plot_hit_z_sensor(pdf)
-            self.plot_hit_cellid1(pdf)
+            # self.plot_hit_cellid1(pdf)
             self.plot_hit_module_layer(pdf)
             # self.plot_module_counts(pdf)
             self.plot_module_position(pdf)
@@ -198,35 +198,38 @@ class Plotter:
             np.linspace(-19, 19, 200),
         ]
 
-        layer, module, side, system, sensor = 0, 0, 0, 3, 0  # barrel example
+        for sensor in range(0, 10):
 
-        mask = (
-            (self.mmdf["hit_layer"] == layer) &
-            (self.mmdf["hit_module"] == module) &
-            (self.mmdf["hit_side"] == side) &
-            (self.mmdf["hit_system"] == system) &
-            (self.mmdf["hit_sensor"] == sensor)
-        )
+            layer, module, side, system, sensor = 0, 0, 0, 3, sensor  # barrel example
+            print(f"Plotting System {system} Side {side} Layer {layer} Module {module} Sensor {sensor} ...")
 
-        for hit in ["hit", "next_hit"]:
-            fig, ax = plt.subplots(figsize=(8,8))
-            _, _, _, im = ax.hist2d(
-                self.mmdf[mask][f"{hit}_x"],
-                self.mmdf[mask][f"{hit}_y"],
-                # pd.concat([self.mmdf[mask]["hit_x"], self.mmdf[mask]["next_hit_x"]]),
-                # pd.concat([self.mmdf[mask]["hit_y"], self.mmdf[mask]["next_hit_y"]]),
-                bins=bins,
-                vmin=0,
-                cmin=0.5,
-                cmap=self.cmap,
-                )
-            fig.colorbar(im, ax=ax, label="Next-module counts")
-            ax.set_title(f"System {system} Side {side} Layer {layer} Module {module}")
-            ax.set_xlabel("Hit X [mm]")
-            ax.set_ylabel("Hit Y [mm]")
-            ax.tick_params(right=True, top=True, axis="both", which="both", direction="in")
-            fig.subplots_adjust(bottom=0.12, left=0.15, right=0.95, top=0.95)
-            pdf.savefig()
-            plt.close()
+            mask = (
+                (self.mmdf["hit_layer"] == layer) &
+                (self.mmdf["hit_module"] == module) &
+                (self.mmdf["hit_side"] == side) &
+                (self.mmdf["hit_system"] == system) &
+                (self.mmdf["hit_sensor"] == sensor)
+            )
+
+            for hit in ["hit", "next_hit"]:
+                fig, ax = plt.subplots(figsize=(8,8))
+                _, _, _, im = ax.hist2d(
+                    self.mmdf[mask][f"{hit}_x"],
+                    self.mmdf[mask][f"{hit}_y"],
+                    # pd.concat([self.mmdf[mask]["hit_x"], self.mmdf[mask]["next_hit_x"]]),
+                    # pd.concat([self.mmdf[mask]["hit_y"], self.mmdf[mask]["next_hit_y"]]),
+                    bins=bins,
+                    vmin=0,
+                    cmin=0.5,
+                    cmap=self.cmap,
+                    )
+                fig.colorbar(im, ax=ax, label="Next-module counts")
+                ax.set_title(f"System {system} Side {side} Layer {layer} Module {module} Sensor {sensor}")
+                ax.set_xlabel("Hit X [mm]")
+                ax.set_ylabel("Hit Y [mm]")
+                ax.tick_params(right=True, top=True, axis="both", which="both", direction="in")
+                fig.subplots_adjust(bottom=0.12, left=0.15, right=0.95, top=0.95)
+                pdf.savefig()
+                plt.close()
 
 
