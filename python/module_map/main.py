@@ -3,6 +3,7 @@ import pandas as pd
 from glob import glob
 
 from slcio_to_hits_dataframe import SlcioToHitsDataFrame
+from hits_sorted_by_module import GetNextHitAndSort
 from hits_to_module_map import HitsToModuleMap
 from plotter import Plotter
 
@@ -41,11 +42,15 @@ def main():
     #                        ):
     #     print(hits_df)
 
-    module_mapper = HitsToModuleMap(hits_df)
+    next_hitter = GetNextHitAndSort(hits_df)
+    sorted_df = next_hitter.get_next_hit_and_sort_by_module()
+    sorted_df.to_parquet("sorted_hits.parquet")
+
+    module_mapper = HitsToModuleMap(sorted_df)
     module_map_df = module_mapper.make_module_map()
     print(module_map_df)
 
-    plotter = Plotter(hits_df, module_map_df)
+    plotter = Plotter(hits_df, sorted_df, module_map_df)
     plotter.plot("plots.pdf")
 
 def get_files(pattern: str) -> list[str]:

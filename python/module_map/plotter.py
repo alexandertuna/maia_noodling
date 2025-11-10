@@ -10,8 +10,12 @@ EPSILON = 1e-3
 
 class Plotter:
 
-    def __init__(self, df: pd.DataFrame, mmdf: pd.DataFrame) -> None:
+    def __init__(self,
+                 df: pd.DataFrame,
+                 sorted_df: pd.DataFrame,
+                 mmdf: pd.DataFrame) -> None:
         self.df = df
+        self.sorted_df = sorted_df
         self.mmdf = mmdf
         self.cmap = "turbo"
         df["hit_rt"] = np.sqrt(df["hit_x"]**2 + df["hit_y"]**2)
@@ -29,6 +33,7 @@ class Plotter:
             self.plot_hit_z_sensor(pdf)
             # self.plot_hit_cellid1(pdf)
             self.plot_hit_module_layer(pdf)
+            self.plot_hit_sensor_layer(pdf)
             # self.plot_module_counts(pdf)
             self.plot_module_position(pdf)
 
@@ -161,6 +166,33 @@ class Plotter:
             pdf.savefig()
             plt.close()
 
+
+    def plot_hit_sensor_layer(self, pdf: PdfPages) -> None:
+        sensor_bins = np.arange(-1.5, self.df["hit_sensor"].max() + 1.5 + EPSILON, 1)
+        layer_bins = np.arange(-1.5, self.df["hit_layer"].max() + 1.5 + EPSILON, 1)
+
+        for det_id in DET_IDS:
+            print(f"Plotting hit sensor layer for {DET_NAMES[det_id]} ...")
+            df = self.df[self.df["hit_system"] == det_id]
+            fig, ax = plt.subplots(figsize=(8,8))
+            _, _, _, im = ax.hist2d(
+                df["hit_sensor"],
+                df["hit_layer"],
+                bins=[sensor_bins, layer_bins],
+                vmin=0,
+                cmin=0.5,
+                cmap=self.cmap,
+            )
+            fig.colorbar(im, ax=ax, label="Hits")
+            ax.set_title(DET_NAMES[det_id])
+            ax.set_xlabel("Hit sensor")
+            ax.set_ylabel("Hit Layer")
+            ax.tick_params(right=True, top=True, axis="both", which="both", direction="in")
+            fig.subplots_adjust(bottom=0.12, left=0.15, right=0.95, top=0.95)
+            pdf.savefig()
+            plt.close()
+
+
     def plot_module_counts(self, pdf: PdfPages) -> None:
         """
         For interpretation purposes, this is mostly for barrel only
@@ -193,27 +225,24 @@ class Plotter:
 
     def plot_module_position(self, pdf: PdfPages) -> None:
         print("Plotting module positions ...")
-        bins = [
-            np.linspace(125, 175, 200),
-            np.linspace(-19, 19, 200),
-        ]
 
         layer, module, side, system = 1, 0, 0, 3  # barrel example
         mask_layer_module_side_system = (
-                (self.mmdf["hit_layer"] == layer) &
-                (self.mmdf["hit_module"] == module) &
-                (self.mmdf["hit_side"] == side) &
-                (self.mmdf["hit_system"] == system)
+                (self.sorted_df["hit_layer"] == layer) &
+                (self.sorted_df["hit_module"] == module) &
+                (self.sorted_df["hit_side"] == side) &
+                (self.sorted_df["hit_system"] == system)
             )
 
         for sensor in range(0, 5):
 
             print(f"Plotting System {system} Side {side} Layer {layer} Module {module} Sensor {sensor} ...")
 
-            mask = mask_layer_module_side_system & (self.mmdf["hit_sensor"] == sensor)
+            mask = mask_layer_module_side_system & (self.sorted_df["hit_sensor"] == sensor)
 
-            all_x = pd.concat([self.mmdf[mask]["hit_x"], self.mmdf[mask]["next_hit_x"]])
-            all_y = pd.concat([self.mmdf[mask]["hit_y"], self.mmdf[mask]["next_hit_y"]])
+            # xy
+            all_x = pd.concat([self.sorted_df[mask]["hit_x"], self.sorted_df[mask]["next_hit_x"]])
+            all_y = pd.concat([self.sorted_df[mask]["hit_y"], self.sorted_df[mask]["next_hit_y"]])
             xlim = (all_x.min() - 5, all_x.max() + 5)
             ylim = (all_y.min() - 5, all_y.max() + 5)
             bins = [
@@ -224,8 +253,8 @@ class Plotter:
             for hit in ["hit", "next_hit"]:
                 fig, ax = plt.subplots(figsize=(8,8))
                 _, _, _, im = ax.hist2d(
-                    self.mmdf[mask][f"{hit}_x"],
-                    self.mmdf[mask][f"{hit}_y"],
+                    self.sorted_df[mask][f"{hit}_x"],
+                    self.sorted_df[mask][f"{hit}_y"],
                     bins=bins,
                     vmin=0,
                     cmin=0.5,
@@ -240,4 +269,32 @@ class Plotter:
                 pdf.savefig()
                 plt.close()
 
+            # rz
+            all_r = pd.concat([self.sorted_df[mask]["hit_r"], self.sorted_df[mask]["next_hit_r"]])
+            all_z = pd.concat([self.sorted_df[mask]["hit_z"], self.sorted_df[mask]["next_hit_z"]])
+            rlim = (all_r.min() - 5, all_r.max() + 5)
+            zlim = (all_z.min() - 5, all_z.max() + 5)
+            bins = [
+                np.linspace(zlim[0], zlim[1], 200),
+                np.linspace(rlim[0], rlim[1], 200),
+            ]
+
+            for hit in ["hit", "next_hit"]:
+                fig, ax = plt.subplots(figsize=(8,8))
+                _, _, _, im = ax.hist2d(
+                    self.sorted_df[mask][f"{hit}_z"],
+                    self.sorted_df[mask][f"{hit}_r"],
+                    bins=bins,
+                    vmin=0,
+                    cmin=0.5,
+                    cmap=self.cmap,
+                    )
+                fig.colorbar(im, ax=ax, label="Next-module counts")
+                ax.set_title(f"System {system} Side {side} Layer {layer} Module {module} Sensor {sensor}")
+                ax.set_xlabel("Hit z [mm]")
+                ax.set_ylabel("Hit r [mm]")
+                ax.tick_params(right=True, top=True, axis="both", which="both", direction="in")
+                fig.subplots_adjust(bottom=0.12, left=0.15, right=0.95, top=0.95)
+                pdf.savefig()
+                plt.close()
 
