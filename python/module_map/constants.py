@@ -34,3 +34,5 @@ DET_NAMES = {
     OT_BARREL: "OT Barrel",
     OT_ENDCAP: "OT Endcap",
 }
+
+MINIMUM_PT = 1.0  # GeV
