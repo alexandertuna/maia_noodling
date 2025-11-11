@@ -46,12 +46,14 @@ def main():
     sorted_df = next_hitter.get_next_hit_and_sort_by_module()
     sorted_df.to_parquet("sorted_hits.parquet")
 
-    module_mapper = HitsToModuleMap(sorted_df)
+    module_mapper = HitsToModuleMap(barrel_only=ops.barrel_only,
+                                    sorted_hits_df=sorted_df)
     module_map_df = module_mapper.make_module_map()
     print(module_map_df)
 
     plotter = Plotter(hits_df, sorted_df, module_map_df)
     plotter.plot("plots.pdf")
+
 
 def get_files(pattern: str) -> list[str]:
     files = []
