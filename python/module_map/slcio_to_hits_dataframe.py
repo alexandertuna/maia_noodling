@@ -127,6 +127,8 @@ class SlcioToHitsDataFrame:
         df['hit_layer'] = np.right_shift(df['hit_cellid0'], 7) & 0b11_1111
         df['hit_module'] = np.right_shift(df['hit_cellid0'], 13) & 0b111_1111_1111
         df['hit_sensor'] = np.right_shift(df['hit_cellid0'], 24) & 0b1111_1111
+        df['hit_theta'] = np.arctan2(df['hit_r'], df['hit_z'])
+        df['hit_phi'] = np.arctan2(df['hit_y'], df['hit_x'])
 
         # remove redundant columns
         df = df.drop(columns=['hit_cellid0', 'hit_cellid1', 'sim_p', 'sim_px', 'sim_py', 'sim_theta'])
