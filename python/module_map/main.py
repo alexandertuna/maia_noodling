@@ -42,7 +42,8 @@ def main():
     #                        ):
     #     print(hits_df)
 
-    next_hitter = GetNextHitAndSort(hits_df)
+    next_hitter = GetNextHitAndSort(barrel_only=ops.barrel_only,
+                                    hits_df=hits_df)
     sorted_df = next_hitter.get_next_hit_and_sort_by_module()
     sorted_df.to_parquet("sorted_hits.parquet")
 

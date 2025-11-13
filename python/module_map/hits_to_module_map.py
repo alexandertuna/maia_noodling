@@ -12,26 +12,9 @@ class HitsToModuleMap:
 
 
     def make_module_map(self):
-        self.remove_innermost_doublet_layers()
+        # self.remove_innermost_doublet_layers()
         self.merge_rows()
         return self.group_df
-
-
-    def remove_innermost_doublet_layers(self):
-        """
-        The module mapping is for minidoublet-minidoublet mapping.
-        Therefore, we need to ignore hits in the innermost layers of a minidoublet,
-        and we only consider next hits in the subsequent layer.
-        e.g., if we have hits in layers 0, 1, 2, 3, then
-        we only want to consider the connection between layers 1 and 2.
-        """
-        if not self.barrel_only:
-            raise ValueError("Removing innermost doublet layers is only implemented for barrel-only dataframes.")
-        mask = (
-            (self.sorted_hits_df["hit_layer"] % 2 == 1) &
-            (self.sorted_hits_df["next_hit_layer"] == self.sorted_hits_df["hit_layer"] + 1)
-        )
-        self.sorted_hits_df = self.sorted_hits_df[mask]
 
 
     def merge_rows(self):

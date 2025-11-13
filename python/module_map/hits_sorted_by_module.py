@@ -6,7 +6,11 @@ from constants import MINIMUM_PT
 class GetNextHitAndSort:
 
 
-    def __init__(self, hits_df: pd.DataFrame):
+    def __init__(self,
+                 barrel_only: bool,
+                 hits_df: pd.DataFrame,
+                 ):
+        self.barrel_only = barrel_only
         self.hits_df = hits_df
 
 
@@ -31,6 +35,8 @@ class GetNextHitAndSort:
             "hit_y",
             "hit_z",
             "hit_r",
+            "hit_theta",
+            "hit_phi",
             ]:
             self.hits_df[f"next_{col}"] = self.hits_df[col].shift(-1).fillna(-1).astype(self.hits_df[col].dtype)
         print(self.hits_df)
@@ -38,13 +44,19 @@ class GetNextHitAndSort:
 
     def filter_valid_rows(self):
         print("Filtering valid rows ...")
+        if not self.barrel_only:
+            raise ValueError("filter_valid_rows is only implemented for barrel-only dataframes.")
         self.valid = (
+            (self.hits_df["sim_pt"] > MINIMUM_PT) &
             (self.hits_df["i_event"] == self.hits_df["next_i_event"]) &
             (self.hits_df["i_sim"] == self.hits_df["next_i_sim"]) &
-            (self.hits_df["sim_pt"] > MINIMUM_PT)
+
+            # barrel-only specific:
+            (self.hits_df["hit_layer"] % 2 == 1) &
+            (self.hits_df["next_hit_layer"] == self.hits_df["hit_layer"] + 1)
         )
         print(self.hits_df[self.valid])
-
+        self.hits_df = self.hits_df[self.valid]
 
 
     def sort_rows_by_module(self):
@@ -61,6 +73,6 @@ class GetNextHitAndSort:
             "next_hit_module",
             "next_hit_sensor",
         ]
-        self.sorted_df = self.hits_df[self.valid].sort_values(by=columns)
+        self.sorted_df = self.hits_df.sort_values(by=columns)
         print(self.sorted_df)
 
