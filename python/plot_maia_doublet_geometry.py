@@ -10,7 +10,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import rcParams
 rcParams.update({'font.size': 16})
 
-FNAME = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_11_06_21h31m00s/muonGun_pT_0_10_digi_0.slcio"
+FNAME = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_11_06_21h31m00s/muonGun_pT_0_10_digi_10*.slcio"
 
 INNER_TRACKER_BARREL = 3
 OUTER_TRACKER_BARREL = 5
@@ -60,6 +60,7 @@ def get_hits(fnames: list[str]) -> pd.DataFrame:
 
     hits = []
     for fname in fnames:
+        print(f"Reading {fname} ...")
         reader = pyLCIO.IOIMPL.LCFactory.getInstance().createLCReader()
         reader.open(fname)
         for event in reader:
@@ -117,20 +118,55 @@ def plot_barrel_xy(df: pd.DataFrame, pdf: PdfPages) -> None:
         "module",
     ]
 
-    for [zoom, xmin, xmax, ymin, ymax] in [
-        [False, -1550, 1550, -1550, 1550],
-        [True, 480, 580, -50, 50]
-    ]:
+    for it, [xmin, xmax, ymin, ymax] in enumerate([
+        [-1550, 1550, -1550, 1550],
+        [100, 195, -50, 50],
+        [480, 580, -50, 50],
+        [765, 955, -50, 50],
+        [1315, 1505, -50, 50],
+    ]):
         fig, ax = plt.subplots(figsize=(8, 8))
         grouped = df.groupby(columns)
         for (system, layer, module), group in grouped:
             x_corners, y_corners = get_points_for_line(group)
-            lw = get_line_width(system, zoom)
+            lw = get_line_width(system, zoom=(it > 0))
             ax.plot(x_corners,
                     y_corners,
                     c=colors[system][layer],
                     lw=lw,
                     )
+
+        if it == 0:
+            ax.text(0, 200, "IT, L0-L3", ha="center", fontsize=16)
+            ax.text(0, 580, "IT, L4-L7", ha="center", fontsize=16)
+            ax.text(0, 940, "OT, L0-L3", ha="center", fontsize=16)
+            ax.text(0, 1230, "OT, L4-L7", ha="center", fontsize=16)
+        elif it == 1:
+            va = "center"
+            ax.text(115, 0, "IT, L0", va=va, fontsize=16)
+            ax.text(131, 0, "IT, L1", va=va, fontsize=16)
+            ax.text(155, 0, "IT, L2", va=va, fontsize=16)
+            ax.text(172, 0, "IT, L3", va=va, fontsize=16)
+        elif it == 2:
+            va = "center"
+            ax.text(498, 0, "IT, L4", va=va, fontsize=16)
+            ax.text(515, 0, "IT, L5", va=va, fontsize=16)
+            ax.text(538, 0, "IT, L6", va=va, fontsize=16)
+            ax.text(555, 0, "IT, L7", va=va, fontsize=16)
+        elif it == 3:
+            va = "center"
+            ax.text(790, 0, "OT, L0", va=va, fontsize=16)
+            ax.text(833, 0, "OT, L1", va=va, fontsize=16)
+            ax.text(870, 0, "OT, L2", va=va, fontsize=16)
+            ax.text(915, 0, "OT, L3", va=va, fontsize=16)
+        elif it == 4:
+            va = "center"
+            ax.text(1335, 0, "OT, L4", va=va, fontsize=16)
+            ax.text(1380, 0, "OT, L5", va=va, fontsize=16)
+            ax.text(1415, 0, "OT, L6", va=va, fontsize=16)
+            ax.text(1460, 0, "OT, L7", va=va, fontsize=16)
+        else:
+            raise Exception("What?")
 
         ax.grid(which="both", linestyle="-", alpha=0.2, c="black", lw=0.5)
         ax.set_axisbelow(True)
@@ -139,10 +175,7 @@ def plot_barrel_xy(df: pd.DataFrame, pdf: PdfPages) -> None:
         ax.set_ylabel("Sim. hit y [mm]")
         ax.set_xlim(xmin, xmax)
         ax.set_ylim(ymin, ymax)
-        if len(TRACKERS) == 1:
-            colname = TRACKERS[0]
-            ax.set_title(f"{colname} sim. hits")
-        fig.subplots_adjust(right=0.98, left=0.16, bottom=0.09, top=0.95)
+        fig.subplots_adjust(right=0.97, left=0.16, bottom=0.09, top=0.95)
         pdf.savefig()
         plt.close()
 
@@ -170,13 +203,14 @@ def get_points_for_line(df: pd.DataFrame) -> tuple[list[float], list[float]]:
     sin_angle = np.sin(-angle)
     xp = cos_angle * df["x"] - sin_angle * df["y"]
     yp = sin_angle * df["x"] + cos_angle * df["y"]
-    xp_min = xp.min()
-    yp_min = yp.min()
-    yp_max = yp.max()
+    outlier = np.abs(xp - xp.median()) > 5 # mm
+    xp_avg = xp[~outlier].median()
+    yp_min = yp[~outlier].min()
+    yp_max = yp[~outlier].max()
     x_corners = []
     y_corners = []
-    for xp_c, yp_c in [(xp_min, yp_min),
-                       (xp_min, yp_max),
+    for xp_c, yp_c in [(xp_avg, yp_min),
+                       (xp_avg, yp_max),
                        ]:
         x_orig = cos_angle * xp_c + sin_angle * yp_c
         y_orig = -sin_angle * xp_c + cos_angle * yp_c
