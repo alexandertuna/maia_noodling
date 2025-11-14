@@ -31,6 +31,11 @@ TRACKERS = [
 INNER_XML = "/ceph/users/atuna/work/maia/k4geo/MuColl/MAIA/compact/MAIA_v0/InnerTrackerBarrelModuleDown.xml"
 OUTER_XML = "/ceph/users/atuna/work/maia/k4geo/MuColl/MAIA/compact/MAIA_v0/OuterTrackerBarrelModuleDown.xml"
 
+NSENSORS = {
+    INNER_TRACKER_BARREL: [32, 32, 32, 32, 46, 46, 46, 46],
+    OUTER_TRACKER_BARREL: [84, 84, 84, 84, 84, 84, 84, 84],
+}
+
 
 def options():
     parser = argparse.ArgumentParser(usage=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -195,8 +200,13 @@ def plot_barrel_rz(df: pd.DataFrame, pdf: PdfPages) -> None:
         grouped = df.groupby(columns)
         for (system, layer, module_mod_2, sensor), group in grouped:
 
+            # get rough boundaries of sensor
+            outlier = np.abs(group["r"] - group["r"].median()) > 5 # mm
+            z_min = group["z"][~outlier].min()
+            z_max = group["z"][~outlier].max()
+            r_avg = group["r"][~outlier].median()
+
             # plot
-            z_min, z_max, r_avg = group["z"].min(), group["z"].max(), group["r"].median()
             lw = get_line_width(system, zoom=False)
             col = colors[system][layer]
             ax.plot([z_min, z_max],
@@ -219,8 +229,13 @@ def plot_barrel_rz(df: pd.DataFrame, pdf: PdfPages) -> None:
                 else:
                     raise Exception("What?")
                 ax.text(z_min + dz, r_avg + dr, f"{acronym}, L{layer}-L{layer+1}", ha=ha, va=va, fontsize=8)
+            if sensor == NSENSORS[system][layer] - 1 and layer % 2 == 0: # and module_mod_2 == 0:
+                dz, dr = 10, 0
+                if system == INNER_TRACKER_BARREL:
+                    dr = -7 if module_mod_2 == 0 else -2
+                ax.text(z_max + dz, r_avg + dr, f"Module % 2 = {module_mod_2}", ha=ha, va=va, fontsize=3)
 
-        ax.text(0.02, 1.01, '"Sensor" (z-position)', transform=ax.transAxes)
+        ax.text(0.02, 1.01, '"Sensor" (z-coordinate)', transform=ax.transAxes)
         ax.grid(which="both", linestyle="-", alpha=0.2, c="black", lw=0.5)
         ax.set_axisbelow(True)
         ax.tick_params(top=True, right=True, direction="in")
