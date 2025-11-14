@@ -2,18 +2,22 @@ import pyLCIO
 import argparse
 import os
 import glob
-from tqdm import tqdm
+import time
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import rcParams
+import xml.etree.ElementTree as ET
 rcParams.update({'font.size': 16})
 
 FNAME = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_11_06_21h31m00s/muonGun_pT_0_10_digi_10*.slcio"
 
 INNER_TRACKER_BARREL = 3
 OUTER_TRACKER_BARREL = 5
+
+InnerTracker_Barrel_DoubleLayer_Gap = 2.0 # mm
+OuterTracker_Barrel_DoubleLayer_Gap = 6.0 # mm
 
 TRACKERS = [
     # "VertexBarrelCollection",
@@ -24,27 +28,48 @@ TRACKERS = [
     # "OuterTrackerEndcapCollection",
 ]
 
+INNER_XML = "/ceph/users/atuna/work/maia/k4geo/MuColl/MAIA/compact/MAIA_v0/InnerTrackerBarrelModuleDown.xml"
+OUTER_XML = "/ceph/users/atuna/work/maia/k4geo/MuColl/MAIA/compact/MAIA_v0/OuterTrackerBarrelModuleDown.xml"
+
 
 def options():
     parser = argparse.ArgumentParser(usage=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-i", type=str, default=FNAME,
-                        help="Path to the input slcio file")
+                        help="Path to input slcio file")
+    parser.add_argument("--inner_xml", type=str, default=INNER_XML,
+                        help="Path to XML file with inner tracker material stack data")
+    parser.add_argument("--outer_xml", type=str, default=OUTER_XML,
+                        help="Path to XML file with outer tracker material stack data")
     parser.add_argument("--pdf", type=str, default="maia_doublet_v0.pdf",
-                        help="Path to the output PDF file")
+                        help="Path to output PDF file")
+    parser.add_argument("--plot_xml", action="store_true",
+                        help="Enable plotting of XML material stacks")
     return parser.parse_args()
 
 
 def main():
 
     ops = options()
-    fnames = get_inputs(ops.i)
 
+    # parse slcio files
+    fnames = get_inputs(ops.i)
     hits = get_hits(fnames)
     hits = post_process(hits)
     print(hits)
 
+    # parse xmls?
+    if ops.plot_xml:
+        xmls = [ops.inner_xml, ops.outer_xml]
+        for xml in xmls:
+            if not os.path.isfile(xml):
+                raise FileNotFoundError(f"XML file not found: {xml}")
+    else:
+        xmls = []
+
     with PdfPages(ops.pdf) as pdf:
         plot_barrel_xy(hits, pdf)
+        for xml in xmls:
+            plot_material_xml(xml, pdf)
 
 
 def get_inputs(fpath: str) -> list[str]:
@@ -86,6 +111,44 @@ def post_process(df: pd.DataFrame) -> pd.DataFrame:
     df["module"] = np.right_shift(df["cellid0"], 13) & 0b111_1111_1111
     df["sensor"] = np.right_shift(df["cellid0"], 24) & 0b1111_1111
     return df
+
+
+def plot_material_xml(xml, pdf):
+
+    is_inner = "inner" in xml.lower()
+
+    # parse XML
+    tree = ET.parse(xml)
+    root = tree.getroot()
+
+    # make dataframe of materials
+    df = pd.DataFrame([
+        comp.attrib for comp in root.findall("module_component")
+    ])
+    df["thickness"] = df["thickness"].str.replace("*mm", "").astype(float)
+    df["sensitive"] = df["sensitive"].str.lower().eq("true")
+    print(df)
+
+    # stacked bar chart
+    text_scaling = 100
+    fig, ax = plt.subplots(figsize=(8, 8))
+    bottom = 0
+    for _, row in df.iterrows():
+        thickness, material, info = row["thickness"], row["material"], row["info"]
+        ax.bar("Module", thickness, bottom=bottom)
+        text = f"{info} ({material})"
+        text = text.replace("Structure and cooling: ", "")
+        fontsize = min(text_scaling*thickness, 30)
+        ax.text(-0.39, bottom, text, ha="left", va="bottom", c="white", fontsize=fontsize)
+        bottom += thickness
+    ax.set_ylabel("Thickness (mm)")
+    ax.set_title(f"{'Inner' if is_inner else 'Outer'} Tracker Barrel Material Stack")
+    ax.tick_params(bottom=False, right=True)
+    fig.subplots_adjust(left=0.1, right=0.95, top=0.95, bottom=0.05)
+    pdf.savefig()
+    plt.close()
+
+
 
 def plot_barrel_xy(df: pd.DataFrame, pdf: PdfPages) -> None:
 
@@ -137,34 +200,49 @@ def plot_barrel_xy(df: pd.DataFrame, pdf: PdfPages) -> None:
                     )
 
         if it == 0:
-            ax.text(0, 200, "IT, L0-L3", ha="center", fontsize=16)
-            ax.text(0, 580, "IT, L4-L7", ha="center", fontsize=16)
-            ax.text(0, 940, "OT, L0-L3", ha="center", fontsize=16)
-            ax.text(0, 1230, "OT, L4-L7", ha="center", fontsize=16)
+            ha = "center"
+            now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+            ax.text(0, 200, "IT, L0-L3", ha=ha)
+            ax.text(0, 580, "IT, L4-L7", ha=ha)
+            ax.text(0, 940, "OT, L0-L3", ha=ha)
+            ax.text(0, 1230, "OT, L4-L7", ha=ha)
+            ax.text(0.74, 1.01, now, transform=ax.transAxes, fontsize=10)
         elif it == 1:
             va = "center"
-            ax.text(115, 0, "IT, L0", va=va, fontsize=16)
-            ax.text(131, 0, "IT, L1", va=va, fontsize=16)
-            ax.text(155, 0, "IT, L2", va=va, fontsize=16)
-            ax.text(172, 0, "IT, L3", va=va, fontsize=16)
+            gap = InnerTracker_Barrel_DoubleLayer_Gap
+            gap = f"Doublet gap: {int(gap)}mm"
+            ax.text(115, 0, "IT, L0", va=va)
+            ax.text(131, 0, "IT, L1", va=va)
+            ax.text(155, 0, "IT, L2", va=va)
+            ax.text(172, 0, "IT, L3", va=va)
+            ax.text(0.02, 1.01, gap, transform=ax.transAxes)
         elif it == 2:
             va = "center"
-            ax.text(498, 0, "IT, L4", va=va, fontsize=16)
-            ax.text(515, 0, "IT, L5", va=va, fontsize=16)
-            ax.text(538, 0, "IT, L6", va=va, fontsize=16)
-            ax.text(555, 0, "IT, L7", va=va, fontsize=16)
+            gap = InnerTracker_Barrel_DoubleLayer_Gap
+            gap = f"Doublet gap: {int(gap)}mm"
+            ax.text(498, 0, "IT, L4", va=va)
+            ax.text(515, 0, "IT, L5", va=va)
+            ax.text(538, 0, "IT, L6", va=va)
+            ax.text(555, 0, "IT, L7", va=va)
+            ax.text(0.02, 1.01, gap, transform=ax.transAxes)
         elif it == 3:
             va = "center"
-            ax.text(790, 0, "OT, L0", va=va, fontsize=16)
-            ax.text(833, 0, "OT, L1", va=va, fontsize=16)
-            ax.text(870, 0, "OT, L2", va=va, fontsize=16)
-            ax.text(915, 0, "OT, L3", va=va, fontsize=16)
+            gap = OuterTracker_Barrel_DoubleLayer_Gap
+            gap = f"Doublet gap: {int(gap)}mm"
+            ax.text(790, 0, "OT, L0", va=va)
+            ax.text(833, 0, "OT, L1", va=va)
+            ax.text(870, 0, "OT, L2", va=va)
+            ax.text(915, 0, "OT, L3", va=va)
+            ax.text(0.02, 1.01, gap, transform=ax.transAxes)
         elif it == 4:
             va = "center"
-            ax.text(1335, 0, "OT, L4", va=va, fontsize=16)
-            ax.text(1380, 0, "OT, L5", va=va, fontsize=16)
-            ax.text(1415, 0, "OT, L6", va=va, fontsize=16)
-            ax.text(1460, 0, "OT, L7", va=va, fontsize=16)
+            gap = OuterTracker_Barrel_DoubleLayer_Gap
+            gap = f"Doublet gap: {int(gap)}mm"
+            ax.text(1335, 0, "OT, L4", va=va)
+            ax.text(1380, 0, "OT, L5", va=va)
+            ax.text(1415, 0, "OT, L6", va=va)
+            ax.text(1460, 0, "OT, L7", va=va)
+            ax.text(0.02, 1.01, gap, transform=ax.transAxes)
         else:
             raise Exception("What?")
 
