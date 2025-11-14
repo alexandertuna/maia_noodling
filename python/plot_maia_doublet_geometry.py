@@ -67,7 +67,8 @@ def main():
         xmls = []
 
     with PdfPages(ops.pdf) as pdf:
-        plot_barrel_xy(hits, pdf)
+        # plot_barrel_xy(hits, pdf)
+        plot_barrel_rz(hits, pdf)
         for xml in xmls:
             plot_material_xml(xml, pdf)
 
@@ -102,7 +103,9 @@ def get_hits(fnames: list[str]) -> pd.DataFrame:
 
     return pd.DataFrame(np.array(hits), columns=["x", "y", "z", "e", "dx", "cellid0"])
 
+
 def post_process(df: pd.DataFrame) -> pd.DataFrame:
+    print("Post-processing hits ...")
     df["cellid0"] = df["cellid0"].astype(np.int64)
     df["r"] = np.sqrt(df["x"]**2 + df["y"]**2)
     df["system"] = np.right_shift(df["cellid0"], 0) & 0b1_1111
@@ -110,6 +113,7 @@ def post_process(df: pd.DataFrame) -> pd.DataFrame:
     df["layer"] = np.right_shift(df["cellid0"], 7) & 0b11_1111
     df["module"] = np.right_shift(df["cellid0"], 13) & 0b111_1111_1111
     df["sensor"] = np.right_shift(df["cellid0"], 24) & 0b1111_1111
+    df["module_mod_2"] = df["module"] % 2
     return df
 
 
@@ -147,6 +151,86 @@ def plot_material_xml(xml, pdf):
     fig.subplots_adjust(left=0.1, right=0.95, top=0.95, bottom=0.05)
     pdf.savefig()
     plt.close()
+
+
+def plot_barrel_rz(df: pd.DataFrame, pdf: PdfPages) -> None:
+
+    colors = {
+        INNER_TRACKER_BARREL: [
+            "green",
+            "purple",
+            "green",
+            "purple",
+            "green",
+            "purple",
+            "green",
+            "purple",
+        ],
+        OUTER_TRACKER_BARREL: [
+            "blue",
+            "red",
+            "blue",
+            "red",
+            "blue",
+            "red",
+            "blue",
+            "red",
+        ],
+    }
+
+    columns = [
+        "system",
+        "layer",
+        "module_mod_2",
+        "sensor",
+    ]
+    ha, va = "left", "bottom"
+
+    for it, [zmin, zmax, rmin, rmax] in enumerate([
+        [-1550, 1550, 0, 1550],
+    ]):
+
+        print(f"Plotting barrel rz section {it} ...")
+        fig, ax = plt.subplots(figsize=(8, 8))
+        grouped = df.groupby(columns)
+        for (system, layer, module_mod_2, sensor), group in grouped:
+
+            # plot
+            z_min, z_max, r_avg = group["z"].min(), group["z"].max(), group["r"].median()
+            lw = get_line_width(system, zoom=False)
+            col = colors[system][layer]
+            ax.plot([z_min, z_max],
+                    [r_avg, r_avg],
+                    c=col,
+                    lw=lw,
+                    alpha = 1.0 if sensor % 2 == 0 else 0.7,
+                    )
+
+            # text annotations
+            if layer % 2 == 1 and module_mod_2 == 1 and sensor % 2 == 0:
+                ax.text(z_min, r_avg, f"{int(sensor):02}", ha=ha, va=va, fontsize=3.5)
+            if layer % 2 == 0 and sensor == 0 and module_mod_2 == 0:
+                if system == INNER_TRACKER_BARREL:
+                    dr, dz = -5, -260
+                    acronym = "IT"
+                elif system == OUTER_TRACKER_BARREL:
+                    dr, dz = 0, -280
+                    acronym = "OT"
+                else:
+                    raise Exception("What?")
+                ax.text(z_min + dz, r_avg + dr, f"{acronym}, L{layer}-L{layer+1}", ha=ha, va=va, fontsize=8)
+
+        ax.text(0.02, 1.01, '"Sensor" (z-position)', transform=ax.transAxes)
+        ax.grid(which="both", linestyle="-", alpha=0.2, c="black", lw=0.5)
+        ax.set_axisbelow(True)
+        ax.tick_params(top=True, right=True, direction="in")
+        ax.set_xlabel("Sim. hit z [mm]")
+        ax.set_ylabel("Sim. hit r [mm]")
+        ax.set_xlim(zmin, zmax)
+        ax.set_ylim(rmin, rmax)
+        fig.subplots_adjust(right=0.97, left=0.16, bottom=0.09, top=0.95)
+        pdf.savefig()
+        plt.close()
 
 
 
@@ -188,6 +272,7 @@ def plot_barrel_xy(df: pd.DataFrame, pdf: PdfPages) -> None:
         [765, 955, -50, 50],
         [1315, 1505, -50, 50],
     ]):
+        print(f"Plotting barrel XY section {it} ...")
         fig, ax = plt.subplots(figsize=(8, 8))
         grouped = df.groupby(columns)
         for (system, layer, module), group in grouped:
