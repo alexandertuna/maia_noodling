@@ -88,110 +88,76 @@ def post_process(df: pd.DataFrame) -> pd.DataFrame:
 
 def plot_barrel_xy(df: pd.DataFrame, pdf: PdfPages) -> None:
 
-    # print("")
-    # print(df)
-    # print(df["dx"].min(), df["dx"].max())
-    # print("")
-    # print("")
-    # print(df)
-    # print(df["e"].min(), df["e"].max())
-    # print("")
-    # DX_MIN = 1e-1 # mm
-    # df = df[df["dx"] > DX_MIN]
-    # print("")
-    # print(df)
-    # print(df["dx"].min(), df["dx"].max())
-    # print("")
-    # E_MIN = 50e-6  # GeV?
-    # df = df[df["e"] > E_MIN]
-    # print("")
-    # print(df)
-    # print(df["e"].min(), df["e"].max())
-    # print("")
+    colors = {
+        INNER_TRACKER_BARREL: [
+            "green",
+            "purple",
+            "green",
+            "purple",
+            "green",
+            "purple",
+            "green",
+            "purple",
+        ],
+        OUTER_TRACKER_BARREL: [
+            "blue",
+            "red",
+            "blue",
+            "red",
+            "blue",
+            "red",
+            "blue",
+            "red",
+        ],
+    }
 
-    rmax = df["r"].max() * 1.1
+    columns = [
+        "system",
+        "layer",
+        "module",
+    ]
 
-    # xy plot
-    plot = "border"
-    fig, ax = plt.subplots(figsize=(8, 8))
-    if plot == "hist2d":
-        _, _, _, im = ax.hist2d(df["x"],
-                                df["y"],
-                                bins=np.linspace(-rmax, rmax, 501),
-                                cmin=0.5,
-        )
-        fig.colorbar(im, ax=ax, label="")
-    elif plot == "scatter":
-        ax.scatter(df["x"], df["y"], color=get_color(), s=1)
-    elif plot == "border":
-        columns = [
-            "system",
-            # "side",
-            "layer",
-            "module",
-            # "sensor",
-        ]
-        colors = [
-            "blue",
-            "red",
-            "blue",
-            "red",
-            "blue",
-            "red",
-            "blue",
-            "red",
-            "blue",
-            "red",
-            "blue",
-            "red",
-            "blue",
-            "red",
-            "blue",
-            "red",
-        ]
+    for [zoom, xmin, xmax, ymin, ymax] in [
+        [False, -1550, 1550, -1550, 1550],
+        [True, 480, 580, -50, 50]
+    ]:
+        fig, ax = plt.subplots(figsize=(8, 8))
         grouped = df.groupby(columns)
         for (system, layer, module), group in grouped:
             x_corners, y_corners = get_points_for_line(group)
-            lw = get_line_width(system)
+            lw = get_line_width(system, zoom)
             ax.plot(x_corners,
                     y_corners,
-                    c=colors[layer],
-                    # alpha=0.5,
+                    c=colors[system][layer],
                     lw=lw,
-                    ) # , color=get_color(), lw=0.5)
+                    )
+
+        ax.grid(which="both", linestyle="-", alpha=0.2, c="black", lw=0.5)
+        ax.set_axisbelow(True)
+        ax.tick_params(top=True, right=True, direction="in")
+        ax.set_xlabel("Sim. hit x [mm]")
+        ax.set_ylabel("Sim. hit y [mm]")
+        ax.set_xlim(xmin, xmax)
+        ax.set_ylim(ymin, ymax)
+        if len(TRACKERS) == 1:
+            colname = TRACKERS[0]
+            ax.set_title(f"{colname} sim. hits")
+        fig.subplots_adjust(right=0.98, left=0.16, bottom=0.09, top=0.95)
+        pdf.savefig()
+        plt.close()
 
 
-
-    else:
-        raise Exception(f"Unknown plot type: {plot}")
-    ax.tick_params(top=True, right=True, direction="in")
-    ax.set_xlabel("Sim. hit x [mm]")
-    ax.set_ylabel("Sim. hit y [mm]")
-    ax.set_xlim(-rmax, rmax)
-    ax.set_ylim(-rmax, rmax)
-    if len(TRACKERS) == 1:
-        colname = TRACKERS[0]
-        ax.set_title(f"{colname} sim. hits")
-    fig.subplots_adjust(right=0.98, left=0.16, bottom=0.09, top=0.95)
-    pdf.savefig()
-    # plt.close()
-
-    # zoom!
-    ax.set_xlim(480, 580)
-    ax.set_ylim(-50, 50)
-    pdf.savefig()
-    plt.close()
-
-
-def get_line_width(system: int) -> float:
+def get_line_width(system: int, zoom: bool) -> float:
+    multiplier = 10.0 if zoom else 1.0
     if system == INNER_TRACKER_BARREL:
-        return 0.3
+        return 0.3 * multiplier
     elif system == OUTER_TRACKER_BARREL:
-        return 0.5
+        return 0.7 * multiplier
     else:
         raise Exception(f"Unknown system: {system}")
 
-def get_points_for_line(df: pd.DataFrame) -> [list, list]:
+
+def get_points_for_line(df: pd.DataFrame) -> tuple[list[float], list[float]]:
     # Assume the points form a rectangle with an angle
     # Find the center of the rectangle (median x and y)
     # Rotate relative to the origin (0, 0) to align with axes
