@@ -47,6 +47,10 @@ def options():
                         help="Path to XML file with outer tracker material stack data")
     parser.add_argument("--pdf", type=str, default="maia_doublet_v0.pdf",
                         help="Path to output PDF file")
+    parser.add_argument("--plot_xy", action="store_true",
+                        help="Enable plotting of XY geometry")
+    parser.add_argument("--plot_rz", action="store_true",
+                        help="Enable plotting of RZ geometry")
     parser.add_argument("--plot_xml", action="store_true",
                         help="Enable plotting of XML material stacks")
     return parser.parse_args()
@@ -55,12 +59,15 @@ def options():
 def main():
 
     ops = options()
+    if not (ops.plot_xy or ops.plot_rz or ops.plot_xml):
+        raise Exception("No plotting options selected! Use --plot_xy, --plot_rz, or --plot_xml.")
 
     # parse slcio files
-    fnames = get_inputs(ops.i)
-    hits = get_hits(fnames)
-    hits = post_process(hits)
-    print(hits)
+    if ops.plot_xy or ops.plot_rz:
+        fnames = get_inputs(ops.i)
+        hits = get_hits(fnames)
+        hits = post_process(hits)
+        print(hits)
 
     # parse xmls?
     if ops.plot_xml:
@@ -71,9 +78,12 @@ def main():
     else:
         xmls = []
 
+    # make plots and save to pdf
     with PdfPages(ops.pdf) as pdf:
-        # plot_barrel_xy(hits, pdf)
-        plot_barrel_rz(hits, pdf)
+        if ops.plot_xy:
+            plot_barrel_xy(hits, pdf)
+        if ops.plot_rz:
+            plot_barrel_rz(hits, pdf)
         for xml in xmls:
             plot_material_xml(xml, pdf)
 
@@ -282,6 +292,7 @@ def plot_barrel_xy(df: pd.DataFrame, pdf: PdfPages) -> None:
 
     for it, [xmin, xmax, ymin, ymax] in enumerate([
         [-1550, 1550, -1550, 1550],
+        [-1550, 1550, -1550, 1550],
         [100, 195, -50, 50],
         [480, 580, -50, 50],
         [765, 955, -50, 50],
@@ -292,7 +303,7 @@ def plot_barrel_xy(df: pd.DataFrame, pdf: PdfPages) -> None:
         grouped = df.groupby(columns)
         for (system, layer, module), group in grouped:
             x_corners, y_corners = get_points_for_line(group)
-            lw = get_line_width(system, zoom=(it > 0))
+            lw = get_line_width(system, zoom=(it > 1))
             ax.plot(x_corners,
                     y_corners,
                     c=colors[system][layer],
@@ -300,14 +311,34 @@ def plot_barrel_xy(df: pd.DataFrame, pdf: PdfPages) -> None:
                     )
 
         if it == 0:
+            # draw entire xy with layer annotations
             ha = "center"
             now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
             ax.text(0, 200, "IT, L0-L3", ha=ha)
             ax.text(0, 580, "IT, L4-L7", ha=ha)
             ax.text(0, 940, "OT, L0-L3", ha=ha)
             ax.text(0, 1230, "OT, L4-L7", ha=ha)
+            ax.text(0.02, 1.01, '"Layer" (r-coordinate)', transform=ax.transAxes, fontsize=16)
             ax.text(0.74, 1.01, now, transform=ax.transAxes, fontsize=10)
         elif it == 1:
+            # draw entire xy with layer and module annotations
+            ha = "center"
+            for (system, layer, module), group in grouped:
+                if layer not in [0, 3, 4, 7]:
+                    continue
+                x_corners, y_corners = get_points_for_line(group)
+                x_avg, y_avg = np.mean(x_corners), np.mean(y_corners)
+                r_avg, phi = np.sqrt(x_avg**2 + y_avg**2), np.arctan2(y_avg, x_avg)
+                if system == INNER_TRACKER_BARREL:
+                    dr = 30 if layer in [3, 7] else -30
+                elif system == OUTER_TRACKER_BARREL:
+                    dr = 40 if layer in [3, 7] else -40
+                else:
+                    raise Exception("What?")
+                x_new, y_new = (r_avg + dr) * np.cos(phi), (r_avg + dr) * np.sin(phi)
+                ax.text(x_new, y_new, f"{module:03}", ha="center", va="center", fontsize=3, rotation=np.degrees(phi))
+            ax.text(0.02, 1.01, '"Module" (phi-coordinate)', transform=ax.transAxes, fontsize=16)
+        elif it == 2:
             va = "center"
             gap = InnerTracker_Barrel_DoubleLayer_Gap
             gap = f"Doublet gap: {int(gap)}mm"
@@ -316,7 +347,7 @@ def plot_barrel_xy(df: pd.DataFrame, pdf: PdfPages) -> None:
             ax.text(155, 0, "IT, L2", va=va)
             ax.text(172, 0, "IT, L3", va=va)
             ax.text(0.02, 1.01, gap, transform=ax.transAxes)
-        elif it == 2:
+        elif it == 3:
             va = "center"
             gap = InnerTracker_Barrel_DoubleLayer_Gap
             gap = f"Doublet gap: {int(gap)}mm"
@@ -325,7 +356,7 @@ def plot_barrel_xy(df: pd.DataFrame, pdf: PdfPages) -> None:
             ax.text(538, 0, "IT, L6", va=va)
             ax.text(555, 0, "IT, L7", va=va)
             ax.text(0.02, 1.01, gap, transform=ax.transAxes)
-        elif it == 3:
+        elif it == 4:
             va = "center"
             gap = OuterTracker_Barrel_DoubleLayer_Gap
             gap = f"Doublet gap: {int(gap)}mm"
@@ -334,7 +365,7 @@ def plot_barrel_xy(df: pd.DataFrame, pdf: PdfPages) -> None:
             ax.text(870, 0, "OT, L2", va=va)
             ax.text(915, 0, "OT, L3", va=va)
             ax.text(0.02, 1.01, gap, transform=ax.transAxes)
-        elif it == 4:
+        elif it == 5:
             va = "center"
             gap = OuterTracker_Barrel_DoubleLayer_Gap
             gap = f"Doublet gap: {int(gap)}mm"
