@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from constants import MINIMUM_PT, MINIMUM_HITS_PER_MODULE
+from constants import MINIMUM_FRACTION_PER_MODULE, MINIMUM_HITS_PER_MODULE
 
 
 class HitsToModuleMap:
@@ -34,6 +34,11 @@ class HitsToModuleMap:
 
         print("Counting repeated rows ...")
         self.group_df = self.sorted_hits_df.groupby(columns).size().reset_index(name="count")
+
+        print("Finding the fraction of repeated rows ...")
+        cols = ["hit_system", "hit_side", "hit_layer", "hit_module", "hit_sensor"]
+        self.group_df["fraction"] = self.group_df["count"] / self.group_df.groupby(cols)["count"].transform("sum")
+
         with pd.option_context("display.min_rows", 20,
                                "display.max_rows", 20,
                                ):
@@ -42,17 +47,18 @@ class HitsToModuleMap:
         print("")
         print(f"Maximum number of counts: {self.group_df['count'].max()}")
         print("")
-        self.group_df = self.group_df[self.group_df['count'] >= MINIMUM_HITS_PER_MODULE]
+        # self.group_df = self.group_df[self.group_df['count'] >= MINIMUM_HITS_PER_MODULE]
+        self.group_df = self.group_df[self.group_df['fraction'] >= MINIMUM_FRACTION_PER_MODULE]
 
-        # parents = self.sorted_hits_df[[
-        #     "hit_system",
-        #     "hit_side",
-        #     "hit_layer",
-        #     "hit_module",
-        #     "hit_sensor",
-        # ]]
-        # print("Parents:")
-        # print(parents)
-        # print("Unique Parents:")
-        # print(parents.drop_duplicates())
+        parents = self.group_df[[
+            "hit_system",
+            "hit_side",
+            "hit_layer",
+            "hit_module",
+            "hit_sensor",
+        ]]
+        print("Parents:")
+        print(parents)
+        print("Unique Parents:")
+        print(parents.drop_duplicates())
 
