@@ -14,6 +14,8 @@ def options():
     parser = argparse.ArgumentParser(usage=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-i", type=str, default=FNAME,
                         help="Comma-separated list of globbable input slcio files")
+    parser.add_argument("-n", type=int, default=0,
+                        help="Maximum number of slcio files to process")
     parser.add_argument("--parquet", type=str, default="hits_dataframe.parquet",
                         help="Intermediate parquet file for hits dataframe")
     parser.add_argument("--load_parquet", action="store_true",
@@ -25,7 +27,7 @@ def options():
 
 def main():
     ops = options()
-    file_paths = get_files(ops.i)
+    file_paths = get_files(ops.i, ops.n)
     for fpath in file_paths:
         print(f"Input file: {fpath}")
 
@@ -56,10 +58,13 @@ def main():
     plotter.plot("plots.pdf")
 
 
-def get_files(pattern: str) -> list[str]:
+def get_files(pattern: str, max_files: int) -> list[str]:
     files = []
     for fi in pattern.split(","):
         files.extend(glob(fi))
+    files.sort()
+    if max_files > 0:
+        files = files[:max_files]
     return files
 
 
