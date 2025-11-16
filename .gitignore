@@ -209,6 +209,7 @@ __marimo__/
 # Other
 *.pdf
 *.slcio
+*.parquet
 .gwms-user-job-wrapper.sh
 
 # HEP / WHIZARD
