@@ -82,6 +82,7 @@ class SlcioToHitsDataFrame:
 
                 for obj in col:
 
+                    # find the hit and the parent mc particle
                     hit, mcp = None, None
                     if is_digi:
                         # `obj` is a relation
@@ -94,12 +95,15 @@ class SlcioToHitsDataFrame:
                         hit = obj
                         mcp = hit.getMCParticle()
 
+                    # skip if hit or mcp is missing
                     if not hit:
                         continue
                     if not mcp:
                         continue
                     if not mcp in mcparticles:
                         continue
+
+                    # record the hit info
                     i_sim = mcparticles.index(mcp)
                     rows.append({
                         'file': os.path.basename(slcio_file_path),
@@ -116,70 +120,6 @@ class SlcioToHitsDataFrame:
                         'hit_cellid0': hit.getCellID0(),
                         'hit_cellid1': hit.getCellID1(),
                     })
-
-
-            # if is_digi:
-            #     for collection in TRACKER_RELATIONS:
-            #         # get the relations collection
-            #         rels = event.getCollection(collection)
-            #         # for each relation, get the MC parent and the hit
-            #         for rel in rels:
-            #             hit, sim_hit = rel.getFrom(), rel.getTo()
-            #             if not hit:
-            #                 continue
-            #             if not sim_hit:
-            #                 continue
-            #             mcp = sim_hit.getMCParticle()
-            #             if not mcp:
-            #                 continue
-            #             if not mcp in mcparticles:
-            #                 continue
-            #             i_sim = mcparticles.index(mcp)
-            #             rows.append({
-            #                 'file': os.path.basename(slcio_file_path),
-            #                 'i_event': i_event,
-            #                 'i_sim': i_sim,
-            #                 'sim_px': sim_px[i_sim],
-            #                 'sim_py': sim_py[i_sim],
-            #                 'sim_pz': sim_pz[i_sim],
-            #                 'sim_m': sim_m[i_sim],
-            #                 'sim_q': sim_q[i_sim],
-            #                 'hit_x': hit.getPosition()[0],
-            #                 'hit_y': hit.getPosition()[1],
-            #                 'hit_z': hit.getPosition()[2],
-            #                 'hit_cellid0': hit.getCellID0(),
-            #                 'hit_cellid1': hit.getCellID1(),
-            #             })
-            # elif is_sim:
-            #     for collection in SIM_TRACKER_COLLECTIONS:
-            #         # get the relations collection
-            #         hits = event.getCollection(collection)
-            #         # for each hit, get the MC parent and the hit
-            #         for hit in hits:
-            #             if not hit:
-            #                 continue
-            #             mcp = hit.getMCParticle()
-            #             if not mcp:
-            #                 continue
-            #             if not mcp in mcparticles:
-            #                 continue
-            #             i_sim = mcparticles.index(mcp)
-            #             rows.append({
-            #                 'file': os.path.basename(slcio_file_path),
-            #                 'i_event': i_event,
-            #                 'i_sim': i_sim,
-            #                 'sim_px': sim_px[i_sim],
-            #                 'sim_py': sim_py[i_sim],
-            #                 'sim_pz': sim_pz[i_sim],
-            #                 'sim_m': sim_m[i_sim],
-            #                 'sim_q': sim_q[i_sim],
-            #                 'hit_x': hit.getPosition()[0],
-            #                 'hit_y': hit.getPosition()[1],
-            #                 'hit_z': hit.getPosition()[2],
-            #                 'hit_cellid0': hit.getCellID0(),
-            #                 'hit_cellid1': hit.getCellID1(),
-            #             })
-
 
         # Close the reader
         reader.close()
