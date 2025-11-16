@@ -13,7 +13,7 @@ import os
 import multiprocessing as mp
 
 from constants import MINIMUM_PT
-from constants import MCPARTICLES, TRACKER_COLLECTIONS, TRACKER_RELATIONS
+from constants import MCPARTICLES, TRACKER_RELATIONS, SIM_TRACKER_COLLECTIONS
 from constants import IT_BARREL, OT_BARREL
 
 
@@ -43,7 +43,10 @@ class SlcioToHitsDataFrame:
         print(f"Converting slcio file to DataFrame: {slcio_file_path}")
 
         # # preamble: cellid decoding
-
+        is_digi = "_digi_" in slcio_file_path
+        is_sim = "_sim_" in slcio_file_path
+        if not is_digi and not is_sim:
+            raise ValueError(f"Cannot determine if file is digi or sim: {slcio_file_path}")
 
         # open the SLCIO file
         reader = pyLCIO.IOIMPL.LCFactory.getInstance().createLCReader()
@@ -71,19 +74,28 @@ class SlcioToHitsDataFrame:
             sim_q = [mcp.getCharge() for mcp in mcparticles]
 
             # inspect all tracking detectors
-            for collection in TRACKER_RELATIONS:
+            collections = TRACKER_RELATIONS if is_digi else SIM_TRACKER_COLLECTIONS
 
-                # get the relations collection
-                rels = event.getCollection(collection)
+            for collection in collections:
 
-                # for each relation, get the MC parent and the hit
-                for rel in rels:
-                    hit, sim_hit = rel.getFrom(), rel.getTo()
+                col = event.getCollection(collection)
+
+                for obj in col:
+
+                    hit, mcp = None, None
+                    if is_digi:
+                        # `obj` is a relation
+                        hit, sim_hit = obj.getFrom(), obj.getTo()
+                        if not sim_hit:
+                            continue
+                        mcp = sim_hit.getMCParticle()
+                    if is_sim:
+                        # `obj` is a sim hit
+                        hit = obj
+                        mcp = hit.getMCParticle()
+
                     if not hit:
                         continue
-                    if not sim_hit:
-                        continue
-                    mcp = sim_hit.getMCParticle()
                     if not mcp:
                         continue
                     if not mcp in mcparticles:
@@ -104,6 +116,70 @@ class SlcioToHitsDataFrame:
                         'hit_cellid0': hit.getCellID0(),
                         'hit_cellid1': hit.getCellID1(),
                     })
+
+
+            # if is_digi:
+            #     for collection in TRACKER_RELATIONS:
+            #         # get the relations collection
+            #         rels = event.getCollection(collection)
+            #         # for each relation, get the MC parent and the hit
+            #         for rel in rels:
+            #             hit, sim_hit = rel.getFrom(), rel.getTo()
+            #             if not hit:
+            #                 continue
+            #             if not sim_hit:
+            #                 continue
+            #             mcp = sim_hit.getMCParticle()
+            #             if not mcp:
+            #                 continue
+            #             if not mcp in mcparticles:
+            #                 continue
+            #             i_sim = mcparticles.index(mcp)
+            #             rows.append({
+            #                 'file': os.path.basename(slcio_file_path),
+            #                 'i_event': i_event,
+            #                 'i_sim': i_sim,
+            #                 'sim_px': sim_px[i_sim],
+            #                 'sim_py': sim_py[i_sim],
+            #                 'sim_pz': sim_pz[i_sim],
+            #                 'sim_m': sim_m[i_sim],
+            #                 'sim_q': sim_q[i_sim],
+            #                 'hit_x': hit.getPosition()[0],
+            #                 'hit_y': hit.getPosition()[1],
+            #                 'hit_z': hit.getPosition()[2],
+            #                 'hit_cellid0': hit.getCellID0(),
+            #                 'hit_cellid1': hit.getCellID1(),
+            #             })
+            # elif is_sim:
+            #     for collection in SIM_TRACKER_COLLECTIONS:
+            #         # get the relations collection
+            #         hits = event.getCollection(collection)
+            #         # for each hit, get the MC parent and the hit
+            #         for hit in hits:
+            #             if not hit:
+            #                 continue
+            #             mcp = hit.getMCParticle()
+            #             if not mcp:
+            #                 continue
+            #             if not mcp in mcparticles:
+            #                 continue
+            #             i_sim = mcparticles.index(mcp)
+            #             rows.append({
+            #                 'file': os.path.basename(slcio_file_path),
+            #                 'i_event': i_event,
+            #                 'i_sim': i_sim,
+            #                 'sim_px': sim_px[i_sim],
+            #                 'sim_py': sim_py[i_sim],
+            #                 'sim_pz': sim_pz[i_sim],
+            #                 'sim_m': sim_m[i_sim],
+            #                 'sim_q': sim_q[i_sim],
+            #                 'hit_x': hit.getPosition()[0],
+            #                 'hit_y': hit.getPosition()[1],
+            #                 'hit_z': hit.getPosition()[2],
+            #                 'hit_cellid0': hit.getCellID0(),
+            #                 'hit_cellid1': hit.getCellID1(),
+            #             })
+
 
         # Close the reader
         reader.close()
