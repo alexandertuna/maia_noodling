@@ -117,6 +117,7 @@ class SlcioToHitsDataFrame:
                         'hit_x': hit.getPosition()[0],
                         'hit_y': hit.getPosition()[1],
                         'hit_z': hit.getPosition()[2],
+                        'hit_e': hit.getEDep(),
                         'hit_cellid0': hit.getCellID0(),
                         'hit_cellid1': hit.getCellID1(),
                     })
