@@ -14,6 +14,13 @@ TRACKER_RELATIONS = [
     "OETrackerHitsRelations",
 ]
 
+SIM_TRACKER_COLLECTIONS = [
+    "InnerTrackerBarrelCollection",
+    "InnerTrackerEndcapCollection",
+    "OuterTrackerBarrelCollection",
+    "OuterTrackerEndcapCollection",
+]
+
 VXD_BARREL = 1
 VXD_ENDCAP = 2
 IT_BARREL = 3
@@ -35,8 +42,11 @@ DET_NAMES = {
     OT_ENDCAP: "OT Endcap",
 }
 
+SPEED_OF_LIGHT = 299.792458  # mm/ns
+
 MINIMUM_PT = 1.0  # GeV
 
 MINIMUM_HITS_PER_MODULE = 10
 MINIMUM_FRACTION_PER_MODULE = 0.001
+MAXIMUM_TIME = 10 # ns
 

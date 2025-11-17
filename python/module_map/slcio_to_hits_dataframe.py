@@ -12,7 +12,7 @@ from tqdm import tqdm
 import os
 import multiprocessing as mp
 
-from constants import MINIMUM_PT
+from constants import MINIMUM_PT, SPEED_OF_LIGHT
 from constants import MCPARTICLES, TRACKER_RELATIONS, SIM_TRACKER_COLLECTIONS
 from constants import IT_BARREL, OT_BARREL
 
@@ -118,6 +118,8 @@ class SlcioToHitsDataFrame:
                         'hit_y': hit.getPosition()[1],
                         'hit_z': hit.getPosition()[2],
                         'hit_e': hit.getEDep(),
+                        'hit_t': hit.getTime(),
+                        'hit_quality': hit.getQuality(),
                         'hit_cellid0': hit.getCellID0(),
                         'hit_cellid1': hit.getCellID1(),
                     })
@@ -139,6 +141,7 @@ class SlcioToHitsDataFrame:
         df['sim_phi'] = np.arctan2(df['sim_py'], df['sim_px'])
         df['hit_r'] = np.sqrt(df['hit_x']**2 + df['hit_y']**2)
         df['hit_R'] = np.sqrt(df['hit_x']**2 + df['hit_y']**2 + df['hit_z']**2)
+        df['hit_t_corrected'] = df['hit_t'] - df['hit_R'] / SPEED_OF_LIGHT
         df['hit_system'] = np.right_shift(df['hit_cellid0'], 0) & 0b1_1111
         df['hit_side'] = np.right_shift(df['hit_cellid0'], 5) & 0b11
         df['hit_layer'] = np.right_shift(df['hit_cellid0'], 7) & 0b11_1111
