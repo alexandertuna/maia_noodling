@@ -312,105 +312,6 @@ class Plotter:
                 print(f"  No hits for System {system} Side {side} Layer {layer} Module {module} Sensor {sensor}, skipping ...")
                 continue
 
-            # # xy
-            # all_x = pd.concat([self.sorted_df[mask]["hit_x"], self.sorted_df[mask]["next_hit_x"]])
-            # all_y = pd.concat([self.sorted_df[mask]["hit_y"], self.sorted_df[mask]["next_hit_y"]])
-            # xlim = (all_x.min() - 5, all_x.max() + 5)
-            # ylim = (all_y.min() - 5, all_y.max() + 5)
-            # bins = [
-            #     np.linspace(xlim[0], xlim[1], 200),
-            #     np.linspace(ylim[0], ylim[1], 200),
-            # ]
-
-            # # hist2d
-            # for hit in ["hit", "next_hit"]:
-            #     fig, ax = plt.subplots(figsize=(8,8))
-            #     _, _, _, im = ax.hist2d(
-            #         self.sorted_df[mask][f"{hit}_x"],
-            #         self.sorted_df[mask][f"{hit}_y"],
-            #         bins=bins,
-            #         vmin=0,
-            #         cmin=0.5,
-            #         cmap=self.cmap,
-            #         )
-            #     fig.colorbar(im, ax=ax, label="Next-module counts")
-            #     ax.set_title(f"System {system} Side {side} Layer {layer} Module {module} Sensor {sensor}")
-            #     ax.set_xlabel("Hit x [mm]")
-            #     ax.set_ylabel("Hit y [mm]")
-            #     ax.tick_params(right=True, top=True, axis="both", which="both", direction="in")
-            #     fig.subplots_adjust(bottom=0.12, left=0.15, right=0.95, top=0.95)
-            #     pdf.savefig()
-            #     plt.close()
-
-            # # 2x scatter
-            # fig, ax = plt.subplots(figsize=(8,8))
-            # ax.scatter(self.sorted_df[mask][f"hit_x"],
-            #            self.sorted_df[mask][f"hit_y"],
-            #            c="blue",
-            #            s=1,
-            #            )
-            # ax.scatter(self.sorted_df[mask][f"next_hit_x"],
-            #            self.sorted_df[mask][f"next_hit_y"],
-            #            c="red",
-            #            s=1,
-            #            )
-            # ax.set_title(f"System {system} Side {side} Layer {layer} Module {module} Sensor {sensor}")
-            # ax.set_xlabel("Hit x [mm]")
-            # ax.set_ylabel("Hit y [mm]")
-            # ax.tick_params(right=True, top=True, axis="both", which="both", direction="in")
-            # fig.subplots_adjust(bottom=0.12, left=0.15, right=0.95, top=0.95)
-            # pdf.savefig()
-            # plt.close()
-
-            # # rz
-            # all_r = pd.concat([self.sorted_df[mask]["hit_r"], self.sorted_df[mask]["next_hit_r"]])
-            # all_z = pd.concat([self.sorted_df[mask]["hit_z"], self.sorted_df[mask]["next_hit_z"]])
-            # rlim = (all_r.min() - 5, all_r.max() + 5)
-            # zlim = (all_z.min() - 5, all_z.max() + 5)
-            # bins = [
-            #     np.linspace(zlim[0], zlim[1], 200),
-            #     np.linspace(rlim[0], rlim[1], 200),
-            # ]
-
-            # for hit in ["hit", "next_hit"]:
-            #     fig, ax = plt.subplots(figsize=(8,8))
-            #     _, _, _, im = ax.hist2d(
-            #         self.sorted_df[mask][f"{hit}_z"],
-            #         self.sorted_df[mask][f"{hit}_r"],
-            #         bins=bins,
-            #         vmin=0,
-            #         cmin=0.5,
-            #         cmap=self.cmap,
-            #         )
-            #     fig.colorbar(im, ax=ax, label="Next-module counts")
-            #     ax.set_title(f"System {system} Side {side} Layer {layer} Module {module} Sensor {sensor}")
-            #     ax.set_xlabel("Hit z [mm]")
-            #     ax.set_ylabel("Hit r [mm]")
-            #     ax.tick_params(right=True, top=True, axis="both", which="both", direction="in")
-            #     fig.subplots_adjust(bottom=0.12, left=0.15, right=0.95, top=0.95)
-            #     pdf.savefig()
-            #     plt.close()
-
-            # # 2x scatter
-            # fig, ax = plt.subplots(figsize=(8,8))
-            # ax.scatter(self.sorted_df[mask][f"hit_z"],
-            #            self.sorted_df[mask][f"hit_r"],
-            #            c="blue",
-            #            s=1,
-            #            )
-            # ax.scatter(self.sorted_df[mask][f"next_hit_z"],
-            #            self.sorted_df[mask][f"next_hit_r"],
-            #            c="red",
-            #            s=1,
-            #            )
-            # ax.set_title(f"{system=} {side=} {layer=} {module=} {sensor=}")
-            # ax.set_xlabel("Hit z [mm]")
-            # ax.set_ylabel("Hit r [mm]")
-            # ax.tick_params(right=True, top=True, axis="both", which="both", direction="in")
-            # fig.subplots_adjust(bottom=0.12, left=0.15, right=0.95, top=0.95)
-            # pdf.savefig()
-            # plt.close()
-
 
             def format_title(system: int, side: int, layer: int, module: int, sensor: int) -> str:
                 if system not in [3, 5]:
@@ -435,52 +336,14 @@ class Plotter:
                          all_theta.max() + 0.03]
             phi_lim = [all_phi.min() - 0.01,
                        all_phi.max() + 0.01]
-            # bins = [
-            #     np.linspace(philim[0], philim[1], 200),
-            #     np.linspace(thetalim[0], thetalim[1], 200),
-            # ]
-            # for hit in ["hit", "next_hit"]:
-            #     fig, ax = plt.subplots(figsize=(8,8))
-            #     _, _, _, im = ax.hist2d(
-            #         self.sorted_df[mask][f"{hit}_theta"],
-            #         self.sorted_df[mask][f"{hit}_phi"],
-            #         bins=bins,
-            #         vmin=0,
-            #         cmin=0.5,
-            #         cmap=self.cmap,
-            #         )
-            #     fig.colorbar(im, ax=ax, label="Next-module counts")
-            #     ax.set_title(f"System {system} Side {side} Layer {layer} Module {module} Sensor {sensor}")
-            #     ax.set_xlabel("Hit theta [rad]")
-            #     ax.set_ylabel("Hit phi [rad]")
-            #     ax.tick_params(right=True, top=True, axis="both", which="both", direction="in")
-            #     fig.subplots_adjust(bottom=0.12, left=0.15, right=0.95, top=0.95)
-            #     pdf.savefig()
-            #     plt.close()
-
 
             # 2x scatter
             fig, ax = plt.subplots(figsize=(8,8))
-            # ax.scatter(self.sorted_df[mask][f"hit_phi"],
-            #            self.sorted_df[mask][f"hit_theta"],
-            #            c="black",
-            #            s=10,
-            #            )
-            # ax.scatter(self.sorted_df[mask][f"next_hit_theta"],
-            #            self.sorted_df[mask][f"next_hit_phi"],
-            #            c="red",
-            #            s=10,
-            #            )
 
             # Draw bounding box of hit_theta, hit_phi
             quantile = [0.001, 0.999]
             theta_min, theta_max = self.sorted_df[mask]["hit_theta"].quantile(quantile)
             phi_min, phi_max = self.sorted_df[mask]["hit_phi"].quantile(quantile)
-
-            # theta_min = self.sorted_df[mask]["hit_theta"].min()
-            # theta_max = self.sorted_df[mask]["hit_theta"].max()
-            # phi_min = self.sorted_df[mask]["hit_phi"].min()
-            # phi_max = self.sorted_df[mask]["hit_phi"].max()
 
             ax.plot([phi_min, phi_min, phi_max, phi_max, phi_min],
                     [theta_min, theta_max, theta_max, theta_min, theta_min],
