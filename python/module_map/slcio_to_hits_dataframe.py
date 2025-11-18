@@ -22,7 +22,8 @@ class SlcioToHitsDataFrame:
     def __init__(self, slcio_file_paths, barrel_only):
         self.slcio_file_paths = slcio_file_paths
         self.barrel_only = barrel_only
-        self.layer = None
+        self.systems = [] # [IT_BARREL]
+        self.layers = [] # [1, 2]
 
 
     def convert(self) -> pd.DataFrame:
@@ -104,6 +105,12 @@ class SlcioToHitsDataFrame:
                     if not mcp in mcparticles:
                         continue
 
+                    # skip if trying to speed up
+                    if self.systems and (np.right_shift(hit.getCellID0(), 0) & 0b1_1111) not in self.systems:
+                        continue
+                    if self.layers and (np.right_shift(hit.getCellID0(), 7) & 0b11_1111) not in self.layers:
+                        continue
+
                     # record the hit info
                     i_sim = mcparticles.index(mcp)
                     rows.append({
@@ -153,7 +160,16 @@ class SlcioToHitsDataFrame:
         df['hit_phi'] = np.arctan2(df['hit_y'], df['hit_x'])
 
         # remove redundant columns
-        df = df.drop(columns=['hit_cellid0', 'hit_cellid1', 'sim_p', 'sim_px', 'sim_py', 'sim_theta'])
+        df = df.drop(columns=['hit_cellid0',
+                              'hit_cellid1',
+                              'sim_p',
+                              'sim_px',
+                              'sim_py',
+                              'sim_theta',
+                              'hit_x',
+                              'hit_y',
+                              'hit_e',
+                              ])
 
         # sort columns alphabetically
         return df[sorted(df.columns)]
@@ -161,7 +177,7 @@ class SlcioToHitsDataFrame:
 
     def sort_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
         print("Sorting DataFrame ...")
-        df = df.sort_values(by=['file', 'i_event', 'i_sim', 'hit_R']).reset_index(drop=True)
+        df = df.sort_values(by=['file', 'i_event', 'i_sim', 'hit_t']).reset_index(drop=True)
         return df
 
 
@@ -177,13 +193,6 @@ class SlcioToHitsDataFrame:
                 (df['hit_system'] == OT_BARREL)
             )
             df = df[subset]
-
-        if self.layer is not None:
-            if self.barrel_only:
-                subset = (df['hit_layer'] == self.layer) | (df['hit_layer'] == (self.layer + 1))
-                df = df[subset]
-            else:
-                raise ValueError("Layer filtering is only supported in barrel-only mode.")
 
         return df
 
