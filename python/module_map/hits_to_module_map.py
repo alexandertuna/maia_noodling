@@ -44,21 +44,21 @@ class HitsToModuleMap:
                                ):
             print(self.group_df)
 
-        print("")
-        print(f"Maximum number of counts: {self.group_df['count'].max()}")
-        print("")
-        # self.group_df = self.group_df[self.group_df['count'] >= MINIMUM_HITS_PER_MODULE]
-        self.group_df = self.group_df[self.group_df['fraction'] >= MINIMUM_FRACTION_PER_MODULE]
+        # print("")
+        # print(f"Maximum number of counts: {self.group_df['count'].max()}")
+        # print("")
+        # # self.group_df = self.group_df[self.group_df['count'] >= MINIMUM_HITS_PER_MODULE]
+        # self.group_df = self.group_df[self.group_df['fraction'] >= MINIMUM_FRACTION_PER_MODULE]
 
-        parents = self.group_df[[
-            "hit_system",
-            "hit_side",
-            "hit_layer",
-            "hit_module",
-            "hit_sensor",
-        ]]
-        print("Parents:")
-        print(parents)
-        print("Unique Parents:")
-        print(parents.drop_duplicates())
+        # parents = self.group_df[[
+        #     "hit_system",
+        #     "hit_side",
+        #     "hit_layer",
+        #     "hit_module",
+        #     "hit_sensor",
+        # ]]
+        # print("Parents:")
+        # print(parents)
+        # print("Unique Parents:")
+        # print(parents.drop_duplicates())
 
