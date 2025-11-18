@@ -22,13 +22,14 @@ class SlcioToHitsDataFrame:
     def __init__(self, slcio_file_paths, barrel_only):
         self.slcio_file_paths = slcio_file_paths
         self.barrel_only = barrel_only
+        self.layer = None
 
 
     def convert(self) -> pd.DataFrame:
         df = self.convert_all_files()
         df = self.postprocess_dataframe(df)
-        df = self.sort_dataframe(df)
         df = self.filter_dataframe(df)
+        df = self.sort_dataframe(df)
         return df
 
 
@@ -163,6 +164,7 @@ class SlcioToHitsDataFrame:
         df = df.sort_values(by=['file', 'i_event', 'i_sim', 'hit_R']).reset_index(drop=True)
         return df
 
+
     def filter_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
         print("Filtering DataFrame ...")
 
@@ -175,6 +177,13 @@ class SlcioToHitsDataFrame:
                 (df['hit_system'] == OT_BARREL)
             )
             df = df[subset]
+
+        if self.layer is not None:
+            if self.barrel_only:
+                subset = (df['hit_layer'] == self.layer) | (df['hit_layer'] == (self.layer + 1))
+                df = df[subset]
+            else:
+                raise ValueError("Layer filtering is only supported in barrel-only mode.")
 
         return df
 
