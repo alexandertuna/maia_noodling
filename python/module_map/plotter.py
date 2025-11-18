@@ -18,10 +18,7 @@ class Plotter:
         self.sorted_df = sorted_df
         self.mmdf = mmdf
         self.cmap = "turbo"
-        df["hit_rt"] = np.sqrt(df["hit_x"]**2 + df["hit_y"]**2)
-        df["hit_theta"] = np.arctan2(df["hit_rt"], df["hit_z"])
         df["hit_eta"] = -np.log(np.tan(df["hit_theta"] / 2))
-        df["hit_phi"] = np.arctan2(df["hit_y"], df["hit_x"])
 
 
     def plot(self, pdf_name: str) -> None:
@@ -30,6 +27,7 @@ class Plotter:
             #### self.plot_hit_eta_phi(pdf)
             #### self.plot_hit_z(pdf)
             self.plot_hit_t(pdf)
+            self.plot_hit_t_R(pdf)
             self.plot_hit_quality(pdf)
             #### self.plot_hit_sensor(pdf)
             #### self.plot_hit_z_sensor(pdf)
@@ -119,6 +117,32 @@ class Plotter:
         fig.subplots_adjust(bottom=0.12, left=0.15, right=0.95, top=0.95)
         pdf.savefig()
         ax.semilogy()
+        pdf.savefig()
+        plt.close()
+
+
+    def plot_hit_t_R(self, pdf: PdfPages) -> None:
+        print("Plotting hit t vs R ...")
+        # eta_bins = np.linspace(-3, 3, 100)
+        # phi_bins = np.linspace(-3.2, 3.2, 100)
+        bins = [
+            np.linspace(-2, 20, 150),
+            np.linspace(0, 2000, 100),
+        ]
+        fig, ax = plt.subplots(figsize=(8,8))
+        _, _, _, im = ax.hist2d(
+            self.df["hit_t"],
+            self.df["hit_R"],
+            bins=bins,
+            vmin=0,
+            cmin=0.5,
+            cmap=self.cmap,
+        )
+        fig.colorbar(im, ax=ax, label="Hits")
+        ax.set_xlabel("Hit time [ns]")
+        ax.set_ylabel("Hit R [mm]")
+        ax.tick_params(right=True, top=True, axis="both", which="both", direction="in")
+        fig.subplots_adjust(bottom=0.12, left=0.15, right=0.95, top=0.95)
         pdf.savefig()
         plt.close()
 
@@ -271,7 +295,7 @@ class Plotter:
     def plot_module_position(self, pdf: PdfPages) -> None:
         print("Plotting module positions ...")
 
-        layer, module, side, system = 1, 0, 0, 3  # barrel example
+        layer, module, side, system = 3, 0, 0, 5  # barrel example
         mask_layer_module_side_system = (
                 (self.sorted_df["hit_layer"] == layer) &
                 (self.sorted_df["hit_module"] == module) &
@@ -280,10 +304,13 @@ class Plotter:
             )
 
         # for sensor in [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]:
-        for sensor in range(10, 29):
+        for sensor in range(15, 25):
             print(f"Plotting System {system} Side {side} Layer {layer} Module {module} Sensor {sensor} ...")
 
             mask = mask_layer_module_side_system & (self.sorted_df["hit_sensor"] == sensor)
+            if not mask.any():
+                print(f"  No hits for System {system} Side {side} Layer {layer} Module {module} Sensor {sensor}, skipping ...")
+                continue
 
             # # xy
             # all_x = pd.concat([self.sorted_df[mask]["hit_x"], self.sorted_df[mask]["next_hit_x"]])
@@ -446,10 +473,15 @@ class Plotter:
             #            )
 
             # Draw bounding box of hit_theta, hit_phi
-            theta_min = self.sorted_df[mask]["hit_theta"].min()
-            theta_max = self.sorted_df[mask]["hit_theta"].max()
-            phi_min = self.sorted_df[mask]["hit_phi"].min()
-            phi_max = self.sorted_df[mask]["hit_phi"].max()
+            quantile = [0.001, 0.999]
+            theta_min, theta_max = self.sorted_df[mask]["hit_theta"].quantile(quantile)
+            phi_min, phi_max = self.sorted_df[mask]["hit_phi"].quantile(quantile)
+
+            # theta_min = self.sorted_df[mask]["hit_theta"].min()
+            # theta_max = self.sorted_df[mask]["hit_theta"].max()
+            # phi_min = self.sorted_df[mask]["hit_phi"].min()
+            # phi_max = self.sorted_df[mask]["hit_phi"].max()
+
             ax.plot([phi_min, phi_min, phi_max, phi_max, phi_min],
                     [theta_min, theta_max, theta_max, theta_min, theta_min],
                     color="black",
@@ -467,7 +499,6 @@ class Plotter:
                 "next_hit_sensor",
             ]
 
-            # grouped = self.sorted_df[mask].groupby(columns)
             # groupby, but sorted by number of rows of group
             grouped = self.sorted_df[mask].groupby(columns)
             grouped = sorted(grouped, key=lambda x: len(x[1]), reverse=True)
