@@ -29,6 +29,8 @@ class Plotter:
         with PdfPages(pdf_name) as pdf:
             #### self.plot_hit_eta_phi(pdf)
             #### self.plot_hit_z(pdf)
+            self.plot_hit_t(pdf)
+            self.plot_hit_quality(pdf)
             #### self.plot_hit_sensor(pdf)
             #### self.plot_hit_z_sensor(pdf)
             self.plot_hit_module_layer(pdf)
@@ -88,6 +90,50 @@ class Plotter:
         ax.set_ylabel("Hits")
         ax.tick_params(right=True, top=True, axis="both", which="both", direction="in")
         fig.subplots_adjust(bottom=0.12, left=0.15, right=0.95, top=0.95)
+        pdf.savefig()
+        plt.close()
+
+
+    def plot_hit_t(self, pdf: PdfPages) -> None:
+        print("Plotting hit t ...")
+        bins = np.linspace(-25, 125, 150)
+
+        # hit_t
+        fig, ax = plt.subplots(figsize=(8,8))
+        ax.hist(self.df["hit_t"], bins=bins, histtype="stepfilled", color="blue")
+        ax.set_xlabel("Hit time [ns]")
+        ax.set_ylabel("Hits")
+        ax.tick_params(right=True, top=True, axis="both", which="both", direction="in")
+        fig.subplots_adjust(bottom=0.12, left=0.15, right=0.95, top=0.95)
+        pdf.savefig()
+        ax.semilogy()
+        pdf.savefig()
+        plt.close()
+
+        # hit_t_corrected
+        fig, ax = plt.subplots(figsize=(8,8))
+        ax.hist(self.df["hit_t_corrected"], bins=bins, histtype="stepfilled", color="blue")
+        ax.set_xlabel("Hit time (corrected) [ns]")
+        ax.set_ylabel("Hits")
+        ax.tick_params(right=True, top=True, axis="both", which="both", direction="in")
+        fig.subplots_adjust(bottom=0.12, left=0.15, right=0.95, top=0.95)
+        pdf.savefig()
+        ax.semilogy()
+        pdf.savefig()
+        plt.close()
+
+
+    def plot_hit_quality(self, pdf: PdfPages) -> None:
+        print("Plotting hit quality ...")
+        bins = 100 # np.linspace(-25, 125, 150)
+        fig, ax = plt.subplots(figsize=(8,8))
+        ax.hist(self.df["hit_quality"], bins=bins, histtype="stepfilled", color="blue")
+        ax.set_xlabel("Hit quality")
+        ax.set_ylabel("Hits")
+        ax.tick_params(right=True, top=True, axis="both", which="both", direction="in")
+        fig.subplots_adjust(bottom=0.12, left=0.15, right=0.95, top=0.95)
+        pdf.savefig()
+        ax.semilogy()
         pdf.savefig()
         plt.close()
 
@@ -434,6 +480,22 @@ class Plotter:
                            label=f"{title} ({frac:.1%})",
                            s=10,
                            )
+                # debug
+                if True:
+                    # mask_ = (group["next_hit_theta"] < theta_min) | (group["next_hit_theta"] > theta_max) | (group["next_hit_theta"] > (theta_max - 0.01)) | (group["next_hit_theta"] < (theta_min + 0.01))
+                    mask_ = ((group["next_hit_theta"] > 1.17) & (group["next_hit_theta"] < 1.18))
+                    if mask_.any():
+                        with pd.option_context("display.min_rows", 50,
+                                               "display.max_rows", 50,
+                                            ):
+                            print(group[mask_][[
+                                "hit_t",
+                                "next_hit_theta",
+                                "next_hit_phi",
+                                "next_hit_module",
+                                "next_hit_sensor",
+                                "next_hit_t",
+                            ]])
             ncols = 1 + (len(grouped) // 3)
             ax.legend(markerscale=3, fontsize=8, ncols=ncols, loc="upper center")
 
