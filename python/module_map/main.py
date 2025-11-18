@@ -39,10 +39,6 @@ def main():
         print(f"Writing hits to {ops.parquet} ...")
         hits_df.to_parquet(ops.parquet)
     print(hits_df)
-    # with pd.option_context("display.min_rows", 100,
-    #                        "display.max_rows", 100,
-    #                        ):
-    #     print(hits_df)
 
     next_hitter = GetNextHitAndSort(barrel_only=ops.barrel_only,
                                     hits_df=hits_df)
