@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from constants import MINIMUM_PT
+from constants import MINIMUM_PT, MINIMUM_TIME, MAXIMUM_TIME
 
 
 class GetNextHitAndSort:
@@ -31,12 +31,10 @@ class GetNextHitAndSort:
             "hit_layer",
             "hit_module",
             "hit_sensor",
-            "hit_x",
-            "hit_y",
-            "hit_z",
-            "hit_r",
             "hit_theta",
             "hit_phi",
+            "hit_t",
+            "hit_t_corrected",
             ]:
             self.hits_df[f"next_{col}"] = self.hits_df[col].shift(-1).fillna(-1).astype(self.hits_df[col].dtype)
         print(self.hits_df)
@@ -48,8 +46,11 @@ class GetNextHitAndSort:
             raise ValueError("filter_valid_rows is only implemented for barrel-only dataframes.")
         self.valid = (
             (self.hits_df["sim_pt"] > MINIMUM_PT) &
+            (self.hits_df["hit_t_corrected"] > MINIMUM_TIME) &
+            (self.hits_df["hit_t_corrected"] < MAXIMUM_TIME) &
             (self.hits_df["i_event"] == self.hits_df["next_i_event"]) &
             (self.hits_df["i_sim"] == self.hits_df["next_i_sim"]) &
+            (self.hits_df["next_hit_t"] >= self.hits_df["hit_t"]) &
 
             # barrel-only specific:
             (self.hits_df["hit_layer"] % 2 == 1) &
