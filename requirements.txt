@@ -2,3 +2,4 @@ tqdm
 numpy
 pandas
 matplotlib
+pyhepmc
