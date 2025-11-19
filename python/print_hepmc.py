@@ -16,6 +16,7 @@ def main():
         raise ValueError("Please provide an input hepmc file with -i")
 
     with pyhepmc.open(args.i) as f:
+        print(f)
         for i, event in enumerate(f):
             print(event)
             if args.n and i >= args.n - 1:
