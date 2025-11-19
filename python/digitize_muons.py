@@ -25,18 +25,17 @@ rm -f output_gen.slcio
 
 import argparse
 import os
-import re
 from pathlib import Path
 
 CODE = "/ceph/users/atuna/work/maia"
 COMPACT = f"{CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
 STEER_SIM = f"{CODE}/SteeringMacros/Sim/sim_steer_GEN_CONDOR.py"
 STEER_RECO = f"{CODE}/SteeringMacros/k4Reco/steer_reco.py"
-
+STEER_WHIZARD_HBB = f"{CODE}/mucoll-benchmarks/generation/signal/whizard/mumu_H_bb_10TeV.sin"
 
 
 def arguments():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--gen", action="store_true", help="Generate events")
     parser.add_argument("--sim", action="store_true", help="Simulate events")
     parser.add_argument("--digi", action="store_true", help="Digitize events")
@@ -102,6 +101,15 @@ def digi(events: int, num: int, typeevent: str, data: str, bib: bool, ip: bool):
 
 
 def gen_command(events: int, num: int, typeevent: str):
+    if typeevent == "muonGun_pT_0_10":
+        return gen_command_muongun(events, num, typeevent)
+    elif typeevent == "mumu_H_bb_10TeV":
+        return gen_command_hbb(events, num, typeevent)
+    else:
+        raise ValueError(f"Unknown typeevent: {typeevent}")
+
+
+def gen_command_muongun(events: int, num: int, typeevent: str):
     pdg = "-13" if num % 2 == 0 else "13"
     pt = "0 10"
     particles = "10"
@@ -116,9 +124,21 @@ def gen_command(events: int, num: int, typeevent: str):
     return cmd
 
 
+def gen_command_hbb(events: int, num: int, typeevent: str):
+    local_filename = f"mumu_H_bb_10TeV_{num}.sin"
+    write_local_whizard_hbb(local_filename=local_filename,
+                            events=events,
+                            typeevent=typeevent,
+                            num=num)
+    rm = remove_whizard_output()
+    cmd = f"time whizard {local_filename} && {rm}"
+    return cmd
+
+
 def sim_command(events: int, num: int, typeevent: str):
-    inp = f"{typeevent}_gen_{num}.slcio"
-    cmd = f"ddsim \
+    suffix = get_suffix(typeevent)
+    inp = f"{typeevent}_gen_{num}.{suffix}"
+    cmd = f"time ddsim \
         --inputFile {inp} \
         --steeringFile {STEER_SIM} \
         --compactFile {COMPACT} \
@@ -130,7 +150,7 @@ def sim_command(events: int, num: int, typeevent: str):
 def digi_command(events: int, num: int, typeevent: str, steer: str, data: str, bib: bool, ip: bool):
     enable_bib = "--enableBIB" if bib else ""
     enable_ip = "--enableIP" if ip else ""
-    cmd = f"k4run \
+    cmd = f"time k4run \
         {steer} \
         {enable_bib} \
         {enable_ip} \
@@ -142,6 +162,15 @@ def digi_command(events: int, num: int, typeevent: str, steer: str, data: str, b
         --code {CODE} \
         --data {data}"
     return cmd
+
+
+def get_suffix(typeevent: str):
+    if typeevent == "muonGun_pT_0_10":
+        return "slcio"
+    elif typeevent == "mumu_H_bb_10TeV":
+        return "hepmc"
+    else:
+        raise ValueError(f"Unknown typeevent: {typeevent}")
 
 
 def write_local_digi_steer(local_filename: str):
@@ -161,6 +190,26 @@ def write_local_digi_steer(local_filename: str):
     # write the local steering file
     local_path = Path(local_filename)
     local_path.write_text(steer_text)
+
+
+def write_local_whizard_hbb(local_filename: str, events: int, typeevent: str, num: int):
+
+    # read the original steering file
+    steer_path = Path(STEER_WHIZARD_HBB)
+    steer_text = steer_path.read_text()
+
+    # apply substitutions
+    steer_text = steer_text.replace("seed = 1889", f"seed = {1889 + num}")
+    steer_text = steer_text.replace("mumu_H_bb_10TeV", f"{typeevent}_gen_{num}")
+    steer_text = steer_text.replace("n_events=100", f"n_events={events}")
+
+    # write the local steering file
+    local_path = Path(local_filename)
+    local_path.write_text(steer_text)
+
+def remove_whizard_output():
+    cmd = "rm -f default* hbb* hdec* opr* whizard.log"
+    return cmd
 
 
 if __name__ == "__main__":
