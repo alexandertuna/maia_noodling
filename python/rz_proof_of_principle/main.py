@@ -152,12 +152,13 @@ class Plotter:
 
         rzangles = []
         xyangles = []
+        n_debug = 0
 
         for ((sensor, module, filename, i_event), group) in self.df.groupby(['hit_sensor', 'hit_module', 'file', 'i_event']):
 
             if len(group) == 0:
                 continue
-            print(f"Plotting module {module}, sensor {sensor}, file {filename}, event {i_event} ...")
+            # print(f"Plotting module {module}, sensor {sensor}, file {filename}, event {i_event} ...")
 
             # fig, ax = plt.subplots(figsize=(8, 8))
             # ax.scatter(group['hit_z'], group['hit_xp'], s=50)
@@ -208,6 +209,25 @@ class Plotter:
             rzangles.extend(rzangs)
             xyangles.extend(xyangs)
 
+            # debug
+            if False and self.signal and np.max(np.abs(rzangs)) > 1.0 and n_debug < 100:
+                n_debug += 1
+                print("Debug: large rz angle found in signal event!")
+                fig, ax = plt.subplots(figsize=(8, 8))
+                ax.scatter(group['hit_z'], group['hit_xp'], s=50)
+                ax.set_xlabel("z (mm)")
+                ax.set_ylabel("y (local) (mm)")
+                ax.set_title(f"Hits on module {module}, sensor {sensor}")
+                ax.text(0.05, 0.90, f"Event {i_event}, {filename}", transform=ax.transAxes)
+                dy = 4 if module % 2 == 1 else 0
+                ax.set_xlim([-35, 5])
+                ax.set_ylim([125 + dy, 131 + dy])
+                ax.plot([-30, 0], [126.97 + dy, 126.97 + dy], color='gray', linestyle='-', alpha=0.3)
+                ax.plot([-30, 0], [128.97 + dy, 128.97 + dy], color='gray', linestyle='-', alpha=0.3)
+                ax.tick_params(direction="in", which="both", top=True, right=True)
+                fig.subplots_adjust(left=0.15, right=0.95, top=0.94, bottom=0.1)
+                pdf.savefig()
+                plt.close()
 
         # numpify
         rzangles = np.array(rzangles)
