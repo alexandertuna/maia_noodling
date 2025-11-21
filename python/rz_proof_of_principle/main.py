@@ -17,34 +17,48 @@ def options():
                         help="Comma-separated list of globbable input slcio files for signal")
     parser.add_argument("-b", type=str,
                         help="Comma-separated list of globbable input slcio files for background")
+    parser.add_argument("--signal_parquet", type=str, default="sig.parquet",
+                        help="Output parquet file for signal hits dataframe")
+    parser.add_argument("--background_parquet", type=str, default="bkg.parquet",
+                        help="Output parquet file for background hits dataframe")
+    parser.add_argument("--load_parquet", action="store_true",
+                        help="Load from parquet files instead of slcio files")
     return parser.parse_args()
 
 
 def main():
     ops = options()
+    if ops.load_parquet and (ops.s or ops.b):
+        raise Exception("Either load from parquet (--load_parquet) or from slcio files (-s and -b), not both.")
 
-    # command line inputs
-    if not ops.s:
-        raise Exception("Please give input signal file(s) with -s")
-    if not ops.b:
-        raise Exception("Please give input background file(s) with -b")
-    sig_paths = get_files(ops.s)
-    bkg_paths = get_files(ops.b)
-    for path in sig_paths:
-        print(f"Input signal file: {path}")
-    for path in bkg_paths:
-        print(f"Input background file: {path}")
+    if not ops.load_parquet:
+        # get slcio file names
+        if not ops.s:
+            raise Exception("Please give input signal file(s) with -s")
+        if not ops.b:
+            raise Exception("Please give input background file(s) with -b")
+        sig_paths = get_files(ops.s)
+        bkg_paths = get_files(ops.b)
+        for path in sig_paths:
+            print(f"Input signal file: {path}")
+        for path in bkg_paths:
+            print(f"Input background file: {path}")
 
-    # load the data
-    sig_df = SlcioToHitsDataFrame(sig_paths, [INNER_BARREL], LAYERS, SENSORS).convert()
-    bkg_df = SlcioToHitsDataFrame(bkg_paths, [INNER_BARREL], LAYERS, SENSORS).convert()
+        # convert slcio to hits dataframe
+        sig_df = SlcioToHitsDataFrame(sig_paths, [INNER_BARREL], LAYERS, SENSORS).convert()
+        bkg_df = SlcioToHitsDataFrame(bkg_paths, [INNER_BARREL], LAYERS, SENSORS).convert()
+
+        # write to parquet
+        sig_df.to_parquet(ops.signal_parquet)
+        bkg_df.to_parquet(ops.background_parquet)
+
+    else:
+        print("Loading from parquet files ...")
+        sig_df = pd.read_parquet(ops.signal_parquet)
+        bkg_df = pd.read_parquet(ops.background_parquet)
+
     print(sig_df)
     print(bkg_df)
-
-    # for df, name in [(sig_df, "signal"),
-    #                  (bkg_df, "background")]:
-    #     print(f"{name} hits: {len(df)}")
-    #     print(f"{name} unique events: {df['file'].nunique()},{df['i_event'].nunique()}")
 
     # make plots
     for df, pdf in [
@@ -180,24 +194,33 @@ class Plotter:
             # number of angles with angle > 1.4 and angle < 1.9
             lo, hi = -0.2, 0.2
             arr = np.array(rzangs)
-            n_selected = np.sum((arr > lo) & (arr < hi))
+            n_selected_rz = np.sum((arr > lo) & (arr < hi))
 
             lo, hi = -0.2, 0.2
             arr_xy = np.array(xyangs)
             n_selected_xy = np.sum((arr_xy > lo) & (arr_xy < hi))
-            print(f"module {module} sensor {sensor} layer {LAYERS[0]} hits: {len(df_0)}")
-            print(f"module {module} sensor {sensor} layer {LAYERS[1]} hits: {len(df_1)}")
-            print(f"module {module} sensor {sensor} total angles to compute: {len(rzangs)}")
-            print(f"module {module} sensor {sensor} number of angles with angle > {lo} and angle < {hi}: {n_selected}")
-            print(f"module {module} sensor {sensor} number of x-y angles with angle > {lo} and angle < {hi}: {n_selected_xy}")
+            # print(f"module {module} sensor {sensor} layer {LAYERS[0]} hits: {len(df_0)}")
+            # print(f"module {module} sensor {sensor} layer {LAYERS[1]} hits: {len(df_1)}")
+            # print(f"module {module} sensor {sensor} total angles to compute: {len(rzangs)}")
+            # print(f"module {module} sensor {sensor} number of r-z angles with angle > {lo} and angle < {hi}: {n_selected_rz}")
+            # print(f"module {module} sensor {sensor} number of x-y angles with angle > {lo} and angle < {hi}: {n_selected_xy}")
 
             rzangles.extend(rzangs)
             xyangles.extend(xyangs)
 
-            #         break
-            #     break
-            # break
 
+        # numpify
+        rzangles = np.array(rzangles)
+        xyangles = np.array(xyangles)
+        lo, hi = -0.3, 0.3
+        n_selected_rz = np.sum((rzangles > lo) & (rzangles < hi))
+        n_selected_xy = np.sum((xyangles > lo) & (xyangles < hi))
+        n_selected_rzxy = np.sum((rzangles > lo) & (rzangles < hi) & (xyangles > lo) & (xyangles < hi))
+        print(f"Total number of r-z angles: {len(rzangles)}")
+        print(f"Total number of x-y angles: {len(xyangles)}")
+        print(f"Total number of r-z angles with angle > {lo} and angle < {hi}: {n_selected_rz}")
+        print(f"Total number of x-y angles with angle > {lo} and angle < {hi}: {n_selected_xy}")
+        print(f"Total number of angles with both r-z and x-y angle > {lo} and < {hi}: {n_selected_rzxy}")
 
         # plot r-z angle distribution
         color = "blue" if self.signal else "red"
