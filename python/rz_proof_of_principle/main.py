@@ -48,7 +48,7 @@ def main():
 
     # make plots
     for df, pdf in [
-        # (sig_df, "sig_plots.pdf"),
+        (sig_df, "sig_plots.pdf"),
         (bkg_df, "bkg_plots.pdf"),
     ]:
         print(f"Making plots for {pdf} ...")
@@ -135,15 +135,12 @@ class Plotter:
 
 
     def plot_rz_events(self, pdf: PdfPages):
-        angles = []
+
+        rzangles = []
         xyangles = []
+
         for ((sensor, module, filename, i_event), group) in self.df.groupby(['hit_sensor', 'hit_module', 'file', 'i_event']):
-        # for sensor in SENSORS:
-            # for module in MODULES:
-                # if module > 2:
-                #     break
-            # mask = (group['hit_module'] == module) & (group['hit_sensor'] == sensor)
-            # df =  group[mask]
+
             if len(group) == 0:
                 continue
             print(f"Plotting module {module}, sensor {sensor}, file {filename}, event {i_event} ...")
@@ -166,19 +163,23 @@ class Plotter:
             if len(df_0) == 0 or len(df_1) == 0:
                 continue
 
-            angs = []
-            xyangs = []
-            for _, hit_0 in df_0.iterrows():
-                for _, hit_1 in df_1.iterrows():
-                    dx = hit_1['hit_xp'] - hit_0['hit_xp']
-                    dz = hit_1['hit_z'] - hit_0['hit_z']
-                    dy = hit_1['hit_yp'] - hit_0['hit_yp']
-                    xyangs.append(np.arctan2(dy, dx))
-                    angs.append(np.arctan2(dx, dz))
+            # vectorized computation of angles
+            x0 = df_0['hit_xp'].values[:, None]      # shape (N0, 1)
+            x1 = df_1['hit_xp'].values[None, :]      # shape (1, N1)
+            y0 = df_0['hit_yp'].values[:, None]      # shape (N0, 1)
+            y1 = df_1['hit_yp'].values[None, :]      # shape (1, N1)
+            z0 = df_0['hit_z'].values[:, None]       # shape (N0, 1)
+            z1 = df_1['hit_z'].values[None, :]       # shape (1, N1)
+            dx = x1 - x0                             # shape (N0, N1)
+            dy = y1 - y0                             # shape (N0, N1)
+            dz = z1 - z0                             # shape (N0, N1)
+            xyangs = np.arctan2(dy, dx).ravel()       # flatten to 1D if needed
+            rzangs = np.arctan2(dz, dx).ravel()       # flatten to 1D if needed
+
             # print("len(angles):", len(angles))
             # number of angles with angle > 1.4 and angle < 1.9
-            lo, hi = 1.4, 1.9
-            arr = np.array(angs)
+            lo, hi = -0.2, 0.2
+            arr = np.array(rzangs)
             n_selected = np.sum((arr > lo) & (arr < hi))
 
             lo, hi = -0.2, 0.2
@@ -186,11 +187,11 @@ class Plotter:
             n_selected_xy = np.sum((arr_xy > lo) & (arr_xy < hi))
             print(f"module {module} sensor {sensor} layer {LAYERS[0]} hits: {len(df_0)}")
             print(f"module {module} sensor {sensor} layer {LAYERS[1]} hits: {len(df_1)}")
-            print(f"module {module} sensor {sensor} total angles to compute: {len(angs)}")
+            print(f"module {module} sensor {sensor} total angles to compute: {len(rzangs)}")
             print(f"module {module} sensor {sensor} number of angles with angle > {lo} and angle < {hi}: {n_selected}")
             print(f"module {module} sensor {sensor} number of x-y angles with angle > {lo} and angle < {hi}: {n_selected_xy}")
 
-            angles.extend(angs)
+            rzangles.extend(rzangs)
             xyangles.extend(xyangs)
 
             #         break
@@ -201,22 +202,21 @@ class Plotter:
         # plot r-z angle distribution
         color = "blue" if self.signal else "red"
         fig, ax = plt.subplots(figsize=(8, 8))
-        bins = np.linspace(-0.1, 3.2, 331)
-        ax.hist(angles, bins=bins, color=color)
+        bins = np.linspace(-1.6, 1.6, 321)
+        ax.hist(rzangles, bins=bins, color=color)
         ax.set_xlabel("r-z angle (rad)")
         ax.set_ylabel("Counts")
         ax.set_title(f"Angle between hits in layer {LAYERS[0]} and {LAYERS[1]}, sensor {sensor}")
-        ax.set_xlim([0.0, np.pi])
         ax.tick_params(direction="in", which="both", top=True, right=True)
         fig.subplots_adjust(left=0.15, right=0.95, top=0.94, bottom=0.1)
         pdf.savefig()
         # plt.close()
 
-        ax.set_xlim([-0.04, 0.12])
+        ax.set_xlim([-1.60, -1.45])
         pdf.savefig()
         # plt.close()
 
-        ax.set_xlim([3.0, 3.16])
+        ax.set_xlim([1.45, 1.60])
         pdf.savefig()
         plt.close()
 
@@ -231,15 +231,15 @@ class Plotter:
         ax.tick_params(direction="in", which="both", top=True, right=True)
         fig.subplots_adjust(left=0.15, right=0.95, top=0.94, bottom=0.1)
         pdf.savefig()
+        # plt.close()
+
+        ax.set_xlim([-1.60, -1.45])
+        pdf.savefig()
+        # plt.close()
+
+        ax.set_xlim([1.45, 1.60])
+        pdf.savefig()
         plt.close()
-
-        # ax.set_xlim([-0.04, 0.12])
-        # pdf.savefig()
-        # plt.close()
-
-        # ax.set_xlim([3.0, 3.16])
-        # pdf.savefig()
-        # plt.close()
 
 
 if __name__ == "__main__":
