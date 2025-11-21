@@ -136,6 +136,7 @@ class Plotter:
 
     def plot_rz_events(self, pdf: PdfPages):
         angles = []
+        xyangles = []
         for ((sensor, module, filename, i_event), group) in self.df.groupby(['hit_sensor', 'hit_module', 'file', 'i_event']):
         # for sensor in SENSORS:
             # for module in MODULES:
@@ -164,24 +165,45 @@ class Plotter:
             df_1 = group[group['hit_layer'] == LAYERS[1]]
             if len(df_0) == 0 or len(df_1) == 0:
                 continue
+
+            angs = []
+            xyangs = []
             for _, hit_0 in df_0.iterrows():
                 for _, hit_1 in df_1.iterrows():
                     dx = hit_1['hit_xp'] - hit_0['hit_xp']
                     dz = hit_1['hit_z'] - hit_0['hit_z']
-                    angles.append(np.arctan2(dx, dz))
+                    dy = hit_1['hit_yp'] - hit_0['hit_yp']
+                    xyangs.append(np.arctan2(dy, dx))
+                    angs.append(np.arctan2(dx, dz))
             # print("len(angles):", len(angles))
+            # number of angles with angle > 1.4 and angle < 1.9
+            lo, hi = 1.4, 1.9
+            arr = np.array(angs)
+            n_selected = np.sum((arr > lo) & (arr < hi))
+
+            lo, hi = -0.2, 0.2
+            arr_xy = np.array(xyangs)
+            n_selected_xy = np.sum((arr_xy > lo) & (arr_xy < hi))
+            print(f"module {module} sensor {sensor} layer {LAYERS[0]} hits: {len(df_0)}")
+            print(f"module {module} sensor {sensor} layer {LAYERS[1]} hits: {len(df_1)}")
+            print(f"module {module} sensor {sensor} total angles to compute: {len(angs)}")
+            print(f"module {module} sensor {sensor} number of angles with angle > {lo} and angle < {hi}: {n_selected}")
+            print(f"module {module} sensor {sensor} number of x-y angles with angle > {lo} and angle < {hi}: {n_selected_xy}")
+
+            angles.extend(angs)
+            xyangles.extend(xyangs)
 
             #         break
             #     break
             # break
 
 
-        # plot angle distribution
+        # plot r-z angle distribution
         color = "blue" if self.signal else "red"
         fig, ax = plt.subplots(figsize=(8, 8))
         bins = np.linspace(-0.1, 3.2, 331)
         ax.hist(angles, bins=bins, color=color)
-        ax.set_xlabel("Angle (rad)")
+        ax.set_xlabel("r-z angle (rad)")
         ax.set_ylabel("Counts")
         ax.set_title(f"Angle between hits in layer {LAYERS[0]} and {LAYERS[1]}, sensor {sensor}")
         ax.set_xlim([0.0, np.pi])
@@ -197,6 +219,27 @@ class Plotter:
         ax.set_xlim([3.0, 3.16])
         pdf.savefig()
         plt.close()
+
+        # plot x-y angle distribution
+        color = "blue" if self.signal else "red"
+        fig, ax = plt.subplots(figsize=(8, 8))
+        bins = np.linspace(-1.6, 1.6, 321)
+        ax.hist(xyangles, bins=bins, color=color)
+        ax.set_xlabel("x-y angle (rad)")
+        ax.set_ylabel("Counts")
+        ax.set_title(f"Angle between hits in layer {LAYERS[0]} and {LAYERS[1]}, sensor {sensor}")
+        ax.tick_params(direction="in", which="both", top=True, right=True)
+        fig.subplots_adjust(left=0.15, right=0.95, top=0.94, bottom=0.1)
+        pdf.savefig()
+        plt.close()
+
+        # ax.set_xlim([-0.04, 0.12])
+        # pdf.savefig()
+        # plt.close()
+
+        # ax.set_xlim([3.0, 3.16])
+        # pdf.savefig()
+        # plt.close()
 
 
 if __name__ == "__main__":
