@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import rcParams
-rcParams.update({'font.size': 16})
+rcParams.update({"font.size": 16})
 
 from constants import BARREL_RADII
 from constants import SIDE, LAYERS, SENSORS, MODULES
@@ -15,9 +15,9 @@ class Plotter:
         self.pdf_path = pdf_path
         self.signal = "sig" in pdf_path.lower()
 
-        self.df["module_angle"] = -1 * self.df["hit_module"] * (2.0 * np.pi / len(MODULES))
-        self.df["hit_xp"] = self.df["hit_x"] * np.cos(self.df["module_angle"]) - self.df["hit_y"] * np.sin(self.df["module_angle"])
-        self.df["hit_yp"] = self.df["hit_x"] * np.sin(self.df["module_angle"]) + self.df["hit_y"] * np.cos(self.df["module_angle"])
+        self.df["module_angle"] = self.df["hit_module"] * (2.0 * np.pi / len(MODULES))
+        self.df["hit_xp"] = self.df["hit_x"] * np.cos(-1 * self.df["module_angle"]) - self.df["hit_y"] * np.sin(-1 * self.df["module_angle"])
+        self.df["hit_yp"] = self.df["hit_x"] * np.sin(-1 * self.df["module_angle"]) + self.df["hit_y"] * np.cos(-1 * self.df["module_angle"])
 
 
     def plot(self):
@@ -29,12 +29,12 @@ class Plotter:
 
     def plot_xy(self, pdf: PdfPages):
         for module in MODULES:
-            mask = self.df['hit_module'] == module
+            mask = self.df["hit_module"] == module
             df_module = self.df[mask]
             if len(df_module) == 0:
                 continue
             fig, ax = plt.subplots(figsize=(8, 8))
-            ax.scatter(df_module['hit_x'], df_module['hit_y'], s=10)
+            ax.scatter(df_module["hit_x"], df_module["hit_y"], s=10)
             ax.set_xlabel("x (mm)")
             ax.set_ylabel("y (mm)")
             ax.set_title(f"x vs y of Hits - Module {module}")
@@ -47,18 +47,18 @@ class Plotter:
         for sensor in SENSORS:
             for module in MODULES:
                 print(f"Plotting module {module} ...")
-                mask = (self.df['hit_module'] == module) & (self.df['hit_sensor'] == sensor)
+                mask = (self.df["hit_module"] == module) & (self.df["hit_sensor"] == sensor)
                 df_module = self.df[mask]
                 if len(df_module) == 0:
                     continue
                 fig, ax = plt.subplots(figsize=(8, 8))
-                ax.scatter(df_module['hit_z'], df_module['hit_xp'], s=50)
+                ax.scatter(df_module["hit_z"], df_module["hit_xp"], s=50)
                 ax.set_xlabel("z (mm)")
                 ax.set_ylabel("y (local) (mm)")
                 # ax.set_xlim([-825, -770])
                 # ax.set_ylim([816, 840])
                 ax.set_title(f"Hits on module {module}, sensor {sensor}")
-                ax.tick_params(direction='in', which='both', top=True, right=True)
+                ax.tick_params(direction="in", which="both", top=True, right=True)
                 fig.subplots_adjust(left=0.15, right=0.95, top=0.94, bottom=0.1)
                 pdf.savefig()
                 plt.close()
@@ -70,11 +70,11 @@ class Plotter:
         xyangles = []
         n_debug = 0
 
-        for ((sensor, module, filename, i_event, i_sim), group) in self.df.groupby(['hit_sensor',
-                                                                                    'hit_module',
-                                                                                    'file',
-                                                                                    'i_event',
-                                                                                    'i_sim',
+        for ((sensor, module, filename, i_event, i_sim), group) in self.df.groupby(["hit_sensor",
+                                                                                    "hit_module",
+                                                                                    "file",
+                                                                                    "i_event",
+                                                                                    "i_sim",
                                                                                     ]):
 
             if len(group) == 0:
@@ -82,7 +82,7 @@ class Plotter:
             # print(f"Plotting module {module}, sensor {sensor}, file {filename}, event {i_event} ...")
 
             # fig, ax = plt.subplots(figsize=(8, 8))
-            # ax.scatter(group['hit_z'], group['hit_xp'], s=50)
+            # ax.scatter(group["hit_z"], group["hit_xp"], s=50)
             # ax.set_xlabel("z (mm)")
             # ax.set_ylabel("y (local) (mm)")
             # # ax.set_xlim([-825, -770])
@@ -94,18 +94,18 @@ class Plotter:
             # plt.close()
 
             # keep track of angles between layer 0 and layer 1
-            df_0 = group[group['hit_layer'] == LAYERS[0]]
-            df_1 = group[group['hit_layer'] == LAYERS[1]]
+            df_0 = group[group["hit_layer"] == LAYERS[0]]
+            df_1 = group[group["hit_layer"] == LAYERS[1]]
             if len(df_0) == 0 or len(df_1) == 0:
                 continue
 
             # vectorized computation of angles
-            x0 = df_0['hit_xp'].values[:, None]      # shape (N0, 1)
-            x1 = df_1['hit_xp'].values[None, :]      # shape (1, N1)
-            y0 = df_0['hit_yp'].values[:, None]      # shape (N0, 1)
-            y1 = df_1['hit_yp'].values[None, :]      # shape (1, N1)
-            z0 = df_0['hit_z'].values[:, None]       # shape (N0, 1)
-            z1 = df_1['hit_z'].values[None, :]       # shape (1, N1)
+            x0 = df_0["hit_xp"].values[:, None]      # shape (N0, 1)
+            x1 = df_1["hit_xp"].values[None, :]      # shape (1, N1)
+            y0 = df_0["hit_yp"].values[:, None]      # shape (N0, 1)
+            y1 = df_1["hit_yp"].values[None, :]      # shape (1, N1)
+            z0 = df_0["hit_z"].values[:, None]       # shape (N0, 1)
+            z1 = df_1["hit_z"].values[None, :]       # shape (1, N1)
             dx = x1 - x0                             # shape (N0, N1)
             dy = y1 - y0                             # shape (N0, N1)
             dz = z1 - z0                             # shape (N0, N1)
@@ -137,7 +137,7 @@ class Plotter:
                 print(group)
                 print()
                 fig, ax = plt.subplots(figsize=(8, 8))
-                ax.scatter(group['hit_z'], group['hit_xp'], s=50)
+                ax.scatter(group["hit_z"], group["hit_xp"], s=50)
                 ax.set_xlabel("z (mm)")
                 ax.set_ylabel("y (local) (mm)")
                 ax.set_title(f"Hits on module {module}, sensor {sensor}")
@@ -145,8 +145,8 @@ class Plotter:
                 dy = 4 if module % 2 == 1 else 0
                 ax.set_xlim([-35, 5])
                 ax.set_ylim([125 + dy, 131 + dy])
-                ax.plot([-30, 0], [126.97 + dy, 126.97 + dy], color='gray', linestyle='-', alpha=0.3)
-                ax.plot([-30, 0], [128.97 + dy, 128.97 + dy], color='gray', linestyle='-', alpha=0.3)
+                ax.plot([-30, 0], [126.97 + dy, 126.97 + dy], color="gray", linestyle="-", alpha=0.3)
+                ax.plot([-30, 0], [128.97 + dy, 128.97 + dy], color="gray", linestyle="-", alpha=0.3)
                 ax.tick_params(direction="in", which="both", top=True, right=True)
                 fig.subplots_adjust(left=0.15, right=0.95, top=0.94, bottom=0.1)
                 pdf.savefig()
