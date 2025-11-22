@@ -2,6 +2,11 @@ MCPARTICLES = "MCParticle"
 
 MUON = 13
 
+SIDE = 0
+LAYERS = [0, 1]
+SENSORS = [15]
+MODULES = range(30)
+
 TRACKER_COLLECTIONS = [
     "IBTrackerHits",
     "IETrackerHits",
