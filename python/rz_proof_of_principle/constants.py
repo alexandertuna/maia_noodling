@@ -1,5 +1,7 @@
 MCPARTICLES = "MCParticle"
 
+MUON = 13
+
 TRACKER_COLLECTIONS = [
     "IBTrackerHits",
     "IETrackerHits",
