@@ -11,16 +11,17 @@ import pandas as pd
 import os
 import multiprocessing as mp
 
-from constants import MINIMUM_PT, SPEED_OF_LIGHT
+from constants import MCPARTICLES, SPEED_OF_LIGHT, MUON
 
 
 class SlcioToHitsDataFrame:
 
-    def __init__(self, slcio_file_paths, collections, layers, sensors):
+    def __init__(self, slcio_file_paths, collections, layers, sensors, signal):
         self.slcio_file_paths = slcio_file_paths
         self.collections = collections
         self.layers = layers
         self.sensors = sensors
+        self.signal = signal
 
 
     def convert(self) -> pd.DataFrame:
@@ -56,40 +57,47 @@ class SlcioToHitsDataFrame:
         for i_event, event in enumerate(reader):
 
             # get mcparticle info
-            # mcparticles = list(event.getCollection(MCPARTICLES))
-            # sim_px = [mcp.getMomentum()[0] for mcp in mcparticles]
-            # sim_py = [mcp.getMomentum()[1] for mcp in mcparticles]
-            # sim_pz = [mcp.getMomentum()[2] for mcp in mcparticles]
-            # sim_m = [mcp.getMass() for mcp in mcparticles]
-            # sim_q = [mcp.getCharge() for mcp in mcparticles]
+            if self.signal:
+                mcparticles = list(event.getCollection(MCPARTICLES))
+                sim_px = [mcp.getMomentum()[0] for mcp in mcparticles]
+                sim_py = [mcp.getMomentum()[1] for mcp in mcparticles]
+                sim_pz = [mcp.getMomentum()[2] for mcp in mcparticles]
+                sim_m = [mcp.getMass() for mcp in mcparticles]
+                sim_q = [mcp.getCharge() for mcp in mcparticles]
+                sim_pdg = [mcp.getPDG() for mcp in mcparticles]
 
             # inspect tracking detector collections
             for collection in self.collections:
 
                 col = event.getCollection(collection)
 
-                for hit in col:
+                for obj in col:
 
-                    # # find the hit and the parent mc particle
-                    # hit, mcp = None, None
-                    # if is_digi:
-                    #     # `obj` is a relation
-                    #     hit, sim_hit = obj.getFrom(), obj.getTo()
-                    #     if not sim_hit:
-                    #         continue
-                    #     mcp = sim_hit.getMCParticle()
-                    # if is_sim:
-                    #     # `obj` is a sim hit
-                    #     hit = obj
-                    #     mcp = hit.getMCParticle()
+                    # find the hit and the parent mc particle
+                    hit, mcp = None, None
+                    if is_digi:
+                        # `obj` is a relation
+                        hit, sim_hit = obj.getFrom(), obj.getTo()
+                        if self.signal:
+                            if not sim_hit:
+                                continue
+                            mcp = sim_hit.getMCParticle()
+                    if is_sim:
+                        # `obj` is a sim hit
+                        hit = obj
+                        if self.signal:
+                            mcp = hit.getMCParticle()
 
                     # skip if hit or mcp is missing
                     if not hit:
                         continue
-                    # if not mcp:
-                    #     continue
-                    # if not mcp in mcparticles:
-                    #     continue
+                    if self.signal and not mcp:
+                        continue
+                    if self.signal and not mcp in mcparticles:
+                        continue
+                    i_sim = mcparticles.index(mcp) if self.signal else -1
+                    if self.signal and abs(sim_pdg[i_sim]) != MUON:
+                        continue
 
                     # skip if trying to speed up
                     if self.layers and (np.right_shift(hit.getCellID0(), 7) & 0b11_1111) not in self.layers:
@@ -98,16 +106,16 @@ class SlcioToHitsDataFrame:
                         continue
 
                     # record the hit info
-                    # i_sim = mcparticles.index(mcp)
                     rows.append({
                         'file': os.path.basename(slcio_file_path),
                         'i_event': i_event,
-                        # 'i_sim': i_sim,
-                        # 'sim_px': sim_px[i_sim],
-                        # 'sim_py': sim_py[i_sim],
-                        # 'sim_pz': sim_pz[i_sim],
-                        # 'sim_m': sim_m[i_sim],
-                        # 'sim_q': sim_q[i_sim],
+                        'i_sim': i_sim,
+                        'sim_px': sim_px[i_sim] if self.signal else 0,
+                        'sim_py': sim_py[i_sim] if self.signal else 0,
+                        'sim_pz': sim_pz[i_sim] if self.signal else 0,
+                        'sim_m': sim_m[i_sim] if self.signal else 0,
+                        'sim_q': sim_q[i_sim] if self.signal else 0,
+                        'sim_pdg': sim_pdg[i_sim] if self.signal else 0,
                         'hit_x': hit.getPosition()[0],
                         'hit_y': hit.getPosition()[1],
                         'hit_z': hit.getPosition()[2],
@@ -117,6 +125,7 @@ class SlcioToHitsDataFrame:
                         'hit_cellid0': hit.getCellID0(),
                         'hit_cellid1': hit.getCellID1(),
                         'hit_is_digi': is_digi,
+                        'hit_is_signal': self.signal,
                     })
 
         # Close the reader
