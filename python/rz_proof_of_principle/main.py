@@ -1,5 +1,6 @@
 import argparse
 from glob import glob
+import pandas as pd
 
 INNER_BARREL = "IBTrackerHitsRelations" # "IBTrackerHits" # "InnerTrackerBarrelCollection"
 OUTER_BARREL = "OBTrackerHitsRelations" # "OBTrackerHits" # "OuterTrackerBarrelCollection"
