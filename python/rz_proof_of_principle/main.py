@@ -1,8 +1,8 @@
 import argparse
 from glob import glob
 
-INNER_BARREL = "IBTrackerHits" # "InnerTrackerBarrelCollection"
-OUTER_BARREL = "OBTrackerHits" # "OuterTrackerBarrelCollection"
+INNER_BARREL = "IBTrackerHitsRelations" # "IBTrackerHits" # "InnerTrackerBarrelCollection"
+OUTER_BARREL = "OBTrackerHitsRelations" # "OBTrackerHits" # "OuterTrackerBarrelCollection"
 from slcio_to_hits_dataframe import SlcioToHitsDataFrame
 
 SIDE = 0
@@ -45,8 +45,8 @@ def main():
             print(f"Input background file: {path}")
 
         # convert slcio to hits dataframe
-        sig_df = SlcioToHitsDataFrame(sig_paths, [INNER_BARREL], LAYERS, SENSORS).convert()
-        bkg_df = SlcioToHitsDataFrame(bkg_paths, [INNER_BARREL], LAYERS, SENSORS).convert()
+        sig_df = SlcioToHitsDataFrame(sig_paths, [INNER_BARREL], LAYERS, SENSORS, signal=True).convert()
+        bkg_df = SlcioToHitsDataFrame(bkg_paths, [INNER_BARREL], LAYERS, SENSORS, signal=False).convert()
 
         # write to parquet
         sig_df.to_parquet(ops.signal_parquet)
@@ -154,7 +154,12 @@ class Plotter:
         xyangles = []
         n_debug = 0
 
-        for ((sensor, module, filename, i_event), group) in self.df.groupby(['hit_sensor', 'hit_module', 'file', 'i_event']):
+        for ((sensor, module, filename, i_event, i_sim), group) in self.df.groupby(['hit_sensor',
+                                                                                    'hit_module',
+                                                                                    'file',
+                                                                                    'i_event',
+                                                                                    'i_sim',
+                                                                                    ]):
 
             if len(group) == 0:
                 continue
@@ -213,12 +218,14 @@ class Plotter:
             if False and self.signal and np.max(np.abs(rzangs)) > 1.0 and n_debug < 100:
                 n_debug += 1
                 print("Debug: large rz angle found in signal event!")
+                print(group)
+                print()
                 fig, ax = plt.subplots(figsize=(8, 8))
                 ax.scatter(group['hit_z'], group['hit_xp'], s=50)
                 ax.set_xlabel("z (mm)")
                 ax.set_ylabel("y (local) (mm)")
                 ax.set_title(f"Hits on module {module}, sensor {sensor}")
-                ax.text(0.05, 0.90, f"Event {i_event}, {filename}", transform=ax.transAxes)
+                ax.text(0.05, 0.90, f"Event {i_event}, sim {i_sim}, {filename}", transform=ax.transAxes)
                 dy = 4 if module % 2 == 1 else 0
                 ax.set_xlim([-35, 5])
                 ax.set_ylim([125 + dy, 131 + dy])
