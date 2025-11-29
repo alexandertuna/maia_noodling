@@ -5,9 +5,9 @@ STEER=${CODE}/SteeringMacros/Sim/sim_steer_GEN_CONDOR.py
 COMPACT=${CODE}/detector-simulation/geometries/MAIA_v0/MAIA_v0.xml
 NUMBER_OF_EVENTS=1
 # SKIP_N_EVENTS=20
-MAX_JOBS=30
+MAX_JOBS=25
 
-for SKIP_N_EVENTS in $(seq 0 9); do
+for SKIP_N_EVENTS in $(seq 0 99); do
 
     # Process at most $MAX_JOBS in parallel
     while (( $(jobs -rp | wc -l) >= MAX_JOBS )); do
