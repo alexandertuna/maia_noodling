@@ -209,6 +209,7 @@ __marimo__/
 # Other
 *.pdf
 *.slcio
+*.hepmc
 *.parquet
 .gwms-user-job-wrapper.sh
 
