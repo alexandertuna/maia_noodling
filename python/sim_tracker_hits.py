@@ -16,7 +16,7 @@ TRACKERS = [
     # "VertexEndcapCollection",
     "InnerTrackerBarrelCollection",
     # "InnerTrackerEndcapCollection",
-    # "OuterTrackerBarrelCollection",
+    "OuterTrackerBarrelCollection",
     # "OuterTrackerEndcapCollection",
 ]
 
@@ -35,7 +35,10 @@ def main():
 
     hits = get_hits(fnames)
     hits["r"] = np.sqrt(hits["x"]**2 + hits["y"]**2)
-    print(hits.head())
+    with pd.option_context("display.min_rows", 100,
+                           "display.max_rows", 100,
+                           ):
+        print(hits)
 
     with PdfPages("output_sim.pdf") as pdf:
         make_plots(hits, pdf)
@@ -86,6 +89,8 @@ def get_hits(fnames: list[str]) -> pd.DataFrame:
                         hit.getEDep(),
                     ] )
 
+    if len(hits) == 0:
+        raise Exception("No hits found!")
     return pd.DataFrame(np.array(hits), columns=["x", "y", "z", "e"])
 
 
