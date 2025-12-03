@@ -103,6 +103,8 @@ def digi(events: int, num: int, typeevent: str, data: str, bib: bool, ip: bool):
 def gen_command(events: int, num: int, typeevent: str):
     if typeevent == "muonGun_pT_0_10":
         return gen_command_muongun(events, num, typeevent)
+    elif typeevent == "neutrinoGun":
+        return gen_command_neutrinogun(events, num, typeevent)
     elif typeevent == "mumu_H_bb_10TeV":
         return gen_command_hbb(events, num, typeevent)
     else:
@@ -120,6 +122,22 @@ def gen_command_muongun(events: int, num: int, typeevent: str):
     --pt {pt} \
     --particles {particles} \
     --theta 10 170 \
+    -- {typeevent}_gen_{num}.slcio"
+    return cmd
+
+
+def gen_command_neutrinogun(events: int, num: int, typeevent: str):
+    pdg = "-14" if num % 2 == 0 else "14"
+    pt = "0.1"
+    particles = "1"
+    theta = "90"
+    cmd = f"python {CODE}/mucoll-benchmarks/generation/pgun/pgun_lcio.py \
+    -s {num} \
+    -e {events} \
+    --pdg {pdg} \
+    --pt {pt} \
+    --particles {particles} \
+    --theta {theta} \
     -- {typeevent}_gen_{num}.slcio"
     return cmd
 
@@ -165,7 +183,9 @@ def digi_command(events: int, num: int, typeevent: str, steer: str, data: str, b
 
 
 def get_suffix(typeevent: str):
-    if typeevent == "muonGun_pT_0_10":
+    if typeevent in ["muonGun_pT_0_10",
+                     "neutrinoGun",
+                     ]:
         return "slcio"
     elif typeevent == "mumu_H_bb_10TeV":
         return "hepmc"
@@ -206,6 +226,7 @@ def write_local_whizard_hbb(local_filename: str, events: int, typeevent: str, nu
     # write the local steering file
     local_path = Path(local_filename)
     local_path.write_text(steer_text)
+
 
 def remove_whizard_output():
     cmd = "rm -f default* hbb* hdec* opr* whizard.log"
