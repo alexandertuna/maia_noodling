@@ -148,24 +148,19 @@ class Plotter:
                 if len(group["sim_pt"].unique()) != 1:
                     raise Exception("Expected unique sim_pt per group")
                 pts = group["sim_pt"].unique()[0]
-                pts = pts * np.ones_like(xpzangs)
+                pts = pts * np.ones_like(rzangs)
             else:
-                pts = np.zeros_like(xpzangs)
+                pts = np.zeros_like(rzangs)
 
             # print("len(angles):", len(angles))
             # number of angles with angle > 1.4 and angle < 1.9
             lo, hi = -0.2, 0.2
-            arr = np.array(xpzangs)
+            arr = np.array(rzangs)
             n_selected_rz = np.sum((arr > lo) & (arr < hi))
 
             lo, hi = -0.2, 0.2
             arr_xy = np.array(xyangs)
             n_selected_xy = np.sum((arr_xy > lo) & (arr_xy < hi))
-            # print(f"module {module} sensor {sensor} layer {LAYERS[0]} hits: {len(df_0)}")
-            # print(f"module {module} sensor {sensor} layer {LAYERS[1]} hits: {len(df_1)}")
-            # print(f"module {module} sensor {sensor} total angles to compute: {len(xpzangs)}")
-            # print(f"module {module} sensor {sensor} number of r-z angles with angle > {lo} and angle < {hi}: {n_selected_rz}")
-            # print(f"module {module} sensor {sensor} number of x-y angles with angle > {lo} and angle < {hi}: {n_selected_xy}")
 
             xpzangles.extend(xpzangs.ravel())
             rzangles.extend(rzangs.ravel())
@@ -175,27 +170,6 @@ class Plotter:
             yprojs.extend(yproj.ravel())
             ptvalues.extend(pts.ravel())
 
-            # debug
-            if False and self.signal and np.max(np.abs(xpzangs)) > 1.0 and n_debug < 100:
-                n_debug += 1
-                print("Debug: large rz angle found in signal event!")
-                print(group)
-                print()
-                fig, ax = plt.subplots(figsize=(8, 8))
-                ax.scatter(group["hit_z"], group["hit_xp"], s=50)
-                ax.set_xlabel("z (mm)")
-                ax.set_ylabel("y (local) (mm)")
-                ax.set_title(f"Hits on module {module}, sensor {sensor}")
-                ax.text(0.05, 0.90, f"Event {i_event}, sim {i_sim}, {filename}", transform=ax.transAxes)
-                dy = 4 if module % 2 == 1 else 0
-                ax.set_xlim([-35, 5])
-                ax.set_ylim([125 + dy, 131 + dy])
-                ax.plot([-30, 0], [126.97 + dy, 126.97 + dy], color="gray", linestyle="-", alpha=0.3)
-                ax.plot([-30, 0], [128.97 + dy, 128.97 + dy], color="gray", linestyle="-", alpha=0.3)
-                ax.tick_params(direction="in", which="both", top=True, right=True)
-                fig.subplots_adjust(left=0.15, right=0.95, top=0.94, bottom=0.1)
-                pdf.savefig()
-                plt.close()
 
         # numpify
         xpzangles = np.array(xpzangles)
@@ -346,22 +320,8 @@ class Plotter:
             fig, ax = plt.subplots(figsize=(8, 8))
             bins = np.linspace(-1.6, 1.6, 161)
             for pt_lo, pt_hi in [
-                # (7, 10),
-                # (4, 7),
-                # (2, 4),
-
                 (3, 4),
                 (2, 3),
-
-                # (10, 11),
-                # (9, 10),
-                # (8, 9),
-                # (7, 8),
-                # (6, 7),
-                # (5, 6),
-                # (4, 5),
-                # (3, 4,),
-                # (2, 3),
                 (1, 2),
                 (0, 1),
             ]:
@@ -387,6 +347,7 @@ class Plotter:
             100,
             np.linspace(-2200, 2200, 441),
             np.linspace(-60, 60, 121),
+            np.linspace(-2, 2, 121),
         ]:
             # plot xpzproj distribution
             color = "blue" if self.signal else "red"
@@ -407,6 +368,7 @@ class Plotter:
             100,
             np.linspace(-2200, 2200, 441),
             np.linspace(-60, 60, 121),
+            np.linspace(-2, 2, 121),
         ]:
             # plot zproj distribution
             color = "blue" if self.signal else "red"
@@ -522,7 +484,7 @@ class Plotter:
              [np.linspace(-1.6, 1.6, 161),
               np.linspace(-60, 60, 121)],
              [np.linspace(-0.5, 0.5, 101),
-              np.linspace(-25, 25, 101)],
+              np.linspace(-2, 2, 101)],
         ]:
             # plot zproj distribution
             color = "blue" if self.signal else "red"
@@ -546,8 +508,8 @@ class Plotter:
               np.linspace(-2100, 2100, 106)],
              [np.linspace(-60, 60, 121),
               np.linspace(-60, 60, 121)],
-             [np.linspace(-30, 30, 121),
-              np.linspace(-30, 30, 121)],
+             [np.linspace(-10, 10, 121),
+              np.linspace(-10, 10, 121)],
         ]:
             color = "blue" if self.signal else "red"
             fig, ax = plt.subplots(figsize=(8, 8))
