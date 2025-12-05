@@ -4,8 +4,14 @@ MUON = 13
 
 SIDE = 0
 LAYERS = [0, 1]
+
+# IT
 SENSORS = [15]
 MODULES = range(30)
+
+# OT
+# SENSORS = [41]
+# MODULES = range(184)
 
 TRACKER_COLLECTIONS = [
     "IBTrackerHits",
