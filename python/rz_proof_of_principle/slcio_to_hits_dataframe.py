@@ -12,7 +12,7 @@ import os
 import multiprocessing as mp
 
 from constants import MCPARTICLES, SPEED_OF_LIGHT, MUON
-
+from constants import MINIMUM_TIME, MAXIMUM_TIME
 
 class SlcioToHitsDataFrame:
 
@@ -27,6 +27,7 @@ class SlcioToHitsDataFrame:
     def convert(self) -> pd.DataFrame:
         df = self.convert_all_files()
         df = self.postprocess_dataframe(df)
+        df = self.filter_dataframe(df)
         return df
 
 
@@ -165,9 +166,10 @@ class SlcioToHitsDataFrame:
         return df[sorted(df.columns)]
 
 
-    # def filter_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
-    #     print("Filtering DataFrame ...")
-    #     subset = (df['sim_pt'] > MINIMUM_PT)
-    #     df = df[subset]
-    #     return df
+    def filter_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
+        print("Filtering DataFrame ...")
+        subset = (df["hit_t_corrected"] >= MINIMUM_TIME) & \
+                 (df["hit_t_corrected"] <= MAXIMUM_TIME)
+        df = df[subset]
+        return df
 
