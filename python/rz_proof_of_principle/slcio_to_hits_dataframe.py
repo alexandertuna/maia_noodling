@@ -5,7 +5,6 @@ CellID encoding for OBTrackerHits: system:5,side:-2,layer:6,module:11,sensor:8
 CellID encoding for OETrackerHits: system:5,side:-2,layer:6,module:11,sensor:8
 """
 
-import pyLCIO
 import numpy as np
 import pandas as pd
 import os
@@ -13,6 +12,11 @@ import multiprocessing as mp
 
 from constants import MCPARTICLES, SPEED_OF_LIGHT, MUON
 from constants import MINIMUM_TIME, MAXIMUM_TIME
+
+try:
+    import pyLCIO
+except ImportError as e:
+    print("pyLCIO is not installed. Will continue onward and see what happens ...")
 
 class SlcioToHitsDataFrame:
 
