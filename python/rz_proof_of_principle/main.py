@@ -2,8 +2,9 @@ import argparse
 from glob import glob
 import pandas as pd
 
-INNER_BARREL = "IBTrackerHitsRelations" # "IBTrackerHits" # "InnerTrackerBarrelCollection"
-OUTER_BARREL = "OBTrackerHitsRelations" # "OBTrackerHits" # "OuterTrackerBarrelCollection"
+INNER_BARREL_SIM = "InnerTrackerBarrelCollection"
+INNER_BARREL_REL = "IBTrackerHitsRelations" # digi
+
 from slcio_to_hits_dataframe import SlcioToHitsDataFrame
 from plot import Plotter
 from constants import SIDE, LAYERS, SENSORS, MODULES
@@ -43,8 +44,8 @@ def main():
             print(f"Input background file: {path}")
 
         # convert slcio to hits dataframe
-        sig_df = SlcioToHitsDataFrame(sig_paths, [INNER_BARREL], LAYERS, SENSORS, signal=True).convert()
-        bkg_df = SlcioToHitsDataFrame(bkg_paths, [INNER_BARREL], LAYERS, SENSORS, signal=False).convert()
+        sig_df = SlcioToHitsDataFrame(sig_paths, [INNER_BARREL_SIM], LAYERS, SENSORS, signal=True).convert()
+        bkg_df = SlcioToHitsDataFrame(bkg_paths, [INNER_BARREL_REL], LAYERS, SENSORS, signal=False).convert()
 
         # write to parquet
         sig_df.to_parquet(ops.signal_parquet)
