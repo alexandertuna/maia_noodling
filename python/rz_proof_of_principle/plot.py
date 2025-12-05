@@ -85,9 +85,11 @@ class Plotter:
     def plot_rz_events(self, pdf: PdfPages):
 
         rzangles = []
+        xpzangles = []
         xyangles = []
         ptvalues = []
-        zprojs = []
+        rzprojs = []
+        xpzprojs = []
         yprojs = []
         n_debug = 0
 
@@ -130,25 +132,30 @@ class Plotter:
             y1 = df_1["hit_yp"].values[None, :]      # shape (1, N1)
             z0 = df_0["hit_z"].values[:, None]       # shape (N0, 1)
             z1 = df_1["hit_z"].values[None, :]       # shape (1, N1)
+            r0 = df_0["hit_r"].values[:, None]       # shape (N0, 1)
+            r1 = df_1["hit_r"].values[None, :]       # shape (1, N1)
             dx = x1 - x0                             # shape (N0, N1)
             dy = y1 - y0                             # shape (N0, N1)
             dz = z1 - z0                             # shape (N0, N1)
+            dr = r1 - r0                             # shape (N0, N1)
             xyangs = np.arctan2(dy, dx)              # shape (N0, N1)
-            rzangs = np.arctan2(dz, dx)              # shape (N0, N1)
-            zproj = z0 - x0 * np.tan(rzangs)         # shape (N0, N1)
+            rzangs = np.arctan2(dz, dr)              # shape (N0, N1)
+            xpzangs = np.arctan2(dz, dx)             # shape (N0, N1)
+            xpzproj = z0 - x0 * np.tan(xpzangs)      # shape (N0, N1)
+            rzproj = z0 - r0 * np.tan(rzangs)        # shape (N0, N1)
             yproj = y0 - x0 * np.tan(xyangs)         # shape (N0, N1)
             if self.signal:
                 if len(group["sim_pt"].unique()) != 1:
                     raise Exception("Expected unique sim_pt per group")
                 pts = group["sim_pt"].unique()[0]
-                pts = pts * np.ones_like(rzangs)
+                pts = pts * np.ones_like(xpzangs)
             else:
-                pts = np.zeros_like(rzangs)
+                pts = np.zeros_like(xpzangs)
 
             # print("len(angles):", len(angles))
             # number of angles with angle > 1.4 and angle < 1.9
             lo, hi = -0.2, 0.2
-            arr = np.array(rzangs)
+            arr = np.array(xpzangs)
             n_selected_rz = np.sum((arr > lo) & (arr < hi))
 
             lo, hi = -0.2, 0.2
@@ -156,18 +163,20 @@ class Plotter:
             n_selected_xy = np.sum((arr_xy > lo) & (arr_xy < hi))
             # print(f"module {module} sensor {sensor} layer {LAYERS[0]} hits: {len(df_0)}")
             # print(f"module {module} sensor {sensor} layer {LAYERS[1]} hits: {len(df_1)}")
-            # print(f"module {module} sensor {sensor} total angles to compute: {len(rzangs)}")
+            # print(f"module {module} sensor {sensor} total angles to compute: {len(xpzangs)}")
             # print(f"module {module} sensor {sensor} number of r-z angles with angle > {lo} and angle < {hi}: {n_selected_rz}")
             # print(f"module {module} sensor {sensor} number of x-y angles with angle > {lo} and angle < {hi}: {n_selected_xy}")
 
+            xpzangles.extend(xpzangs.ravel())
             rzangles.extend(rzangs.ravel())
             xyangles.extend(xyangs.ravel())
-            zprojs.extend(zproj.ravel())
+            xpzprojs.extend(xpzproj.ravel())
+            rzprojs.extend(rzproj.ravel())
             yprojs.extend(yproj.ravel())
             ptvalues.extend(pts.ravel())
 
             # debug
-            if False and self.signal and np.max(np.abs(rzangs)) > 1.0 and n_debug < 100:
+            if False and self.signal and np.max(np.abs(xpzangs)) > 1.0 and n_debug < 100:
                 n_debug += 1
                 print("Debug: large rz angle found in signal event!")
                 print(group)
@@ -189,20 +198,23 @@ class Plotter:
                 plt.close()
 
         # numpify
+        xpzangles = np.array(xpzangles)
         rzangles = np.array(rzangles)
         xyangles = np.array(xyangles)
         ptvalues = np.array(ptvalues)
-        zprojs = np.array(zprojs)
+        xpzprojs = np.array(xpzprojs)
+        rzprojs = np.array(rzprojs)
         yprojs = np.array(yprojs)
         lo, hi = -0.3, 0.3
-        n_selected_rz = np.sum((rzangles > lo) & (rzangles < hi))
+        n_selected_xpz = np.sum((xpzangles > lo) & (xpzangles < hi))
         n_selected_xy = np.sum((xyangles > lo) & (xyangles < hi))
-        n_selected_rzxy = np.sum((rzangles > lo) & (rzangles < hi) & (xyangles > lo) & (xyangles < hi))
-        print(f"Total number of r-z angles: {len(rzangles)}")
+        n_selected_xpzxy = np.sum((xpzangles > lo) & (xpzangles < hi) & (xyangles > lo) & (xyangles < hi))
+        print(f"Total number of xp-z angles: {len(xpzangles)}")
         print(f"Total number of x-y angles: {len(xyangles)}")
-        print(f"Total number of r-z angles with angle > {lo} and angle < {hi}: {n_selected_rz}")
+        print(f"Total number of xp-z angles with angle > {lo} and angle < {hi}: {n_selected_xpz}")
         print(f"Total number of x-y angles with angle > {lo} and angle < {hi}: {n_selected_xy}")
-        print(f"Total number of angles with both r-z and x-y angle > {lo} and < {hi}: {n_selected_rzxy}")
+        print(f"Total number of angles with both xp-z and x-y angle > {lo} and < {hi}: {n_selected_xpzxy}")
+
 
         # plot r-z angle distribution
         print("Plotting r-z angle distribution ...")
@@ -226,9 +238,60 @@ class Plotter:
         pdf.savefig()
         plt.close()
 
-        # plot z projection in slices of pt
+
+        # plot xp-z angle distribution
+        print("Plotting xp-z angle distribution ...")
+        color = "blue" if self.signal else "red"
+        fig, ax = plt.subplots(figsize=(8, 8))
+        bins = np.linspace(-1.6, 1.6, 321)
+        ax.hist(xpzangles, bins=bins, color=color)
+        ax.set_xlabel("xp-z angle (rad)")
+        ax.set_ylabel("Counts")
+        ax.set_title(f"Angle between hits in layer {LAYERS[0]} and {LAYERS[1]}, sensor {sensor}")
+        ax.tick_params(direction="in", which="both", top=True, right=True)
+        fig.subplots_adjust(left=0.15, right=0.95, top=0.94, bottom=0.1)
+        pdf.savefig()
+        # plt.close()
+
+        ax.set_xlim([-1.60, -1.45])
+        pdf.savefig()
+        # plt.close()
+
+        ax.set_xlim([1.45, 1.60])
+        pdf.savefig()
+        plt.close()
+
+        # plot xp-z angles in slices of pt
         if self.signal:
-            print("Plotting z projection distribution in slices of pt ...")
+            print("Plotting xp-z angle distribution in slices of pt ...")
+            color = "blue" if self.signal else "red"
+            fig, ax = plt.subplots(figsize=(8, 8))
+            bins = np.linspace(-1.0, 1.0, 201)
+            for pt_lo, pt_hi in [
+                (3, 4),
+                (2, 3),
+                (1, 2),
+                (0, 1),
+            ]:
+                mask = (ptvalues >= pt_lo) & (ptvalues < pt_hi)
+                xpzangles_pt = xpzangles[mask]
+                ax.hist(xpzangles_pt, bins=bins, linewidth=2, histtype="step", label=f"pt {pt_lo}-{pt_hi} GeV")
+            # ax.hist(xyangles, bins=bins, color=color)
+            ax.set_xlabel("xp-z angle (rad)")
+            ax.set_ylabel("Counts")
+            ax.set_title(f"Angle between hits in layer {LAYERS[0]} and {LAYERS[1]}, sensor {sensor}")
+            ax.tick_params(direction="in", which="both", top=True, right=True)
+            ax.legend()
+            ax.grid()
+            ax.set_axisbelow(True)
+            fig.subplots_adjust(left=0.15, right=0.95, top=0.94, bottom=0.1)
+            pdf.savefig()
+            plt.close()
+
+
+        # plot r-z angles in slices of pt
+        if self.signal:
+            print("Plotting r-z angle distribution in slices of pt ...")
             color = "blue" if self.signal else "red"
             fig, ax = plt.subplots(figsize=(8, 8))
             bins = np.linspace(-1.0, 1.0, 201)
@@ -242,9 +305,9 @@ class Plotter:
                 rzangles_pt = rzangles[mask]
                 ax.hist(rzangles_pt, bins=bins, linewidth=2, histtype="step", label=f"pt {pt_lo}-{pt_hi} GeV")
             # ax.hist(xyangles, bins=bins, color=color)
-            ax.set_xlabel("z projection (mm)")
+            ax.set_xlabel("r-z angle (rad)")
             ax.set_ylabel("Counts")
-            ax.set_title(f"z-proj. for hits in layer {LAYERS[0]} and {LAYERS[1]}, sensor {sensor}")
+            ax.set_title(f"Angle between hits in layer {LAYERS[0]} and {LAYERS[1]}, sensor {sensor}")
             ax.tick_params(direction="in", which="both", top=True, right=True)
             ax.legend()
             ax.grid()
@@ -325,11 +388,31 @@ class Plotter:
             np.linspace(-2200, 2200, 441),
             np.linspace(-60, 60, 121),
         ]:
+            # plot xpzproj distribution
+            color = "blue" if self.signal else "red"
+            fig, ax = plt.subplots(figsize=(8, 8))
+            ax.hist(xpzprojs, bins=bins, color=color)
+            ax.set_xlabel("(x') z projection (mm)")
+            ax.set_ylabel("Counts")
+            ax.set_title(f"(x') z-proj. for hits in layers {LAYERS[0]} and {LAYERS[1]}, sensor {sensor}")
+            ax.tick_params(direction="in", which="both", top=True, right=True)
+            fig.subplots_adjust(left=0.15, right=0.95, top=0.94, bottom=0.1)
+            pdf.savefig()
+            plt.close()
+
+
+        # z-projection
+        print("Plotting rz-projection distribution ...")
+        for bins in [
+            100,
+            np.linspace(-2200, 2200, 441),
+            np.linspace(-60, 60, 121),
+        ]:
             # plot zproj distribution
             color = "blue" if self.signal else "red"
             fig, ax = plt.subplots(figsize=(8, 8))
-            ax.hist(zprojs, bins=bins, color=color)
-            ax.set_xlabel("z projection (mm)")
+            ax.hist(rzprojs, bins=bins, color=color)
+            ax.set_xlabel("(r) z-projection (mm)")
             ax.set_ylabel("Counts")
             ax.set_title(f"z-proj. for hits in layers {LAYERS[0]} and {LAYERS[1]}, sensor {sensor}")
             ax.tick_params(direction="in", which="both", top=True, right=True)
@@ -351,12 +434,11 @@ class Plotter:
                 (0, 1),
             ]:
                 mask = (ptvalues >= pt_lo) & (ptvalues < pt_hi)
-                zprojs_pt = zprojs[mask]
-                ax.hist(zprojs_pt, bins=bins, linewidth=2, histtype="step", label=f"pt {pt_lo}-{pt_hi} GeV")
-            # ax.hist(xyangles, bins=bins, color=color)
-            ax.set_xlabel("z projection (mm)")
+                xpzprojs_pt = xpzprojs[mask]
+                ax.hist(xpzprojs_pt, bins=bins, linewidth=2, histtype="step", label=f"pt {pt_lo}-{pt_hi} GeV")
+            ax.set_xlabel("(x') z projection (mm)")
             ax.set_ylabel("Counts")
-            ax.set_title(f"z-proj. for hits in layer {LAYERS[0]} and {LAYERS[1]}, sensor {sensor}")
+            ax.set_title(f"(x') z-proj. for hits in layer {LAYERS[0]} and {LAYERS[1]}, sensor {sensor}")
             ax.tick_params(direction="in", which="both", top=True, right=True)
             ax.legend()
             ax.grid()
@@ -414,18 +496,18 @@ class Plotter:
             plt.close()
 
 
-        # rz vs xy hist2d
-        print("Plotting z-projection distribution ...")
+        # xp-z vs xy hist2d
+        print("Plotting xp-z vs xy distribution ...")
         for bins in [
             100,
         ]:
-            # plot zproj distribution
+            # plot xp-z vs xy distribution
             color = "blue" if self.signal else "red"
             fig, ax = plt.subplots(figsize=(8, 8))
-            _, _, _, im = ax.hist2d(rzangles, xyangles, bins=bins, cmap="gist_rainbow", cmin=0.5)
-            ax.set_xlabel("r-z angle (rad)")
+            _, _, _, im = ax.hist2d(xpzangles, xyangles, bins=bins, cmap="gist_rainbow", cmin=0.5)
+            ax.set_xlabel("xp-z angle (rad)")
             ax.set_ylabel("x-y angle (rad)")
-            ax.set_title(f"rz vs xy angles for hits in layers {LAYERS[0]} and {LAYERS[1]}, sensor {sensor}")
+            ax.set_title(f"xp-z vs xy angles for hits in layers {LAYERS[0]} and {LAYERS[1]}, sensor {sensor}")
             ax.tick_params(direction="in", which="both", top=True, right=True)
             fig.colorbar(im, ax=ax, pad=0.01, label="Hit pairs")
             fig.subplots_adjust(left=0.15, right=0.95, top=0.94, bottom=0.1)
@@ -445,10 +527,10 @@ class Plotter:
             # plot zproj distribution
             color = "blue" if self.signal else "red"
             fig, ax = plt.subplots(figsize=(8, 8))
-            _, _, _, im = ax.hist2d(rzangles, zprojs, bins=bins, cmap="gist_rainbow", cmin=0.5)
-            ax.set_xlabel("r-z angle (rad)")
-            ax.set_ylabel("z projection (mm)")
-            ax.set_title(f"rz vs z projection for hits in layers {LAYERS[0]} and {LAYERS[1]}, sensor {sensor}")
+            _, _, _, im = ax.hist2d(xpzangles, xpzprojs, bins=bins, cmap="gist_rainbow", cmin=0.5)
+            ax.set_xlabel("xp-z angle (rad)")
+            ax.set_ylabel("(xp) z projection (mm)")
+            ax.set_title(f"xp-z vs (xp) z projection for hits in layers {LAYERS[0]} and {LAYERS[1]}, sensor {sensor}")
             ax.tick_params(direction="in", which="both", top=True, right=True)
             fig.colorbar(im, ax=ax, pad=0.01, label="Hit pairs")
             fig.subplots_adjust(left=0.15, right=0.95, top=0.94, bottom=0.1)
@@ -469,10 +551,10 @@ class Plotter:
         ]:
             color = "blue" if self.signal else "red"
             fig, ax = plt.subplots(figsize=(8, 8))
-            _, _, _, im = ax.hist2d(yprojs, zprojs, bins=bins, cmap="gist_rainbow", cmin=0.5)
+            _, _, _, im = ax.hist2d(yprojs, xpzprojs, bins=bins, cmap="gist_rainbow", cmin=0.5)
             ax.set_xlabel("y projection (mm)")
-            ax.set_ylabel("z projection (mm)")
-            ax.set_title(f"y vs z projection for hits in layers {LAYERS[0]} and {LAYERS[1]}, sensor {sensor}")
+            ax.set_ylabel("(xp) z projection (mm)")
+            ax.set_title(f"y vs (xp) z projection for hits in layers {LAYERS[0]} and {LAYERS[1]}, sensor {sensor}")
             ax.tick_params(direction="in", which="both", top=True, right=True)
             fig.colorbar(im, ax=ax, pad=0.01, label="Hit pairs")
             fig.subplots_adjust(left=0.15, right=0.95, top=0.94, bottom=0.1)
