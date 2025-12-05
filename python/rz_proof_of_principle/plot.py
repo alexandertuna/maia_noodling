@@ -26,6 +26,7 @@ class Plotter:
             # self.plot_rz(pdf, first_event=True)
             # if self.signal:
             #     self.plot_rz(pdf, first_event=False)
+            self.plot_hit_time(pdf)
             self.plot_rz_events(pdf)
 
 
@@ -80,6 +81,40 @@ class Plotter:
                 fig.subplots_adjust(left=0.15, right=0.95, top=0.94, bottom=0.1)
                 pdf.savefig()
                 plt.close()
+
+
+    def plot_hit_time(self, pdf: PdfPages):
+        bins = np.linspace(-12, 24, 181)
+
+        fig, ax = plt.subplots(figsize=(8, 8))
+        color = "blue" if self.signal else "red"
+        ax.hist(self.df["hit_t"], bins=bins, color=color)
+        ax.set_xlabel("Hit time [ns]")
+        ax.set_ylabel("Counts")
+        ax.tick_params(direction="in", which="both", top=True, right=True)
+        ax.grid()
+        ax.set_axisbelow(True)
+        ax.semilogy()
+        ax.set_ylim([0.5, None])
+        fig.subplots_adjust(left=0.15, right=0.95, top=0.94, bottom=0.1)
+        pdf.savefig()
+        plt.close()
+
+        fig, ax = plt.subplots(figsize=(8, 8))
+        color = "blue" if self.signal else "red"
+        ax.hist(self.df["hit_t_corrected"], bins=bins, color=color)
+        ax.set_xlabel("Hit time, corrected for time-of-flight [ns]")
+        ax.set_ylabel("Counts")
+        ax.tick_params(direction="in", which="both", top=True, right=True)
+        ax.grid()
+        ax.set_axisbelow(True)
+        ax.semilogy()
+        ax.set_ylim([0.5, None])
+        fig.subplots_adjust(left=0.15, right=0.95, top=0.94, bottom=0.1)
+        pdf.savefig()
+        plt.close()
+
+
 
 
     def plot_rz_events(self, pdf: PdfPages):
@@ -432,30 +467,33 @@ class Plotter:
 
         # plot y projection in slices of pt
         if self.signal:
-            print("Plotting y projection distribution in slices of pt ...")
-            color = "blue" if self.signal else "red"
-            fig, ax = plt.subplots(figsize=(8, 8))
-            bins = np.linspace(-50, 50, 201)
-            for pt_lo, pt_hi in [
-                (3, 4),
-                (2, 3),
-                (1, 2),
-                (0, 1),
+            for bins in [
+                np.linspace(-500, 500, 201),
+                np.linspace(-50, 50, 201),
             ]:
-                mask = (ptvalues >= pt_lo) & (ptvalues < pt_hi)
-                yprojs_pt = yprojs[mask]
-                ax.hist(yprojs_pt, bins=bins, linewidth=2, histtype="step", label=f"pt {pt_lo}-{pt_hi} GeV")
-            # ax.hist(xyangles, bins=bins, color=color)
-            ax.set_xlabel("y projection (mm)")
-            ax.set_ylabel("Counts")
-            ax.set_title(f"y-proj. for hits in layer {LAYERS[0]} and {LAYERS[1]}, sensor {sensor}")
-            ax.tick_params(direction="in", which="both", top=True, right=True)
-            ax.legend()
-            ax.grid()
-            ax.set_axisbelow(True)
-            fig.subplots_adjust(left=0.15, right=0.95, top=0.94, bottom=0.1)
-            pdf.savefig()
-            plt.close()
+                print("Plotting y projection distribution in slices of pt ...")
+                color = "blue" if self.signal else "red"
+                fig, ax = plt.subplots(figsize=(8, 8))
+                for pt_lo, pt_hi in [
+                    (3, 4),
+                    (2, 3),
+                    (1, 2),
+                    (0, 1),
+                ]:
+                    mask = (ptvalues >= pt_lo) & (ptvalues < pt_hi)
+                    yprojs_pt = yprojs[mask]
+                    ax.hist(yprojs_pt, bins=bins, linewidth=2, histtype="step", label=f"pt {pt_lo}-{pt_hi} GeV")
+                # ax.hist(xyangles, bins=bins, color=color)
+                ax.set_xlabel("y projection (mm)")
+                ax.set_ylabel("Counts")
+                ax.set_title(f"y-proj. for hits in layer {LAYERS[0]} and {LAYERS[1]}, sensor {sensor}")
+                ax.tick_params(direction="in", which="both", top=True, right=True)
+                ax.legend()
+                ax.grid()
+                ax.set_axisbelow(True)
+                fig.subplots_adjust(left=0.15, right=0.95, top=0.94, bottom=0.1)
+                pdf.savefig()
+                plt.close()
 
 
         # xp-z vs xy hist2d
