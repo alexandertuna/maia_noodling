@@ -51,7 +51,7 @@ def main():
 
         for i_hit, hit in enumerate(collection):
 
-            if i_hit % 2e5 == 0:
+            if i_hit % 4e5 == 0:
                 print(f" Processing hit {i_hit}")
 
             cellid0 = hit.getCellID0()
@@ -228,6 +228,34 @@ def main():
                 ax.set_xlabel("Cosine of incidence angle")
                 ax.set_ylabel("Distance to surface [um]")
                 ax.set_title(f"Distance vs incidence angle {tag} bounds")
+                fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
+                pdf.savefig()
+                plt.close()
+
+        # path length vs cos theta
+        print("Plotting path length vs incidence angle ...")
+        for the_df, tag in [(inside, "inside"),
+                            (outside, "outside"),
+                           ]:
+            for norm in [None, colors.LogNorm()]:
+                fig, ax = plt.subplots(figsize=(8, 8))
+                bins = 100
+                bins = [
+                    np.linspace(0, 1, 501),
+                    np.linspace(-1, 1, 201),
+                ]
+                _, _, _, im = ax.hist2d(
+                    the_df["path_length"],
+                    the_df["cos_theta"],
+                    bins=bins,
+                    cmap="hot",
+                    cmin=0.5,
+                    norm=norm,
+                )
+                ax.set_xlabel("Path length [mm]")
+                ax.set_ylabel("Cosine of incidence angle")
+                ax.set_title(f"{tag} bounds")
+                fig.colorbar(im, ax=ax, pad=0.01, label="Counts")
                 fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
                 pdf.savefig()
                 plt.close()
