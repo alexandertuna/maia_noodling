@@ -16,9 +16,13 @@ rcParams.update({"font.size": 16})
 
 CODE = "/ceph/users/atuna/work/maia"
 XML = f"{CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
-SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2025_12_05_12h49m00s/m5000p5000_timing_cuts_166.neutrinoGun_digi_100.slcio"
+# SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2025_12_05_12h49m00s/m5000p5000_timing_cuts_166.neutrinoGun_digi_100.slcio"
+# SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2025_12_05_12h49m00s/neutrinoGun_sim_100.slcio"
+SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2025_10_17_10h40m00s/BIB10TeV/sim_mm/BIB_sim_100.slcio"
 COLLECTION = "InnerTrackerBarrelCollection"
+MCPARTICLE = "MCParticle"
 MM_TO_CM = 0.1
+MM_TO_UM = 1e3
 CM_TO_UM = 1e4
 CM_TO_MM = 10.0
 GEV_TO_KEV = 1e6
@@ -41,11 +45,18 @@ def main():
 
     reader = pyLCIO.IOIMPL.LCFactory.getInstance().createLCReader()
     reader.open(SLCIO)
+
     for i_event, event in enumerate(reader):
+
         print(f"Event number: {event.getEventNumber()}")
-        for name in sorted(list(event.getCollectionNames())):
-            print(name)
+
+        if i_event == 0:
+            print(" Collections in the event:")
+            for name in sorted(list(event.getCollectionNames())):
+                print(name)
+
         collection = event.getCollection(COLLECTION)
+        mcps = [mcp for mcp in event.getCollection(MCPARTICLE)]
         print(f"Collection: {COLLECTION}, Number of elements: {len(collection)}")
         total_hits += len(collection)
 
@@ -54,10 +65,28 @@ def main():
             if i_hit % 4e5 == 0:
                 print(f" Processing hit {i_hit}")
 
+            # sim hit info
             cellid0 = hit.getCellID0()
             energy = hit.getEDep() * GEV_TO_KEV
             time = hit.getTime()
             path_length = hit.getPathLength()
+
+            # parent mc particle info
+            mcp = hit.getMCParticle()
+            i_mcp = mcps.index(mcp) if mcp else -1
+            mc_pid = mcp.getPDG() if mcp else 0
+            mc_e = mcp.getEnergy() if mcp else 0
+            mc_px = mcp.getMomentum()[0] if mcp else 0
+            mc_py = mcp.getMomentum()[1] if mcp else 0
+            mc_pz = mcp.getMomentum()[2] if mcp else 0
+            if mcp:
+                vx, vy, vz = mcp.getVertex()[0], mcp.getVertex()[1], mcp.getVertex()[2]
+                ex, ey, ez = mcp.getEndpoint()[0], mcp.getEndpoint()[1], mcp.getEndpoint()[2]
+                mc_path_length = np.sqrt((ex - vx)**2 + (ey - vy)**2 + (ez - vz)**2)
+            else:
+                mc_path_length = 0
+
+            # hit/surface relations
             surf = _map.find(cellid0).second
             pos = dd4hep.rec.Vector3D(hit.getPosition()[0] * MM_TO_CM,
                                       hit.getPosition()[1] * MM_TO_CM,
@@ -126,6 +155,7 @@ def main():
                 outside += 1
 
             hits.append({
+                "i_event": i_event,
                 "collection": COLLECTION,
                 "energy": energy,
                 "time": time,
@@ -137,14 +167,40 @@ def main():
                 "local_v": local.v() * CM_TO_MM,
                 "cos_theta": cos_theta,
                 "path_length": path_length,
+                "i_mcp": i_mcp,
+                "mc_pid": mc_pid,
+                "mc_e": mc_e,
+                "mc_px": mc_px,
+                "mc_py": mc_py,
+                "mc_pz": mc_pz,
+                "mc_path_length": mc_path_length,
             })
 
 
     print(f" Total hits: {total_hits}, inside bounds: {inside}, outside bounds: {outside}")
 
     # create dataframe
+    print("Creating dataframe ...")
     df = pd.DataFrame(hits)
+
+    # add some columns
+    print("Adding columns to dataframe ...")
+    df["system"] = np.right_shift(df["cellid0"], 0) & 0b1_1111
+    df["side"] = np.right_shift(df["cellid0"], 5) & 0b11
     df["layer"] = np.right_shift(df["cellid0"], 7) & 0b11_1111
+    df["module"] = np.right_shift(df["cellid0"], 13) & 0b111_1111_1111
+    df["sensor"] = np.right_shift(df["cellid0"], 24) & 0b1111_1111
+    df["mc_pt"] = np.sqrt(df["mc_px"]**2 + df["mc_py"]**2)
+
+    # sort dataframe
+    print("Sorting dataframe ...")
+    df = df.sort_values(by=["i_event", "layer", "module", "sensor"])
+
+    # show the dataframe
+    with pd.option_context("display.min_rows", 50,
+                           "display.max_rows", 50,
+                          ):
+        print(df)
 
     # show some stats
     inside = df[df["inside_bounds"] == True]
@@ -314,6 +370,39 @@ def main():
                 fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
                 pdf.savefig()
                 plt.close()
+
+        # local u vs v when path length < 0.05 and abs(cos theta) > 0.75
+        print("Plotting local u vs v with different path length and incidence angles ...")
+        cut_path_length = 50 # um
+        cut_cos_theta = 0.75
+        bins = [
+            np.linspace(-24, 24, 241),
+            np.linspace(-24, 24, 241),
+        ]
+        for the_df, tag in [(inside, "inside"),
+                            (outside, "outside"),
+                           ]:
+            scenario = f"path_length < {cut_path_length}um, abs(cos(theta)) > {cut_cos_theta}"
+            mask = (
+                ((the_df["path_length"] * MM_TO_UM) < cut_path_length) &
+                (abs(the_df["cos_theta"]) > cut_cos_theta)
+            )
+            sel = the_df[mask]
+            fig, ax = plt.subplots(figsize=(8, 8))
+            _, _, _, im = ax.hist2d(
+                sel["local_u"],
+                sel["local_v"],
+                bins=bins,
+                cmap="hot",
+                cmin=0.5,
+            )
+            ax.set_xlabel("Local u [mm]")
+            ax.set_ylabel("Local v [mm]")
+            ax.set_title(f"Hits {tag}, {scenario}")
+            fig.colorbar(im, ax=ax, pad=0.01, label="Counts")
+            fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
+            pdf.savefig()
+            plt.close()
 
 
 if __name__ == "__main__":
