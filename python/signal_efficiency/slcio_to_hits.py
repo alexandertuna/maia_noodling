@@ -78,9 +78,6 @@ class SlcioToHitsDataFrame:
         # loop over all events in the slcio file
         for i_event, event in enumerate(reader):
 
-            if i_event >= 1000:
-                break
-
             # inspect mcparticles
             mcparticles = list(event.getCollection(MCPARTICLE))
             sim_px = [mcp.getMomentum()[0] for mcp in mcparticles]
@@ -143,14 +140,12 @@ class SlcioToHitsDataFrame:
                     if not mcp in mcparticles:
                         continue
                     i_sim = mcparticles.index(mcp)
-                    if abs(sim_pdg[i_sim]) != MUON:
-                        continue
 
                     # hit/surface relations
                     surf = maps[collection].find(hit.getCellID0()).second
                     pos = dd4hep.rec.Vector3D(hit.getPosition()[0] * MM_TO_CM,
-                                            hit.getPosition()[1] * MM_TO_CM,
-                                            hit.getPosition()[2] * MM_TO_CM)
+                                              hit.getPosition()[1] * MM_TO_CM,
+                                              hit.getPosition()[2] * MM_TO_CM)
                     inside_bounds = surf.insideBounds(pos)
                     distance = surf.distance(pos) * CM_TO_MM
 
