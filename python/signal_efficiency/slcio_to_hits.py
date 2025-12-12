@@ -36,6 +36,7 @@ class SlcioToHitsDataFrame:
         ):
         self.slcio_file_paths = slcio_file_paths
         self.collections = collections
+        self.load_geometry = True
 
 
     def convert(self) -> pd.DataFrame:
@@ -57,16 +58,17 @@ class SlcioToHitsDataFrame:
         print(f"Converting slcio file to DataFrame: {slcio_file_path}")
 
         # setup the detector
-        detector = dd4hep.Detector.getInstance()
-        detector.fromCompact(XML)
-        surfman = DDRec.SurfaceManager(detector)
-        dets = {}
-        dets["InnerTrackerBarrelCollection"] = detector.detector("InnerTrackerBarrel")
-        dets["OuterTrackerBarrelCollection"] = detector.detector("OuterTrackerBarrel")
-        maps = {}
-        for name, det in dets.items():
-            maps[name] = surfman.map(det.name())
-            print(f"Number of surfaces in {name} map:", len(maps[name]))
+        if self.load_geometry:
+            detector = dd4hep.Detector.getInstance()
+            detector.fromCompact(XML)
+            surfman = DDRec.SurfaceManager(detector)
+            dets = {}
+            dets["InnerTrackerBarrelCollection"] = detector.detector("InnerTrackerBarrel")
+            dets["OuterTrackerBarrelCollection"] = detector.detector("OuterTrackerBarrel")
+            maps = {}
+            for name, det in dets.items():
+                maps[name] = surfman.map(det.name())
+                print(f"Number of surfaces in {name} map:", len(maps[name]))
 
         # open the SLCIO file
         reader = pyLCIO.IOIMPL.LCFactory.getInstance().createLCReader()
@@ -142,12 +144,16 @@ class SlcioToHitsDataFrame:
                     i_sim = mcparticles.index(mcp)
 
                     # hit/surface relations
-                    surf = maps[collection].find(hit.getCellID0()).second
-                    pos = dd4hep.rec.Vector3D(hit.getPosition()[0] * MM_TO_CM,
-                                              hit.getPosition()[1] * MM_TO_CM,
-                                              hit.getPosition()[2] * MM_TO_CM)
-                    inside_bounds = surf.insideBounds(pos)
-                    distance = surf.distance(pos) * CM_TO_MM
+                    if self.load_geometry:
+                        surf = maps[collection].find(hit.getCellID0()).second
+                        pos = dd4hep.rec.Vector3D(hit.getPosition()[0] * MM_TO_CM,
+                                                hit.getPosition()[1] * MM_TO_CM,
+                                                hit.getPosition()[2] * MM_TO_CM)
+                        inside_bounds = surf.insideBounds(pos)
+                        distance = surf.distance(pos) * CM_TO_MM
+                    else:
+                        inside_bounds = True
+                        distance = -1
 
                     # record the hit info
                     rows.append({
