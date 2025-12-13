@@ -14,6 +14,7 @@ MCPARTICLE = "MCParticle"
 MUON = 13
 SPEED_OF_LIGHT = 299.792458  # mm/ns
 ONE_MM = 1.0
+EPSILON = 1e-6
 BARREL_TRACKER_MAX_RADIUS = 1446.0
 BARREL_TRACKER_MAX_Z = 1264.2
 BARREL_TRACKER_MAX_THETA = np.arctan(BARREL_TRACKER_MAX_RADIUS / BARREL_TRACKER_MAX_Z)
@@ -36,7 +37,7 @@ class SlcioToHitsDataFrame:
         ):
         self.slcio_file_paths = slcio_file_paths
         self.collections = collections
-        self.load_geometry = True
+        self.load_geometry = False
 
 
     def convert(self) -> pd.DataFrame:
@@ -48,6 +49,7 @@ class SlcioToHitsDataFrame:
 
 
     def convert_all_files(self) -> pd.DataFrame:
+        print(f"Converting {len(self.slcio_file_paths)} slcio files to a DataFrame ...")
         with mp.Pool(processes=mp.cpu_count()) as pool:
             all_hits_dfs = pool.map(self.convert_one_file, self.slcio_file_paths)
         print("Merging DataFrames ...")
@@ -55,7 +57,7 @@ class SlcioToHitsDataFrame:
 
 
     def convert_one_file(self, slcio_file_path: str) -> pd.DataFrame:
-        print(f"Converting slcio file to DataFrame: {slcio_file_path}")
+        # print(f"Converting slcio file to DataFrame: {slcio_file_path}")
 
         # setup the detector
         if self.load_geometry:
@@ -207,9 +209,9 @@ class SlcioToHitsDataFrame:
         df["hit_layer"] = np.right_shift(df["hit_cellid0"], 7) & 0b11_1111
         df["hit_module"] = np.right_shift(df["hit_cellid0"], 13) & 0b111_1111_1111
         df["hit_sensor"] = np.right_shift(df["hit_cellid0"], 24) & 0b1111_1111
-        df["hit_theta"] = np.arctan2(df["hit_r"], df["hit_z"])
-        df["hit_eta"] = -np.log(np.tan(df["hit_theta"] / 2))
         df["hit_phi"] = np.arctan2(df["hit_y"], df["hit_x"])
+        df["hit_theta"] = np.maximum(np.arctan2(df["hit_r"], df["hit_z"]), EPSILON)
+        df["hit_eta"] = -np.log(np.tan(df["hit_theta"] / 2))
 
         # remove redundant columns
         df = df.drop(columns=[
