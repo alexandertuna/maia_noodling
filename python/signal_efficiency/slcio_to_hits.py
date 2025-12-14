@@ -14,7 +14,10 @@ MCPARTICLE = "MCParticle"
 MUON = 13
 SPEED_OF_LIGHT = 299.792458  # mm/ns
 ONE_MM = 1.0
+ONE_GEV = 1.0
+HALF_SENSOR_THICKNESS = 50.0 # um
 EPSILON = 1e-6
+EPSILON_INSIDE_BOUNDS = 1.0
 BARREL_TRACKER_MAX_RADIUS = 1446.0
 BARREL_TRACKER_MAX_Z = 1264.2
 BARREL_TRACKER_MAX_THETA = np.arctan(BARREL_TRACKER_MAX_RADIUS / BARREL_TRACKER_MAX_Z)
@@ -37,7 +40,7 @@ class SlcioToHitsDataFrame:
         ):
         self.slcio_file_paths = slcio_file_paths
         self.collections = collections
-        self.load_geometry = False
+        self.load_geometry = True
 
 
     def convert(self) -> pd.DataFrame:
@@ -50,7 +53,7 @@ class SlcioToHitsDataFrame:
 
     def convert_all_files(self) -> pd.DataFrame:
         print(f"Converting {len(self.slcio_file_paths)} slcio files to a DataFrame ...")
-        with mp.Pool(processes=mp.cpu_count()) as pool:
+        with mp.Pool() as pool:
             all_hits_dfs = pool.map(self.convert_one_file, self.slcio_file_paths)
         print("Merging DataFrames ...")
         return pd.concat(all_hits_dfs, ignore_index=True)
@@ -145,13 +148,41 @@ class SlcioToHitsDataFrame:
                         continue
                     i_sim = mcparticles.index(mcp)
 
+                    # # ------------------------------------------------------------
+                    # # try putting cuts here
+                    # """
+                    # (df["sim_q"] != 0) &
+                    # (df["sim_vertex_r"] < ONE_MM) &
+                    # (df["sim_vertex_z"] < ONE_MM) &
+                    # (df["sim_endpoint_r"] > BARREL_TRACKER_MAX_RADIUS) &
+                    # (np.abs(df["sim_eta"]) < BARREL_TRACKER_MAX_ETA)
+                    # """
+                    # if abs(sim_pdg[i_sim]) != MUON:
+                    #     continue
+                    # sim_vertex_r = np.sqrt(sim_vertex_x[i_sim]**2 + sim_vertex_y[i_sim]**2)
+                    # if sim_vertex_r >= ONE_MM:
+                    #     continue
+                    # if abs(sim_vertex_z[i_sim]) >= ONE_MM:
+                    #     continue
+                    # sim_endpoint_r = np.sqrt(sim_endpoint_x[i_sim]**2 + sim_endpoint_y[i_sim]**2)
+                    # if sim_endpoint_r <= BARREL_TRACKER_MAX_RADIUS:
+                    #     continue
+                    # sim_theta = np.arctan2(
+                    #     np.sqrt(sim_px[i_sim]**2 + sim_py[i_sim]**2),
+                    #     sim_pz[i_sim],
+                    # )
+                    # sim_eta = -np.log(np.tan(sim_theta / 2.0))
+                    # if abs(sim_eta) >= BARREL_TRACKER_MAX_ETA:
+                    #     continue
+                    # # ------------------------------------------------------------
+
                     # hit/surface relations
                     if self.load_geometry:
                         surf = maps[collection].find(hit.getCellID0()).second
                         pos = dd4hep.rec.Vector3D(hit.getPosition()[0] * MM_TO_CM,
                                                 hit.getPosition()[1] * MM_TO_CM,
                                                 hit.getPosition()[2] * MM_TO_CM)
-                        inside_bounds = surf.insideBounds(pos)
+                        inside_bounds = surf.insideBounds(pos) # EPSILON_INSIDE_BOUNDS
                         distance = surf.distance(pos) * CM_TO_MM
                     else:
                         inside_bounds = True
@@ -214,7 +245,7 @@ class SlcioToHitsDataFrame:
         df["hit_eta"] = -np.log(np.tan(df["hit_theta"] / 2))
 
         # remove redundant columns
-        df = df.drop(columns=[
+        df.drop(columns=[
             "sim_px",
             "sim_py",
             "sim_theta",
@@ -227,7 +258,7 @@ class SlcioToHitsDataFrame:
             "hit_R",
             "hit_theta",
             "hit_cellid0",
-        ])
+        ], inplace=True)
 
         # sort columns alphabetically
         return df[sorted(df.columns)]
@@ -235,11 +266,15 @@ class SlcioToHitsDataFrame:
 
     def filter_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
         mask = (
+            (df["sim_q"] != 0) &
+            (df["sim_pt"] > ONE_GEV) &
             (df["sim_vertex_r"] < ONE_MM) &
-            (df["sim_vertex_z"] < ONE_MM) &
+            (np.abs(df["sim_vertex_z"]) < ONE_MM) &
             (df["sim_endpoint_r"] > BARREL_TRACKER_MAX_RADIUS) &
-            (np.abs(df["sim_eta"]) < BARREL_TRACKER_MAX_ETA)
+            (np.abs(df["sim_eta"]) < BARREL_TRACKER_MAX_ETA) &
+            (df["hit_inside_bounds"] | (~df["hit"]))
         )
+            # (np.abs(df["hit_distance"]) < HALF_SENSOR_THICKNESS)
         n_pass, n_total = mask.sum(), len(mask)
         print(f"Keeping {n_pass} / {n_total} rows when filtering ...")
         return df[mask].reset_index(drop=True)
@@ -256,3 +291,4 @@ class SlcioToHitsDataFrame:
             "hit_layer",
         ]
         return df.sort_values(by=columns).reset_index(drop=True)
+
