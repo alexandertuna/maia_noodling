@@ -6,14 +6,15 @@ from slcio_to_hits import SlcioToHitsDataFrame
 from plot import Plotter
 
 FNAMES = [
-    "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_11_06_21h31m00s/muonGun_pT_0_10_sim_1*.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_11_06_21h31m00s/muonGun_pT_0_10_sim_*.slcio",
 ]
 COLLECTIONS = [
     "InnerTrackerBarrelCollection",
     "OuterTrackerBarrelCollection",
 ]
 NOW = time.strftime("%Y_%m_%d_%Hh%Mm%Ss")
-PDF = f"detector_efficiency_{NOW}.pdf"
+PDF = f"detector_efficiency_NOW.pdf"
+PARQUET = f"detector_efficiency_NOW.parquet"
 PRINT_GROUPS = 0
 
 
@@ -23,6 +24,9 @@ def main():
         slcio_file_paths=fnames,
         collections=COLLECTIONS,
     ).convert()
+
+    # write df to file
+    df.to_parquet(PARQUET)
 
     # show some info
     group_cols = ["file", "i_event", "i_sim"]
