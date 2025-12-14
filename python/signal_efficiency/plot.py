@@ -31,7 +31,11 @@ class Plotter:
             self.plot_sim_phi(pdf)
             self.plot_hit_time(pdf)
             self.plot_hit_time_corrected(pdf)
+            self.plot_hit_distance(pdf)
+            self.plot_hit_xy(pdf)
+            self.plot_hit_rz(pdf)
             self.plot_efficiency_vs_sim(pdf)
+
 
 
     def plot_sim_pt(self, pdf: PdfPages):
@@ -58,7 +62,7 @@ class Plotter:
 
     def plot_sim_eta(self, pdf: PdfPages):
         mask = ~(self.df["hit"].astype(bool))
-        bins = np.linspace(-1.2, 1.2, 101)
+        bins = np.linspace(-0.9, 0.9, 181)
         fig, ax = plt.subplots(figsize=(8,8))
         ax.hist(self.df[mask]["sim_eta"],
                 bins=bins,
@@ -135,8 +139,34 @@ class Plotter:
                 alpha=0.9,
                 label="All hits",
                 )
+        # add vertical line at MAX_TIME
+        ax.axvline(MAX_TIME, color="red", linestyle="--")
         ax.tick_params(direction="in", which="both", top=True, right=True)
         ax.set_xlabel("Sim. hit time, corrected for propagation [ns]")
+        ax.set_ylabel("Counts")
+        ax.set_title(f"Require sim. hit time < {MAX_TIME}ns")
+        ax.minorticks_on()
+        ax.grid(which="both")
+        ax.set_axisbelow(True)
+        fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
+        pdf.savefig()
+        ax.semilogy()
+        pdf.savefig()
+        plt.close()
+
+
+    def plot_hit_distance(self, pdf: PdfPages):
+        mask = self.df["hit"].astype(bool)
+        bins = np.linspace(-300, 300, 301)
+        fig, ax = plt.subplots(figsize=(8,8))
+        ax.hist(self.df[mask]["hit_distance"],
+                bins=bins,
+                histtype="stepfilled",
+                color="dodgerblue",
+                alpha=0.9,
+                )
+        ax.tick_params(direction="in", which="both", top=True, right=True)
+        ax.set_xlabel("Sim. hit distance to surface [mm]")
         ax.set_ylabel("Counts")
         ax.minorticks_on()
         ax.grid(which="both")
@@ -144,6 +174,58 @@ class Plotter:
         fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
         pdf.savefig()
         ax.semilogy()
+        pdf.savefig()
+        plt.close()
+
+
+    def plot_hit_xy(self, pdf: PdfPages):
+        mask = self.df["hit"].astype(bool)
+        bins = [
+            np.linspace(-1500, 1500, 451),
+            np.linspace(-1500, 1500, 451),
+        ]
+        fig, ax = plt.subplots(figsize=(8,8))
+        _, _, _, im = ax.hist2d(
+            self.df[mask]["hit_r"] * np.cos(self.df[mask]["hit_phi"]),
+            self.df[mask]["hit_r"] * np.sin(self.df[mask]["hit_phi"]),
+            bins=bins,
+            cmap="gist_rainbow",
+            cmin=0.5,
+        )
+        fig.colorbar(im, ax=ax, pad=0.01, label="Sim. hits")
+        ax.tick_params(direction="in", which="both", top=True, right=True)
+        ax.set_xlabel("Sim. hit x [mm]")
+        ax.set_ylabel("Sim. hit y [mm]")
+        ax.minorticks_on()
+        ax.grid(which="both")
+        ax.set_axisbelow(True)
+        fig.subplots_adjust(left=0.15, right=0.93, top=0.95, bottom=0.09)
+        pdf.savefig()
+        plt.close()
+
+
+    def plot_hit_rz(self, pdf: PdfPages):
+        mask = self.df["hit"].astype(bool)
+        bins = [
+            np.linspace(-2000, 2000, 401),
+            np.linspace(0, 1500, 451),
+        ]
+        fig, ax = plt.subplots(figsize=(8,8))
+        _, _, _, im = ax.hist2d(
+            self.df[mask]["hit_z"],
+            self.df[mask]["hit_r"],
+            bins=bins,
+            cmap="gist_rainbow",
+            cmin=0.5,
+        )
+        fig.colorbar(im, ax=ax, pad=0.01, label="Sim. hits")
+        ax.tick_params(direction="in", which="both", top=True, right=True)
+        ax.set_xlabel("Sim. hit z [mm]")
+        ax.set_ylabel("Sim. hit r [mm]")
+        ax.minorticks_on()
+        ax.grid(which="both")
+        ax.set_axisbelow(True)
+        fig.subplots_adjust(left=0.15, right=0.93, top=0.95, bottom=0.09)
         pdf.savefig()
         plt.close()
 
@@ -157,6 +239,11 @@ class Plotter:
         system_name = {
             INNER_TRACKER_BARREL: "Inner Tracker Barrel",
             OUTER_TRACKER_BARREL: "Outer Tracker Barrel",
+        }
+        xlabel = {
+            "sim_pt": "Simulated $p_T$ [GeV]",
+            "sim_eta": "Simulated eta",
+            "sim_phi": "Simulated phi",
         }
 
         # denominator of efficiency
@@ -206,7 +293,7 @@ class Plotter:
                     )
                     ax.set_ylim(0.9, 1.01)
                     ax.tick_params(direction="in", which="both", top=True, right=True)
-                    ax.set_xlabel(kinematic)
+                    ax.set_xlabel(xlabel[kinematic])
                     ax.set_ylabel(f"Hit efficiency with $t_{{corrected}}$ < {MAX_TIME} ns")
                     ax.set_title(f"{system_name[system]}, layer {layer}")
                     ax.minorticks_on()
