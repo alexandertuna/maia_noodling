@@ -1,5 +1,7 @@
 from glob import glob
 import pandas as pd
+import time
+
 from slcio_to_hits import SlcioToHitsDataFrame
 from plot import Plotter
 
@@ -10,7 +12,8 @@ COLLECTIONS = [
     "InnerTrackerBarrelCollection",
     "OuterTrackerBarrelCollection",
 ]
-PDF = "signal_efficiency.pdf"
+NOW = time.strftime("%Y_%m_%d_%Hh%Mm%Ss")
+PDF = f"detector_efficiency_{NOW}.pdf"
 PRINT_GROUPS = 0
 
 
@@ -60,6 +63,7 @@ def main():
 
     plotter = Plotter(df, PDF)
     plotter.plot()
+
 
 def get_filenames(fnames):
     names = []
