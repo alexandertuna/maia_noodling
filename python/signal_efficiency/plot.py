@@ -6,6 +6,16 @@ from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import rcParams
 rcParams.update({"font.size": 16})
 
+INNER_TRACKER_BARREL = 3
+OUTER_TRACKER_BARREL = 5
+SYSTEMS = [
+    INNER_TRACKER_BARREL,
+    OUTER_TRACKER_BARREL,
+]
+LAYERS = range(8)
+MAX_TIME = 3.0 # ns
+
+
 class Plotter:
 
 
@@ -21,7 +31,7 @@ class Plotter:
             self.plot_sim_phi(pdf)
             self.plot_hit_time(pdf)
             self.plot_hit_time_corrected(pdf)
-            self.plot_efficiency_vs_sim_eta(pdf)
+            self.plot_efficiency_vs_sim(pdf)
 
 
     def plot_sim_pt(self, pdf: PdfPages):
@@ -138,17 +148,16 @@ class Plotter:
         plt.close()
 
 
-    def plot_efficiency_vs_sim_eta(self, pdf: PdfPages):
+    def plot_efficiency_vs_sim(self, pdf: PdfPages):
         bins = {
             "sim_pt": np.linspace(0, 10, 101),
-            "sim_eta": np.linspace(-1.0, 1.0, 101),
+            "sim_eta": np.linspace(-0.9, 0.9, 91),
             "sim_phi": np.linspace(-3.2, 3.2, 161),
         }
         system_name = {
-            3: "Inner Tracker Barrel",
-            5: "Outer Tracker Endcap",
+            INNER_TRACKER_BARREL: "Inner Tracker Barrel",
+            OUTER_TRACKER_BARREL: "Outer Tracker Barrel",
         }
-        max_time = 3.0 # ns
 
         # denominator of efficiency
         mask_denom = ~(self.df["hit"].astype(bool))
@@ -162,18 +171,16 @@ class Plotter:
             "sim_phi",
         ]:
 
-            # system, layer, max_time = 3, 0, 3  # IT barrel layer 0
             print(f"Plotting hit efficiency vs {kinematic}...")
+            for system in SYSTEMS:
 
-            for system in [3, 5]:
-
-                for layer in [0, 1, 2, 3, 4, 5, 6, 7]:
+                for layer in LAYERS:
 
                     mask_numer = (
                         (self.df["hit"].astype(bool)) &
                         (self.df["hit_system"] == system) &
                         (self.df["hit_layer"] == layer) &
-                        (self.df["hit_t_corrected"] < max_time)
+                        (self.df["hit_t_corrected"] < MAX_TIME)
                     )
 
                     # dont double-count if >1 hits on a layer
@@ -197,10 +204,10 @@ class Plotter:
                         linestyle="none",
                         color="dodgerblue",
                     )
-                    ax.set_ylim(0.8, 1.02)
+                    ax.set_ylim(0.9, 1.01)
                     ax.tick_params(direction="in", which="both", top=True, right=True)
                     ax.set_xlabel(kinematic)
-                    ax.set_ylabel(f"Hit efficiency with $t_{{corrected}}$ < {max_time} ns")
+                    ax.set_ylabel(f"Hit efficiency with $t_{{corrected}}$ < {MAX_TIME} ns")
                     ax.set_title(f"{system_name[system]}, layer {layer}")
                     ax.minorticks_on()
                     ax.grid(which="both")
