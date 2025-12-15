@@ -6,7 +6,7 @@ from slcio_to_hits import SlcioToHitsDataFrame
 from plot import Plotter
 
 FNAMES = [
-    "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_11_06_21h31m00s/muonGun_pT_0_10_sim_*.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_11_06_21h31m00s/muonGun_pT_0_10_sim_1*.slcio",
 ]
 COLLECTIONS = [
     "InnerTrackerBarrelCollection",
@@ -26,6 +26,7 @@ def main():
     ).convert()
 
     # write df to file
+    print(f"Writing data frame to {PARQUET}...")
     df.to_parquet(PARQUET)
 
     # show some info
