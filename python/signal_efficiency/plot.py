@@ -26,9 +26,9 @@ class Plotter:
 
     def plot(self):
         with PdfPages(self.pdf) as pdf:
-            self.plot_sim_pt(pdf)
-            self.plot_sim_eta(pdf)
-            self.plot_sim_phi(pdf)
+            self.plot_mcp_pt(pdf)
+            self.plot_mcp_eta(pdf)
+            self.plot_mcp_phi(pdf)
             self.plot_hit_time(pdf)
             self.plot_hit_time_corrected(pdf)
             self.plot_hit_distance(pdf)
@@ -38,11 +38,11 @@ class Plotter:
 
 
 
-    def plot_sim_pt(self, pdf: PdfPages):
+    def plot_mcp_pt(self, pdf: PdfPages):
         mask = ~(self.df["hit"].astype(bool))
         bins = np.linspace(0, 10, 101)
         fig, ax = plt.subplots(figsize=(8,8))
-        ax.hist(self.df[mask]["sim_pt"],
+        ax.hist(self.df[mask]["mcp_pt"],
                 bins=bins,
                 histtype="stepfilled",
                 color="dodgerblue",
@@ -60,11 +60,11 @@ class Plotter:
         plt.close()
 
 
-    def plot_sim_eta(self, pdf: PdfPages):
+    def plot_mcp_eta(self, pdf: PdfPages):
         mask = ~(self.df["hit"].astype(bool))
         bins = np.linspace(-0.9, 0.9, 181)
         fig, ax = plt.subplots(figsize=(8,8))
-        ax.hist(self.df[mask]["sim_eta"],
+        ax.hist(self.df[mask]["mcp_eta"],
                 bins=bins,
                 histtype="stepfilled",
                 color="dodgerblue",
@@ -82,11 +82,11 @@ class Plotter:
         plt.close()
 
 
-    def plot_sim_phi(self, pdf: PdfPages):
+    def plot_mcp_phi(self, pdf: PdfPages):
         mask = ~(self.df["hit"].astype(bool))
         bins = np.linspace(-3.2, 3.2, 161)
         fig, ax = plt.subplots(figsize=(8,8))
-        ax.hist(self.df[mask]["sim_phi"],
+        ax.hist(self.df[mask]["mcp_phi"],
                 bins=bins,
                 histtype="stepfilled",
                 color="dodgerblue",
@@ -232,18 +232,18 @@ class Plotter:
 
     def plot_efficiency_vs_sim(self, pdf: PdfPages):
         bins = {
-            "sim_pt": np.linspace(0, 10, 101),
-            "sim_eta": np.linspace(-0.9, 0.9, 91),
-            "sim_phi": np.linspace(-3.2, 3.2, 161),
+            "mcp_pt": np.linspace(0, 10, 101),
+            "mcp_eta": np.linspace(-0.9, 0.9, 91),
+            "mcp_phi": np.linspace(-3.2, 3.2, 161),
         }
         system_name = {
             INNER_TRACKER_BARREL: "Inner Tracker Barrel",
             OUTER_TRACKER_BARREL: "Outer Tracker Barrel",
         }
         xlabel = {
-            "sim_pt": "Simulated $p_T$ [GeV]",
-            "sim_eta": "Simulated eta",
-            "sim_phi": "Simulated phi",
+            "mcp_pt": "Simulated $p_T$ [GeV]",
+            "mcp_eta": "Simulated eta",
+            "mcp_phi": "Simulated phi",
         }
 
         # denominator of efficiency
@@ -253,9 +253,9 @@ class Plotter:
             warnings.warn("Warning: duplicates found in denominator dataframe!")
 
         for kinematic in [
-            "sim_pt",
-            "sim_eta",
-            "sim_phi",
+            "mcp_pt",
+            "mcp_eta",
+            "mcp_phi",
         ]:
 
             print(f"Plotting hit efficiency vs {kinematic}...")
@@ -271,7 +271,7 @@ class Plotter:
                     )
 
                     # dont double-count if >1 hits on a layer
-                    subset = ["file", "i_event", "i_sim", "hit_system", "hit_layer"]
+                    subset = ["file", "i_event", "i_mcp", "hit_system", "hit_layer"]
                     df_numer = self.df[mask_numer].drop_duplicates(subset=subset)
                     counts_denom, _ = np.histogram(df_denom[kinematic], bins=bins[kinematic])
                     counts_numer, _ = np.histogram(df_numer[kinematic], bins=bins[kinematic])

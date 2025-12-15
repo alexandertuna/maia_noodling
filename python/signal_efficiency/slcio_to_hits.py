@@ -87,20 +87,20 @@ class SlcioToHitsDataFrame:
 
             # inspect mcparticles
             mcparticles = list(event.getCollection(MCPARTICLE))
-            sim_px = [mcp.getMomentum()[0] for mcp in mcparticles]
-            sim_py = [mcp.getMomentum()[1] for mcp in mcparticles]
-            sim_pz = [mcp.getMomentum()[2] for mcp in mcparticles]
-            sim_m = [mcp.getMass() for mcp in mcparticles]
-            sim_q = [mcp.getCharge() for mcp in mcparticles]
-            sim_pdg = [mcp.getPDG() for mcp in mcparticles]
-            sim_vertex_x = [mcp.getVertex()[0] for mcp in mcparticles]
-            sim_vertex_y = [mcp.getVertex()[1] for mcp in mcparticles]
-            sim_vertex_z = [mcp.getVertex()[2] for mcp in mcparticles]
-            sim_endpoint_x = [mcp.getEndpoint()[0] for mcp in mcparticles]
-            sim_endpoint_y = [mcp.getEndpoint()[1] for mcp in mcparticles]
-            sim_endpoint_z = [mcp.getEndpoint()[2] for mcp in mcparticles]
-            for i_sim in range(len(mcparticles)):
-                if abs(sim_pdg[i_sim]) != MUON:
+            mcp_px = [mcp.getMomentum()[0] for mcp in mcparticles]
+            mcp_py = [mcp.getMomentum()[1] for mcp in mcparticles]
+            mcp_pz = [mcp.getMomentum()[2] for mcp in mcparticles]
+            mcp_m = [mcp.getMass() for mcp in mcparticles]
+            mcp_q = [mcp.getCharge() for mcp in mcparticles]
+            mcp_pdg = [mcp.getPDG() for mcp in mcparticles]
+            mcp_vertex_x = [mcp.getVertex()[0] for mcp in mcparticles]
+            mcp_vertex_y = [mcp.getVertex()[1] for mcp in mcparticles]
+            mcp_vertex_z = [mcp.getVertex()[2] for mcp in mcparticles]
+            mcp_endpoint_x = [mcp.getEndpoint()[0] for mcp in mcparticles]
+            mcp_endpoint_y = [mcp.getEndpoint()[1] for mcp in mcparticles]
+            mcp_endpoint_z = [mcp.getEndpoint()[2] for mcp in mcparticles]
+            for i_mcp in range(len(mcparticles)):
+                if abs(mcp_pdg[i_mcp]) != MUON:
                     continue
                 rows.append({
                     'hit': False,
@@ -115,19 +115,19 @@ class SlcioToHitsDataFrame:
                     'hit_pathlength': 0,
                     'hit_inside_bounds': False,
                     'hit_distance': 0,
-                    'i_sim': i_sim,
-                    'sim_px': sim_px[i_sim],
-                    'sim_py': sim_py[i_sim],
-                    'sim_pz': sim_pz[i_sim],
-                    'sim_m': sim_m[i_sim],
-                    'sim_q': sim_q[i_sim],
-                    'sim_pdg': sim_pdg[i_sim],
-                    'sim_vertex_x': sim_vertex_x[i_sim],
-                    'sim_vertex_y': sim_vertex_y[i_sim],
-                    'sim_vertex_z': sim_vertex_z[i_sim],
-                    'sim_endpoint_x': sim_endpoint_x[i_sim],
-                    'sim_endpoint_y': sim_endpoint_y[i_sim],
-                    'sim_endpoint_z': sim_endpoint_z[i_sim],
+                    'i_mcp': i_mcp,
+                    'mcp_px': mcp_px[i_mcp],
+                    'mcp_py': mcp_py[i_mcp],
+                    'mcp_pz': mcp_pz[i_mcp],
+                    'mcp_m': mcp_m[i_mcp],
+                    'mcp_q': mcp_q[i_mcp],
+                    'mcp_pdg': mcp_pdg[i_mcp],
+                    'mcp_vertex_x': mcp_vertex_x[i_mcp],
+                    'mcp_vertex_y': mcp_vertex_y[i_mcp],
+                    'mcp_vertex_z': mcp_vertex_z[i_mcp],
+                    'mcp_endpoint_x': mcp_endpoint_x[i_mcp],
+                    'mcp_endpoint_y': mcp_endpoint_y[i_mcp],
+                    'mcp_endpoint_z': mcp_endpoint_z[i_mcp],
                 })
 
             # inspect tracking detector collections
@@ -146,33 +146,33 @@ class SlcioToHitsDataFrame:
                         continue
                     if not mcp in mcparticles:
                         continue
-                    i_sim = mcparticles.index(mcp)
+                    i_mcp = mcparticles.index(mcp)
 
                     # # ------------------------------------------------------------
                     # # try putting cuts here
                     # """
-                    # (df["sim_q"] != 0) &
-                    # (df["sim_vertex_r"] < ONE_MM) &
-                    # (df["sim_vertex_z"] < ONE_MM) &
-                    # (df["sim_endpoint_r"] > BARREL_TRACKER_MAX_RADIUS) &
-                    # (np.abs(df["sim_eta"]) < BARREL_TRACKER_MAX_ETA)
+                    # (df["mcp_q"] != 0) &
+                    # (df["mcp_vertex_r"] < ONE_MM) &
+                    # (df["mcp_vertex_z"] < ONE_MM) &
+                    # (df["mcp_endpoint_r"] > BARREL_TRACKER_MAX_RADIUS) &
+                    # (np.abs(df["mcp_eta"]) < BARREL_TRACKER_MAX_ETA)
                     # """
-                    # if abs(sim_pdg[i_sim]) != MUON:
+                    # if abs(mcp_pdg[i_mcp]) != MUON:
                     #     continue
-                    # sim_vertex_r = np.sqrt(sim_vertex_x[i_sim]**2 + sim_vertex_y[i_sim]**2)
-                    # if sim_vertex_r >= ONE_MM:
+                    # mcp_vertex_r = np.sqrt(mcp_vertex_x[i_mcp]**2 + mcp_vertex_y[i_mcp]**2)
+                    # if mcp_vertex_r >= ONE_MM:
                     #     continue
-                    # if abs(sim_vertex_z[i_sim]) >= ONE_MM:
+                    # if abs(mcp_vertex_z[i_mcp]) >= ONE_MM:
                     #     continue
-                    # sim_endpoint_r = np.sqrt(sim_endpoint_x[i_sim]**2 + sim_endpoint_y[i_sim]**2)
-                    # if sim_endpoint_r <= BARREL_TRACKER_MAX_RADIUS:
+                    # mcp_endpoint_r = np.sqrt(mcp_endpoint_x[i_mcp]**2 + mcp_endpoint_y[i_mcp]**2)
+                    # if mcp_endpoint_r <= BARREL_TRACKER_MAX_RADIUS:
                     #     continue
-                    # sim_theta = np.arctan2(
-                    #     np.sqrt(sim_px[i_sim]**2 + sim_py[i_sim]**2),
-                    #     sim_pz[i_sim],
+                    # mcp_theta = np.arctan2(
+                    #     np.sqrt(mcp_px[i_mcp]**2 + mcp_py[i_mcp]**2),
+                    #     mcp_pz[i_mcp],
                     # )
-                    # sim_eta = -np.log(np.tan(sim_theta / 2.0))
-                    # if abs(sim_eta) >= BARREL_TRACKER_MAX_ETA:
+                    # mcp_eta = -np.log(np.tan(mcp_theta / 2.0))
+                    # if abs(mcp_eta) >= BARREL_TRACKER_MAX_ETA:
                     #     continue
                     # # ------------------------------------------------------------
 
@@ -202,19 +202,19 @@ class SlcioToHitsDataFrame:
                         'hit_pathlength': hit.getPathLength(),
                         'hit_inside_bounds': inside_bounds,
                         'hit_distance': distance,
-                        'i_sim': i_sim,
-                        'sim_px': sim_px[i_sim],
-                        'sim_py': sim_py[i_sim],
-                        'sim_pz': sim_pz[i_sim],
-                        'sim_m': sim_m[i_sim],
-                        'sim_q': sim_q[i_sim],
-                        'sim_pdg': sim_pdg[i_sim],
-                        'sim_vertex_x': sim_vertex_x[i_sim],
-                        'sim_vertex_y': sim_vertex_y[i_sim],
-                        'sim_vertex_z': sim_vertex_z[i_sim],
-                        'sim_endpoint_x': sim_endpoint_x[i_sim],
-                        'sim_endpoint_y': sim_endpoint_y[i_sim],
-                        'sim_endpoint_z': sim_endpoint_z[i_sim],
+                        'i_mcp': i_mcp,
+                        'mcp_px': mcp_px[i_mcp],
+                        'mcp_py': mcp_py[i_mcp],
+                        'mcp_pz': mcp_pz[i_mcp],
+                        'mcp_m': mcp_m[i_mcp],
+                        'mcp_q': mcp_q[i_mcp],
+                        'mcp_pdg': mcp_pdg[i_mcp],
+                        'mcp_vertex_x': mcp_vertex_x[i_mcp],
+                        'mcp_vertex_y': mcp_vertex_y[i_mcp],
+                        'mcp_vertex_z': mcp_vertex_z[i_mcp],
+                        'mcp_endpoint_x': mcp_endpoint_x[i_mcp],
+                        'mcp_endpoint_y': mcp_endpoint_y[i_mcp],
+                        'mcp_endpoint_z': mcp_endpoint_z[i_mcp],
                     })
 
         # Close the reader
@@ -226,12 +226,12 @@ class SlcioToHitsDataFrame:
 
     def postprocess_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
         print("Postprocessing DataFrame ...")
-        df["sim_pt"] = np.sqrt(df["sim_px"]**2 + df["sim_py"]**2)
-        df["sim_theta"] = np.arctan2(df["sim_pt"], df["sim_pz"])
-        df["sim_eta"] = -np.log(np.tan(df["sim_theta"] / 2))
-        df["sim_phi"] = np.arctan2(df["sim_py"], df["sim_px"])
-        df["sim_vertex_r"] = np.sqrt(df["sim_vertex_x"]**2 + df["sim_vertex_y"]**2)
-        df["sim_endpoint_r"] = np.sqrt(df["sim_endpoint_x"]**2 + df["sim_endpoint_y"]**2)
+        df["mcp_pt"] = np.sqrt(df["mcp_px"]**2 + df["mcp_py"]**2)
+        df["mcp_theta"] = np.arctan2(df["mcp_pt"], df["mcp_pz"])
+        df["mcp_eta"] = -np.log(np.tan(df["mcp_theta"] / 2))
+        df["mcp_phi"] = np.arctan2(df["mcp_py"], df["mcp_px"])
+        df["mcp_vertex_r"] = np.sqrt(df["mcp_vertex_x"]**2 + df["mcp_vertex_y"]**2)
+        df["mcp_endpoint_r"] = np.sqrt(df["mcp_endpoint_x"]**2 + df["mcp_endpoint_y"]**2)
         df["hit_r"] = np.sqrt(df["hit_x"]**2 + df["hit_y"]**2)
         df["hit_R"] = np.sqrt(df["hit_x"]**2 + df["hit_y"]**2 + df["hit_z"]**2)
         df["hit_t_corrected"] = df["hit_t"] - (df["hit_R"] / SPEED_OF_LIGHT)
@@ -246,13 +246,13 @@ class SlcioToHitsDataFrame:
 
         # remove redundant columns
         df.drop(columns=[
-            "sim_px",
-            "sim_py",
-            "sim_theta",
-            "sim_vertex_x",
-            "sim_vertex_y",
-            "sim_endpoint_x",
-            "sim_endpoint_y",
+            "mcp_px",
+            "mcp_py",
+            "mcp_theta",
+            "mcp_vertex_x",
+            "mcp_vertex_y",
+            "mcp_endpoint_x",
+            "mcp_endpoint_y",
             "hit_x",
             "hit_y",
             "hit_R",
@@ -266,12 +266,12 @@ class SlcioToHitsDataFrame:
 
     def filter_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
         mask = (
-            (df["sim_q"] != 0) &
-            (df["sim_pt"] > ONE_GEV) &
-            (df["sim_vertex_r"] < ONE_MM) &
-            (np.abs(df["sim_vertex_z"]) < ONE_MM) &
-            (df["sim_endpoint_r"] > BARREL_TRACKER_MAX_RADIUS) &
-            (np.abs(df["sim_eta"]) < BARREL_TRACKER_MAX_ETA) &
+            (df["mcp_q"] != 0) &
+            (df["mcp_pt"] > ONE_GEV) &
+            (df["mcp_vertex_r"] < ONE_MM) &
+            (np.abs(df["mcp_vertex_z"]) < ONE_MM) &
+            (df["mcp_endpoint_r"] > BARREL_TRACKER_MAX_RADIUS) &
+            (np.abs(df["mcp_eta"]) < BARREL_TRACKER_MAX_ETA) &
             (df["hit_inside_bounds"] | (~df["hit"]))
         )
             # (np.abs(df["hit_distance"]) < HALF_SENSOR_THICKNESS)
@@ -285,7 +285,7 @@ class SlcioToHitsDataFrame:
         columns = [
             "file",
             "i_event",
-            "i_sim",
+            "i_mcp",
             "hit",
             "hit_system",
             "hit_layer",

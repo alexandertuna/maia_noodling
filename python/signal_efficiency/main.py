@@ -30,17 +30,17 @@ def main():
     df.to_parquet(PARQUET)
 
     # show some info
-    group_cols = ["file", "i_event", "i_sim"]
+    group_cols = ["file", "i_event", "i_mcp"]
     for i_group, (cols, group) in enumerate(df.groupby(group_cols)):
         if i_group >= PRINT_GROUPS:
             break
         mask = group["hit"]
         cols = ["i_event",
-                "i_sim",
-                "sim_pt",
-                "sim_eta",
-                "sim_phi",
-                "sim_pdg",
+                "i_mcp",
+                "mcp_pt",
+                "mcp_eta",
+                "mcp_phi",
+                "mcp_pdg",
                 "hit_system",
                 "hit_layer",
                 "hit_module",
