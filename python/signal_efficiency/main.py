@@ -34,20 +34,20 @@ def main():
     for i_group, (cols, group) in enumerate(df.groupby(group_cols)):
         if i_group >= PRINT_GROUPS:
             break
-        mask = group["hit"]
+        mask = group["simhit"]
         cols = ["i_event",
                 "i_mcp",
                 "mcp_pt",
                 "mcp_eta",
                 "mcp_phi",
                 "mcp_pdg",
-                "hit_system",
-                "hit_layer",
-                "hit_module",
-                "hit_sensor",
-                "hit_eta",
-                "hit_phi",
-                "hit_t",
+                "simhit_system",
+                "simhit_layer",
+                "simhit_module",
+                "simhit_sensor",
+                "simhit_eta",
+                "simhit_phi",
+                "simhit_t",
                 ]
         linebreak = "-"*30
         print(f"{linebreak} mcparticle {i_group} {linebreak}")

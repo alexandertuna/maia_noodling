@@ -103,18 +103,18 @@ class SlcioToHitsDataFrame:
                 if abs(mcp_pdg[i_mcp]) != MUON:
                     continue
                 rows.append({
-                    'hit': False,
+                    'simhit': False,
                     'file': os.path.basename(slcio_file_path),
                     'i_event': i_event,
-                    'hit_x': 0,
-                    'hit_y': 0,
-                    'hit_z': 0,
-                    'hit_e': 0,
-                    'hit_t': 0,
-                    'hit_cellid0': 0,
-                    'hit_pathlength': 0,
-                    'hit_inside_bounds': False,
-                    'hit_distance': 0,
+                    'simhit_x': 0,
+                    'simhit_y': 0,
+                    'simhit_z': 0,
+                    'simhit_e': 0,
+                    'simhit_t': 0,
+                    'simhit_cellid0': 0,
+                    'simhit_pathlength': 0,
+                    'simhit_inside_bounds': False,
+                    'simhit_distance': 0,
                     'i_mcp': i_mcp,
                     'mcp_px': mcp_px[i_mcp],
                     'mcp_py': mcp_py[i_mcp],
@@ -190,18 +190,18 @@ class SlcioToHitsDataFrame:
 
                     # record the hit info
                     rows.append({
-                        'hit': True,
+                        'simhit': True,
                         'file': os.path.basename(slcio_file_path),
                         'i_event': i_event,
-                        'hit_x': hit.getPosition()[0],
-                        'hit_y': hit.getPosition()[1],
-                        'hit_z': hit.getPosition()[2],
-                        'hit_e': hit.getEDep(),
-                        'hit_t': hit.getTime(),
-                        'hit_cellid0': hit.getCellID0(),
-                        'hit_pathlength': hit.getPathLength(),
-                        'hit_inside_bounds': inside_bounds,
-                        'hit_distance': distance,
+                        'simhit_x': hit.getPosition()[0],
+                        'simhit_y': hit.getPosition()[1],
+                        'simhit_z': hit.getPosition()[2],
+                        'simhit_e': hit.getEDep(),
+                        'simhit_t': hit.getTime(),
+                        'simhit_cellid0': hit.getCellID0(),
+                        'simhit_pathlength': hit.getPathLength(),
+                        'simhit_inside_bounds': inside_bounds,
+                        'simhit_distance': distance,
                         'i_mcp': i_mcp,
                         'mcp_px': mcp_px[i_mcp],
                         'mcp_py': mcp_py[i_mcp],
@@ -232,17 +232,17 @@ class SlcioToHitsDataFrame:
         df["mcp_phi"] = np.arctan2(df["mcp_py"], df["mcp_px"])
         df["mcp_vertex_r"] = np.sqrt(df["mcp_vertex_x"]**2 + df["mcp_vertex_y"]**2)
         df["mcp_endpoint_r"] = np.sqrt(df["mcp_endpoint_x"]**2 + df["mcp_endpoint_y"]**2)
-        df["hit_r"] = np.sqrt(df["hit_x"]**2 + df["hit_y"]**2)
-        df["hit_R"] = np.sqrt(df["hit_x"]**2 + df["hit_y"]**2 + df["hit_z"]**2)
-        df["hit_t_corrected"] = df["hit_t"] - (df["hit_R"] / SPEED_OF_LIGHT)
-        df["hit_system"] = np.right_shift(df["hit_cellid0"], 0) & 0b1_1111
-        df["hit_side"] = np.right_shift(df["hit_cellid0"], 5) & 0b11
-        df["hit_layer"] = np.right_shift(df["hit_cellid0"], 7) & 0b11_1111
-        df["hit_module"] = np.right_shift(df["hit_cellid0"], 13) & 0b111_1111_1111
-        df["hit_sensor"] = np.right_shift(df["hit_cellid0"], 24) & 0b1111_1111
-        df["hit_phi"] = np.arctan2(df["hit_y"], df["hit_x"])
-        df["hit_theta"] = np.maximum(np.arctan2(df["hit_r"], df["hit_z"]), EPSILON)
-        df["hit_eta"] = -np.log(np.tan(df["hit_theta"] / 2))
+        df["simhit_r"] = np.sqrt(df["simhit_x"]**2 + df["simhit_y"]**2)
+        df["simhit_R"] = np.sqrt(df["simhit_x"]**2 + df["simhit_y"]**2 + df["simhit_z"]**2)
+        df["simhit_t_corrected"] = df["simhit_t"] - (df["simhit_R"] / SPEED_OF_LIGHT)
+        df["simhit_system"] = np.right_shift(df["simhit_cellid0"], 0) & 0b1_1111
+        df["simhit_side"] = np.right_shift(df["simhit_cellid0"], 5) & 0b11
+        df["simhit_layer"] = np.right_shift(df["simhit_cellid0"], 7) & 0b11_1111
+        df["simhit_module"] = np.right_shift(df["simhit_cellid0"], 13) & 0b111_1111_1111
+        df["simhit_sensor"] = np.right_shift(df["simhit_cellid0"], 24) & 0b1111_1111
+        df["simhit_phi"] = np.arctan2(df["simhit_y"], df["simhit_x"])
+        df["simhit_theta"] = np.maximum(np.arctan2(df["simhit_r"], df["simhit_z"]), EPSILON)
+        df["simhit_eta"] = -np.log(np.tan(df["simhit_theta"] / 2))
 
         # remove redundant columns
         df.drop(columns=[
@@ -253,11 +253,11 @@ class SlcioToHitsDataFrame:
             "mcp_vertex_y",
             "mcp_endpoint_x",
             "mcp_endpoint_y",
-            "hit_x",
-            "hit_y",
-            "hit_R",
-            "hit_theta",
-            "hit_cellid0",
+            "simhit_x",
+            "simhit_y",
+            "simhit_R",
+            "simhit_theta",
+            "simhit_cellid0",
         ], inplace=True)
 
         # sort columns alphabetically
@@ -272,9 +272,9 @@ class SlcioToHitsDataFrame:
             (np.abs(df["mcp_vertex_z"]) < ONE_MM) &
             (df["mcp_endpoint_r"] > BARREL_TRACKER_MAX_RADIUS) &
             (np.abs(df["mcp_eta"]) < BARREL_TRACKER_MAX_ETA) &
-            (df["hit_inside_bounds"] | (~df["hit"]))
+            (df["simhit_inside_bounds"] | (~df["simhit"]))
         )
-            # (np.abs(df["hit_distance"]) < HALF_SENSOR_THICKNESS)
+            # (np.abs(df["simhit_distance"]) < HALF_SENSOR_THICKNESS)
         n_pass, n_total = mask.sum(), len(mask)
         print(f"Keeping {n_pass} / {n_total} rows when filtering ...")
         return df[mask].reset_index(drop=True)
@@ -286,9 +286,9 @@ class SlcioToHitsDataFrame:
             "file",
             "i_event",
             "i_mcp",
-            "hit",
-            "hit_system",
-            "hit_layer",
+            "simhit",
+            "simhit_system",
+            "simhit_layer",
         ]
         return df.sort_values(by=columns).reset_index(drop=True)
 

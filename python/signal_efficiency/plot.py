@@ -29,17 +29,17 @@ class Plotter:
             self.plot_mcp_pt(pdf)
             self.plot_mcp_eta(pdf)
             self.plot_mcp_phi(pdf)
-            self.plot_hit_time(pdf)
-            self.plot_hit_time_corrected(pdf)
-            self.plot_hit_distance(pdf)
-            self.plot_hit_xy(pdf)
-            self.plot_hit_rz(pdf)
+            self.plot_simhit_time(pdf)
+            self.plot_simhit_time_corrected(pdf)
+            self.plot_simhit_distance(pdf)
+            self.plot_simhit_xy(pdf)
+            self.plot_simhit_rz(pdf)
             self.plot_efficiency_vs_sim(pdf)
 
 
 
     def plot_mcp_pt(self, pdf: PdfPages):
-        mask = ~(self.df["hit"].astype(bool))
+        mask = ~(self.df["simhit"].astype(bool))
         bins = np.linspace(0, 10, 101)
         fig, ax = plt.subplots(figsize=(8,8))
         ax.hist(self.df[mask]["mcp_pt"],
@@ -61,7 +61,7 @@ class Plotter:
 
 
     def plot_mcp_eta(self, pdf: PdfPages):
-        mask = ~(self.df["hit"].astype(bool))
+        mask = ~(self.df["simhit"].astype(bool))
         bins = np.linspace(-0.9, 0.9, 181)
         fig, ax = plt.subplots(figsize=(8,8))
         ax.hist(self.df[mask]["mcp_eta"],
@@ -83,7 +83,7 @@ class Plotter:
 
 
     def plot_mcp_phi(self, pdf: PdfPages):
-        mask = ~(self.df["hit"].astype(bool))
+        mask = ~(self.df["simhit"].astype(bool))
         bins = np.linspace(-3.2, 3.2, 161)
         fig, ax = plt.subplots(figsize=(8,8))
         ax.hist(self.df[mask]["mcp_phi"],
@@ -104,11 +104,11 @@ class Plotter:
         plt.close()
 
 
-    def plot_hit_time(self, pdf: PdfPages):
-        mask = self.df["hit"].astype(bool)
+    def plot_simhit_time(self, pdf: PdfPages):
+        mask = self.df["simhit"].astype(bool)
         bins = np.linspace(0, 40, 201)
         fig, ax = plt.subplots(figsize=(8,8))
-        ax.hist(self.df[mask]["hit_t"],
+        ax.hist(self.df[mask]["simhit_t"],
                 bins=bins,
                 histtype="stepfilled",
                 color="dodgerblue",
@@ -128,11 +128,11 @@ class Plotter:
         plt.close()
 
 
-    def plot_hit_time_corrected(self, pdf: PdfPages):
-        mask = self.df["hit"].astype(bool)
+    def plot_simhit_time_corrected(self, pdf: PdfPages):
+        mask = self.df["simhit"].astype(bool)
         bins = np.linspace(0, 40, 201)
         fig, ax = plt.subplots(figsize=(8,8))
-        ax.hist(self.df[mask]["hit_t_corrected"],
+        ax.hist(self.df[mask]["simhit_t_corrected"],
                 bins=bins,
                 histtype="stepfilled",
                 color="dodgerblue",
@@ -155,11 +155,11 @@ class Plotter:
         plt.close()
 
 
-    def plot_hit_distance(self, pdf: PdfPages):
-        mask = self.df["hit"].astype(bool)
+    def plot_simhit_distance(self, pdf: PdfPages):
+        mask = self.df["simhit"].astype(bool)
         bins = np.linspace(-300, 300, 301)
         fig, ax = plt.subplots(figsize=(8,8))
-        ax.hist(self.df[mask]["hit_distance"],
+        ax.hist(self.df[mask]["simhit_distance"],
                 bins=bins,
                 histtype="stepfilled",
                 color="dodgerblue",
@@ -178,16 +178,16 @@ class Plotter:
         plt.close()
 
 
-    def plot_hit_xy(self, pdf: PdfPages):
-        mask = self.df["hit"].astype(bool)
+    def plot_simhit_xy(self, pdf: PdfPages):
+        mask = self.df["simhit"].astype(bool)
         bins = [
             np.linspace(-1500, 1500, 451),
             np.linspace(-1500, 1500, 451),
         ]
         fig, ax = plt.subplots(figsize=(8,8))
         _, _, _, im = ax.hist2d(
-            self.df[mask]["hit_r"] * np.cos(self.df[mask]["hit_phi"]),
-            self.df[mask]["hit_r"] * np.sin(self.df[mask]["hit_phi"]),
+            self.df[mask]["simhit_r"] * np.cos(self.df[mask]["simhit_phi"]),
+            self.df[mask]["simhit_r"] * np.sin(self.df[mask]["simhit_phi"]),
             bins=bins,
             cmap="gist_rainbow",
             cmin=0.5,
@@ -204,16 +204,16 @@ class Plotter:
         plt.close()
 
 
-    def plot_hit_rz(self, pdf: PdfPages):
-        mask = self.df["hit"].astype(bool)
+    def plot_simhit_rz(self, pdf: PdfPages):
+        mask = self.df["simhit"].astype(bool)
         bins = [
             np.linspace(-2000, 2000, 401),
             np.linspace(0, 1500, 451),
         ]
         fig, ax = plt.subplots(figsize=(8,8))
         _, _, _, im = ax.hist2d(
-            self.df[mask]["hit_z"],
-            self.df[mask]["hit_r"],
+            self.df[mask]["simhit_z"],
+            self.df[mask]["simhit_r"],
             bins=bins,
             cmap="gist_rainbow",
             cmin=0.5,
@@ -247,7 +247,7 @@ class Plotter:
         }
 
         # denominator of efficiency
-        mask_denom = ~(self.df["hit"].astype(bool))
+        mask_denom = ~(self.df["simhit"].astype(bool))
         df_denom = self.df[mask_denom]
         if df_denom.duplicated().any():
             warnings.warn("Warning: duplicates found in denominator dataframe!")
@@ -258,20 +258,20 @@ class Plotter:
             "mcp_phi",
         ]:
 
-            print(f"Plotting hit efficiency vs {kinematic}...")
+            print(f"Plotting sim hit efficiency vs {kinematic}...")
             for system in SYSTEMS:
 
                 for layer in LAYERS:
 
                     mask_numer = (
-                        (self.df["hit"].astype(bool)) &
-                        (self.df["hit_system"] == system) &
-                        (self.df["hit_layer"] == layer) &
-                        (self.df["hit_t_corrected"] < MAX_TIME)
+                        (self.df["simhit"].astype(bool)) &
+                        (self.df["simhit_system"] == system) &
+                        (self.df["simhit_layer"] == layer) &
+                        (self.df["simhit_t_corrected"] < MAX_TIME)
                     )
 
                     # dont double-count if >1 hits on a layer
-                    subset = ["file", "i_event", "i_mcp", "hit_system", "hit_layer"]
+                    subset = ["file", "i_event", "i_mcp", "simhit_system", "simhit_layer"]
                     df_numer = self.df[mask_numer].drop_duplicates(subset=subset)
                     counts_denom, _ = np.histogram(df_denom[kinematic], bins=bins[kinematic])
                     counts_numer, _ = np.histogram(df_numer[kinematic], bins=bins[kinematic])
@@ -294,7 +294,7 @@ class Plotter:
                     ax.set_ylim(0.9, 1.01)
                     ax.tick_params(direction="in", which="both", top=True, right=True)
                     ax.set_xlabel(xlabel[kinematic])
-                    ax.set_ylabel(f"Hit efficiency with $t_{{corrected}}$ < {MAX_TIME} ns")
+                    ax.set_ylabel(f"Sim. hit efficiency with $t_{{corrected}}$ < {MAX_TIME} ns")
                     ax.set_title(f"{system_name[system]}, layer {layer}")
                     ax.minorticks_on()
                     ax.grid(which="both")
