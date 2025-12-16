@@ -9,12 +9,20 @@ import pyLCIO
 import dd4hep
 import DDRec
 
+PARQUET = "geometry.parquet"
+PDF = "geometry.pdf"
 CODE = "/ceph/users/atuna/work/maia"
 XML = f"{CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
 FIRST_FEW_MODULES = [0, 1]
 FIRST_FEW_SENSORS = [0, 1]
 
+
 def main():
+    corners_xy, corners_rz = read_geometry()
+    plot(corners_xy, corners_rz)
+
+
+def read_geometry():
 
     # load geometry
     detector = dd4hep.Detector.getInstance()
@@ -28,17 +36,8 @@ def main():
         maps[name] = surfman.map(det.name())
         print(f"Number of surfaces in {name} map:", len(maps[name]))
 
-    # converting id to physical quantities
-    def convert_id(id: int) -> dict:
-        return {
-            "system": (id >> 0) & 0b1_1111,
-            "side": (id >> 5) & 0b11,
-            "layer": (id >> 7) & 0b11_1111,
-            "module": (id >> 13) & 0b111_1111_1111,
-            "sensor": (id >> 24) & 0b1111_1111,
-        }
-
     # storage
+    rows = []
     corners_xy = {}
     corners_rz = {}
 
@@ -92,23 +91,50 @@ def main():
                 origin + half_v - half_n,
             ]
 
-            # print("")
-            # print("innerThickness:", surf.innerThickness())
-            # print("outerThickness:", surf.outerThickness())
-            # print("origin:", origin.x(), origin.y(), origin.z())
-            # print("udir:", udir.x(), udir.y(), udir.z())
-            # print("vdir:", vdir.x(), vdir.y(), vdir.z())
-            # print("ndir:", ndir.x(), ndir.y(), ndir.z())
-            # for corner in corners_xy[-1]:
-            #     print("  corner_xy:", corner.x(), corner.y(), corner.z())
-            # for corner in corners_rz[-1]:
-            #     print("  corner_rz:", corner.x(), corner.y(), corner.z())
-            # print("")
+            rows.append({
+                "id": id,
+                **convert_id(id),
+                "origin_x": origin.x(),
+                "origin_y": origin.y(),
+                "origin_z": origin.z(),
+                "corner_xy_0_x": corners_xy[id][0].x(),
+                "corner_xy_0_y": corners_xy[id][0].y(),
+                "corner_xy_0_z": corners_xy[id][0].z(),
+                "corner_xy_1_x": corners_xy[id][1].x(),
+                "corner_xy_1_y": corners_xy[id][1].y(),
+                "corner_xy_1_z": corners_xy[id][1].z(),
+                "corner_xy_2_x": corners_xy[id][2].x(),
+                "corner_xy_2_y": corners_xy[id][2].y(),
+                "corner_xy_2_z": corners_xy[id][2].z(),
+                "corner_xy_3_x": corners_xy[id][3].x(),
+                "corner_xy_3_y": corners_xy[id][3].y(),
+                "corner_xy_3_z": corners_xy[id][3].z(),
+                "corner_rz_0_x": corners_rz[id][0].x(),
+                "corner_rz_0_y": corners_rz[id][0].y(),
+                "corner_rz_0_z": corners_rz[id][0].z(),
+                "corner_rz_1_x": corners_rz[id][1].x(),
+                "corner_rz_1_y": corners_rz[id][1].y(),
+                "corner_rz_1_z": corners_rz[id][1].z(),
+                "corner_rz_2_x": corners_rz[id][2].x(),
+                "corner_rz_2_y": corners_rz[id][2].y(),
+                "corner_rz_2_z": corners_rz[id][2].z(),
+                "corner_rz_3_x": corners_rz[id][3].x(),
+                "corner_rz_3_y": corners_rz[id][3].y(),
+                "corner_rz_3_z": corners_rz[id][3].z(),
+            })
 
+    # write dataframe to file
+    df = pd.DataFrame(rows)
+    print(df)
+    print(f"Writing geometry data frame to {PARQUET}...")
+    df.to_parquet(PARQUET)
 
-    fname = f"surface_bounds.pdf"
-    print(f"Writing bounding box to {fname}...")
-    with PdfPages(fname) as pdf:
+    return corners_xy, corners_rz
+
+def plot(corners_xy: dict, corners_rz: dict):
+
+    print(f"Writing bounding box to {PDF}...")
+    with PdfPages(PDF) as pdf:
 
         fig, ax = plt.subplots(figsize=(8,8))
         for it, (id, c_xy) in enumerate(corners_xy.items()):
@@ -166,6 +192,17 @@ def main():
         fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
         pdf.savefig()
         plt.close()
+
+
+def convert_id(id: int) -> dict:
+    return {
+        "system": (id >> 0) & 0b1_1111,
+        "side": (id >> 5) & 0b11,
+        "layer": (id >> 7) & 0b11_1111,
+        "module": (id >> 13) & 0b111_1111_1111,
+        "sensor": (id >> 24) & 0b1111_1111,
+    }
+
 
 
 if __name__ == "__main__":
