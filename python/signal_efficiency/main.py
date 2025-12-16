@@ -7,10 +7,9 @@ from plot import Plotter
 
 FNAMES = [
     "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_11_06_21h31m00s/muonGun_pT_0_10_sim_1*.slcio",
-]
-COLLECTIONS = [
-    "InnerTrackerBarrelCollection",
-    "OuterTrackerBarrelCollection",
+    "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_11_06_21h31m00s/muonGun_pT_0_10_sim_2*.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_11_06_21h31m00s/muonGun_pT_0_10_sim_3*.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_11_06_21h31m00s/muonGun_pT_0_10_sim_4*.slcio",
 ]
 NOW = time.strftime("%Y_%m_%d_%Hh%Mm%Ss")
 PDF = f"detector_efficiency_NOW.pdf"
@@ -20,10 +19,7 @@ PRINT_GROUPS = 0
 
 def main():
     fnames = get_filenames(FNAMES)
-    df = SlcioToHitsDataFrame(
-        slcio_file_paths=fnames,
-        collections=COLLECTIONS,
-    ).convert()
+    df = SlcioToHitsDataFrame(slcio_file_paths=fnames).convert()
 
     # write df to file
     print(f"Writing data frame to {PARQUET}...")
