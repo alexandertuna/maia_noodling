@@ -15,7 +15,9 @@ CODE = "/ceph/users/atuna/work/maia"
 XML = f"{CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
 FIRST_FEW_MODULES = [0, 1]
 FIRST_FEW_SENSORS = [0, 1]
+SENSOR_THICKNESS = 0.1 # mm
 CM_TO_MM = 10.0
+MM_TO_CM = 0.1
 
 
 def main():
@@ -61,7 +63,9 @@ def read_geometry():
             ndir = surf.normal()
             len_u = surf.length_along_u()
             len_v = surf.length_along_v()
-            len_n = surf.innerThickness()
+            # len_n = surf.innerThickness() # distance from sensor to edge of surface
+            # len_n = surf.outerThickness() # distance from sensor to other edge of surface
+            len_n = SENSOR_THICKNESS * MM_TO_CM
 
             half_u = dd4hep.rec.Vector3D(
                 udir.x() * len_u / 2.0,
@@ -132,6 +136,7 @@ def read_geometry():
 
     return corners_xy, corners_rz
 
+
 def plot(corners_xy: dict, corners_rz: dict):
 
     print(f"Writing bounding box to {PDF}...")
@@ -146,6 +151,7 @@ def plot(corners_xy: dict, corners_rz: dict):
             ax.scatter(
                 [c.x() * CM_TO_MM for c in c_xy],
                 [c.y() * CM_TO_MM for c in c_xy],
+                marker="none",
                 color="blue",
                 s=0.1,
             )
@@ -175,6 +181,7 @@ def plot(corners_xy: dict, corners_rz: dict):
             ax.scatter(
                 [c.z() * CM_TO_MM for c in c_rz],
                 [np.sqrt((c.x() * CM_TO_MM)**2 + (c.y() * CM_TO_MM)**2) for c in c_rz],
+                marker="none",
                 color="red",
                 s=0.1,
             )
