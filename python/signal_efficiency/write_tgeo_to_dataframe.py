@@ -15,6 +15,7 @@ CODE = "/ceph/users/atuna/work/maia"
 XML = f"{CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
 FIRST_FEW_MODULES = [0, 1]
 FIRST_FEW_SENSORS = [0, 1]
+CM_TO_MM = 10.0
 
 
 def main():
@@ -94,33 +95,33 @@ def read_geometry():
             rows.append({
                 "id": id,
                 **convert_id(id),
-                "origin_x": origin.x(),
-                "origin_y": origin.y(),
-                "origin_z": origin.z(),
-                "corner_xy_0_x": corners_xy[id][0].x(),
-                "corner_xy_0_y": corners_xy[id][0].y(),
-                "corner_xy_0_z": corners_xy[id][0].z(),
-                "corner_xy_1_x": corners_xy[id][1].x(),
-                "corner_xy_1_y": corners_xy[id][1].y(),
-                "corner_xy_1_z": corners_xy[id][1].z(),
-                "corner_xy_2_x": corners_xy[id][2].x(),
-                "corner_xy_2_y": corners_xy[id][2].y(),
-                "corner_xy_2_z": corners_xy[id][2].z(),
-                "corner_xy_3_x": corners_xy[id][3].x(),
-                "corner_xy_3_y": corners_xy[id][3].y(),
-                "corner_xy_3_z": corners_xy[id][3].z(),
-                "corner_rz_0_x": corners_rz[id][0].x(),
-                "corner_rz_0_y": corners_rz[id][0].y(),
-                "corner_rz_0_z": corners_rz[id][0].z(),
-                "corner_rz_1_x": corners_rz[id][1].x(),
-                "corner_rz_1_y": corners_rz[id][1].y(),
-                "corner_rz_1_z": corners_rz[id][1].z(),
-                "corner_rz_2_x": corners_rz[id][2].x(),
-                "corner_rz_2_y": corners_rz[id][2].y(),
-                "corner_rz_2_z": corners_rz[id][2].z(),
-                "corner_rz_3_x": corners_rz[id][3].x(),
-                "corner_rz_3_y": corners_rz[id][3].y(),
-                "corner_rz_3_z": corners_rz[id][3].z(),
+                "origin_x": origin.x() * CM_TO_MM,
+                "origin_y": origin.y() * CM_TO_MM,
+                "origin_z": origin.z() * CM_TO_MM,
+                "corner_xy_0_x": corners_xy[id][0].x() * CM_TO_MM,
+                "corner_xy_0_y": corners_xy[id][0].y() * CM_TO_MM,
+                "corner_xy_0_z": corners_xy[id][0].z() * CM_TO_MM,
+                "corner_xy_1_x": corners_xy[id][1].x() * CM_TO_MM,
+                "corner_xy_1_y": corners_xy[id][1].y() * CM_TO_MM,
+                "corner_xy_1_z": corners_xy[id][1].z() * CM_TO_MM,
+                "corner_xy_2_x": corners_xy[id][2].x() * CM_TO_MM,
+                "corner_xy_2_y": corners_xy[id][2].y() * CM_TO_MM,
+                "corner_xy_2_z": corners_xy[id][2].z() * CM_TO_MM,
+                "corner_xy_3_x": corners_xy[id][3].x() * CM_TO_MM,
+                "corner_xy_3_y": corners_xy[id][3].y() * CM_TO_MM,
+                "corner_xy_3_z": corners_xy[id][3].z() * CM_TO_MM,
+                "corner_rz_0_x": corners_rz[id][0].x() * CM_TO_MM,
+                "corner_rz_0_y": corners_rz[id][0].y() * CM_TO_MM,
+                "corner_rz_0_z": corners_rz[id][0].z() * CM_TO_MM,
+                "corner_rz_1_x": corners_rz[id][1].x() * CM_TO_MM,
+                "corner_rz_1_y": corners_rz[id][1].y() * CM_TO_MM,
+                "corner_rz_1_z": corners_rz[id][1].z() * CM_TO_MM,
+                "corner_rz_2_x": corners_rz[id][2].x() * CM_TO_MM,
+                "corner_rz_2_y": corners_rz[id][2].y() * CM_TO_MM,
+                "corner_rz_2_z": corners_rz[id][2].z() * CM_TO_MM,
+                "corner_rz_3_x": corners_rz[id][3].x() * CM_TO_MM,
+                "corner_rz_3_y": corners_rz[id][3].y() * CM_TO_MM,
+                "corner_rz_3_z": corners_rz[id][3].z() * CM_TO_MM,
             })
 
     # write dataframe to file
@@ -143,20 +144,21 @@ def plot(corners_xy: dict, corners_rz: dict):
             if convert_id(id)["sensor"] not in FIRST_FEW_SENSORS:
                 continue
             ax.scatter(
-                [c.x() for c in c_xy],
-                [c.y() for c in c_xy],
+                [c.x() * CM_TO_MM for c in c_xy],
+                [c.y() * CM_TO_MM for c in c_xy],
                 color="blue",
                 s=0.1,
             )
             rect_xy = plt.Polygon(
-                [(c.x(), c.y()) for c in c_xy],
+                [(c.x() * CM_TO_MM,
+                  c.y() * CM_TO_MM) for c in c_xy],
                 fill="blue",
                 edgecolor="blue",
             )
             ax.add_patch(rect_xy)
         ax.tick_params(direction="in", which="both", top=True, right=True)
-        ax.set_xlabel("X [mm]")
-        ax.set_ylabel("Y [mm]")
+        ax.set_xlabel("x [mm]")
+        ax.set_ylabel("y [mm]")
         ax.minorticks_on()
         ax.grid(which="both")
         ax.set_axisbelow(True)
@@ -171,20 +173,21 @@ def plot(corners_xy: dict, corners_rz: dict):
             if convert_id(id)["module"] not in FIRST_FEW_MODULES:
                 continue
             ax.scatter(
-                [c.z() for c in c_rz],
-                [np.sqrt(c.x()**2 + c.y()**2) for c in c_rz],
+                [c.z() * CM_TO_MM for c in c_rz],
+                [np.sqrt((c.x() * CM_TO_MM)**2 + (c.y() * CM_TO_MM)**2) for c in c_rz],
                 color="red",
                 s=0.1,
             )
             rect_rz = plt.Polygon(
-                [(c.z(), np.sqrt(c.x()**2 + c.y()**2)) for c in c_rz],
+                [(c.z() * CM_TO_MM,
+                  np.sqrt((c.x() * CM_TO_MM)**2 + (c.y() * CM_TO_MM)**2)) for c in c_rz],
                 fill="red",
                 edgecolor="red",
             )
             ax.add_patch(rect_rz)
         ax.tick_params(direction="in", which="both", top=True, right=True)
-        ax.set_xlabel("Z [mm]")
-        ax.set_ylabel("R [mm]")
+        ax.set_xlabel("z [mm]")
+        ax.set_ylabel("r [mm]")
         # ax.set_title(f"Surface ID {id} in {name}")
         ax.minorticks_on()
         ax.grid(which="both")
