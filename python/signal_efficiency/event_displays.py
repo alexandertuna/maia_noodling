@@ -21,6 +21,10 @@ TRACKERNAME = {
     INNER_TRACKER_BARREL: "Inner Tracker",
     OUTER_TRACKER_BARREL: "Outer Tracker",
 }
+N_LAYERS = {
+    INNER_TRACKER_BARREL: 8,
+    OUTER_TRACKER_BARREL: 8,
+}
 
 
 class EventDisplays:
@@ -29,6 +33,8 @@ class EventDisplays:
     def __init__(self, df, pdf):
         self.df = df
         self.pdf = pdf
+        self.plot_if_missing_a_layer = True
+        self.n_displays = 100
         self.geo = pd.read_parquet(PARQUET)
         self.geo["origin_r"] = np.sqrt(self.geo["origin_x"]**2 + self.geo["origin_y"]**2)
         self.geo["origin_phi"] = np.arctan2(self.geo["origin_y"], self.geo["origin_x"])
@@ -36,23 +42,32 @@ class EventDisplays:
 
     def make_event_displays(self):
         with PdfPages(self.pdf) as pdf:
+            i_display = 0
             group_cols = ["file", "i_event", "i_mcp"]
             for i_group, (cols, group) in enumerate(self.df.groupby(group_cols)):
-                if i_group >= 100:
+                if i_display >= self.n_displays:
                     break
+                if self.plot_if_missing_a_layer and not self.missing_a_layer(group):
+                    print(f"Skipping mcparticle {i_group} because it has hits in all layers")
+                    continue
                 self.make_one_event_display(i_group, group, pdf)
+                i_display += 1
+
+
+    def missing_a_layer(self, group) -> bool:
+        cols = ["simhit_system", "simhit_layer"]
+        for tracker in TRACKERS:
+            tracker_group = group[group["simhit_system"] == tracker]
+            n_layers = len(tracker_group[cols].drop_duplicates())
+            if n_layers < N_LAYERS[tracker]:
+                return True
+        return False
 
 
     def make_one_event_display(self, i_group, group, pdf):
         mask = group["simhit"] & (group["simhit_t_corrected"] < MAX_TIME_CORRECTED)
         if mask.sum() < MIN_HITS_FOR_CIRCLE:
             raise ValueError("Not enough simhits to make an event display.")
-
-        # check if any layers are missing
-        cols = ["simhit_system", "simhit_layer"]
-        n_layers = len(group[cols].drop_duplicates())
-        if n_layers < TOTAL_LAYERS:
-            print(f"Event display mcparticle {i_group}: WARNING! Only {n_layers} layers have hits.")
 
         # get x, y for convenience
         group["simhit_x"] = group["simhit_r"] * np.cos(group["simhit_phi"])
@@ -73,12 +88,20 @@ class EventDisplays:
         geomask = min_d2 <= NEARBY2
         print(f"Event display mcparticle {i_group}: found {geomask.sum()} nearby modules.")
 
+        # annotations
+        if len(group["mcp_pt"].unique()) > 1:
+            raise ValueError("Multiple mcparticle pT values found.")
+        mc_pt = group["mcp_pt"].unique()[0]
+        mc_eta = group["mcp_eta"].unique()[0]
+
         # one plot for IT and one plot for OT
-        for tracker in TRACKERS:
+        fig, axs = plt.subplots(ncols=2, figsize=(16, 8))
+
+        for (ax, tracker) in zip(axs, TRACKERS):
 
             trackermask = mask & (group["simhit_system"] == tracker)
+            layers = sorted(list(group[trackermask]["simhit_layer"].unique()))
 
-            fig, ax = plt.subplots(figsize=(8, 8))
             for _, row in self.geo[geomask].iterrows():
                 corner_xs = [row["corner_xy_0_x"],
                              row["corner_xy_1_x"],
@@ -92,7 +115,7 @@ class EventDisplays:
                              row["corner_xy_3_y"],
                              row["corner_xy_0_y"]
                             ]
-                ax.plot(corner_xs, corner_ys, c="green", marker="none", linewidth=0.5, zorder=1)
+                ax.plot(corner_xs, corner_ys, c="black", marker="none", linewidth=0.5, zorder=1)
             ax.plot(
                 circle_x,
                 circle_y,
@@ -123,13 +146,22 @@ class EventDisplays:
                          group[trackermask]["simhit_y"].max() + PADDING])
             ax.set_xlabel("x [mm]")
             ax.set_ylabel("y [mm]")
-            ax.set_title(f"{TRACKERNAME[tracker]} display, mcparticle {i_group}")
+            ax.set_title(f"{TRACKERNAME[tracker]}, MC {i_group}, $p_T$ = {mc_pt:.1f} GeV, eta = {mc_eta:.2f}")
             ax.minorticks_on()
             ax.grid(which="both", alpha=0.5)
             ax.set_axisbelow(True)
-            fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
-            pdf.savefig()
-            plt.close()
+            if len(layers) < N_LAYERS[tracker]:
+                missing_layers = set(range(N_LAYERS[tracker])) - set(layers)
+                ax.text(
+                    0.5,
+                    0.95,
+                    f"Missing layers {missing_layers}",
+                    transform=ax.transAxes,
+                )
+
+        fig.subplots_adjust(left=0.07, right=0.97, top=0.95, bottom=0.09)
+        pdf.savefig()
+        plt.close()
 
 
 def fit_circle(
