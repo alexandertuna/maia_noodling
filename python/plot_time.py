@@ -10,8 +10,9 @@ FILE_SIM = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2
 FILE_DIGI = "/ceph/users/atuna/work/maia/maia_noodling/samples/v00/neutrinoGun/neutrinoGun_digi_0.slcio"
 
 COLL_SIM = "InnerTrackerBarrelCollection"
-COLL_DIGI = "IBTrackerHits"
+COLL_DIGI = "InnerTrackerBarrelCollection"
 
+SPEED_OF_LIGHT = 299.792458  # mm/ns
 
 def main():
     df_sim = get_dataframe(FILE_SIM, COLL_SIM)
@@ -29,10 +30,15 @@ def get_dataframe(fname: str, collection: str) -> pd.DataFrame:
     for event in reader:
         for hit in event.getCollection(collection):
             row = {
+                "hit_x": hit.getPosition()[0],
+                "hit_y": hit.getPosition()[1],
+                "hit_z": hit.getPosition()[2],
                 "hit_time": hit.getTime(),
             }
             rows.append(row)
     df = pd.DataFrame(rows)
+    df["hit_R"] = np.sqrt(df["hit_x"]**2 + df["hit_y"]**2 + df["hit_z"]**2)
+    df["hit_time_corrected"] = df["hit_time"] - df["hit_R"] / SPEED_OF_LIGHT
     return df
 
 
@@ -41,13 +47,13 @@ def plot(df: pd.DataFrame, label: str, pdf: PdfPages):
     bins = np.linspace(-5, 15, 401)
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.hist(
-        df["hit_time"],
+        df["hit_time_corrected"],
         bins=bins,
         histtype="stepfilled",
         alpha=0.9,
         color=color,
     )
-    ax.set_xlabel("Hit time (ns)")
+    ax.set_xlabel("Hit time, corrected for propagation (ns)")
     ax.set_ylabel("Counts")
     ax.set_ylim(0.8, None)
     ax.set_title(f"Hit time: {label}")
