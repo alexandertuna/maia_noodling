@@ -7,9 +7,10 @@ from matplotlib import rcParams
 rcParams.update({"font.size": 16})
 
 PARQUET = "geometry.parquet"
-NEARBY = 30 # mm
+NEARBY = 200 # mm
 NEARBY2 = NEARBY**2
 PADDING = 50 # mm
+SQUARED_DISTANCE = False
 MAX_TIME_CORRECTED = 3.0 # ns
 MIN_HITS_FOR_CIRCLE = 3
 TOTAL_LAYERS = 16
@@ -36,8 +37,6 @@ class EventDisplays:
         self.plot_if_missing_a_layer = True
         self.n_displays = 100
         self.geo = pd.read_parquet(PARQUET)
-        self.geo["origin_r"] = np.sqrt(self.geo["origin_x"]**2 + self.geo["origin_y"]**2)
-        self.geo["origin_phi"] = np.arctan2(self.geo["origin_y"], self.geo["origin_x"])
 
 
     def make_event_displays(self):
@@ -81,12 +80,24 @@ class EventDisplays:
         circle_y = y_center + radius * np.sin(thetas)
 
         # find nearby modules
-        hits = group[mask][["simhit_x", "simhit_y", "simhit_z"]].to_numpy(dtype=np.float64)
-        orig = self.geo[["origin_x", "origin_y", "origin_z"]].to_numpy(dtype=np.float64)
-        d2 = ((hits[:, None, :] - orig[None, :, :]) ** 2).sum(axis=2)
-        min_d2 = d2.min(axis=0)
-        geomask = min_d2 <= NEARBY2
-        print(f"Event display mcparticle {i_group}: found {geomask.sum()} nearby modules.")
+        hits = group[mask][["simhit_x", "simhit_y"]].to_numpy(dtype=np.float64)
+        orig = self.geo[["origin_x", "origin_y"]].to_numpy(dtype=np.float64)
+        if SQUARED_DISTANCE:
+            d2 = ((hits[:, None, :] - orig[None, :, :]) ** 2).sum(axis=2)
+            min_d2 = d2.min(axis=0)
+            geomask = min_d2 <= NEARBY2
+        else:
+            diff = np.abs(hits[:, None, :] - orig[None, :, :])
+            within_box = (diff <= NEARBY).all(axis=2)
+            geomask = within_box.any(axis=0)
+        cornercols = [
+            "corner_xy_0_x", "corner_xy_0_y",
+            "corner_xy_1_x", "corner_xy_1_y",
+            "corner_xy_2_x", "corner_xy_2_y",
+            "corner_xy_3_x", "corner_xy_3_y",
+        ]
+        modules = self.geo[geomask][cornercols].drop_duplicates()
+        print(f"Event display mcparticle {i_group}: found {len(modules)} unique nearby modules ({geomask.sum()} total)")
 
         # annotations
         if len(group["mcp_pt"].unique()) > 1:
@@ -102,7 +113,7 @@ class EventDisplays:
             trackermask = mask & (group["simhit_system"] == tracker)
             layers = sorted(list(group[trackermask]["simhit_layer"].unique()))
 
-            for _, row in self.geo[geomask].iterrows():
+            for _, row in modules.iterrows():
                 corner_xs = [row["corner_xy_0_x"],
                              row["corner_xy_1_x"],
                              row["corner_xy_2_x"],
@@ -131,12 +142,14 @@ class EventDisplays:
                 group[mask_even]["simhit_x"],
                 group[mask_even]["simhit_y"],
                 marker="o",
+                label="Even (inner) layers",
                 **ops,
             )
             ax.scatter(
                 group[mask_odd]["simhit_x"],
                 group[mask_odd]["simhit_y"],
                 marker="s",
+                label="Odd (outer) layers",
                 **ops,
             )
 
