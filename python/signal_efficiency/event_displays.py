@@ -185,7 +185,7 @@ class EventDisplays:
             if len(layers) < N_LAYERS[tracker]:
                 missing_layers = sorted(list(set(range(N_LAYERS[tracker])) - set(layers)))
                 missing_layers = ", ".join([str(ml) for ml in missing_layers])
-                ax.text(0.40, 0.50, f"Missing layers: {missing_layers}", transform=ax.transAxes,
+                ax.text(0.35, 0.50, f"Missing layers: {missing_layers}", transform=ax.transAxes,
                         bbox=dict(facecolor="white", edgecolor="black", alpha=0.8))
 
         fig.subplots_adjust(left=0.07, right=0.97, top=0.95, bottom=0.09)
