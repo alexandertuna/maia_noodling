@@ -11,5 +11,6 @@ docker run --rm -it --platform=linux/amd64 \
   -e DISPLAY=host.docker.internal:0 \
   -v ${CODE}/maia_noodling:/home/mucoll/maia_noodling \
   -v ${CODE}/detector-simulation:/home/mucoll/detector-simulation \
+  -v ${CODE}/k4geo:/home/mucoll/k4geo \
   ghcr.io/muoncollidersoft/mucoll-sim-alma9:v2.9.8-amd64
 
