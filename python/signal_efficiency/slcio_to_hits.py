@@ -35,7 +35,7 @@ class SlcioToHitsDataFrame:
             slcio_file_paths,
         ):
         self.slcio_file_paths = slcio_file_paths
-        self.load_geometry = True
+        self.load_geometry = False
 
 
     def convert(self) -> pd.DataFrame:
@@ -269,7 +269,7 @@ def postprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "simhit_y",
         "simhit_R",
         "simhit_theta",
-        "simhit_cellid0",
+        # "simhit_cellid0",
     ], inplace=True)
 
     # sort columns alphabetically
