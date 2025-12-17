@@ -9,7 +9,7 @@ rcParams.update({"font.size": 16})
 PARQUET = "geometry.parquet"
 NEARBY = 200 # mm
 NEARBY2 = NEARBY**2
-PADDING = 50 # mm
+PADDING = 100 # mm
 SQUARED_DISTANCE = False
 MAX_TIME_CORRECTED = 3.0 # ns
 MIN_HITS_FOR_CIRCLE = 3
@@ -113,7 +113,28 @@ class EventDisplays:
             trackermask = mask & (group["simhit_system"] == tracker)
             layers = sorted(list(group[trackermask]["simhit_layer"].unique()))
 
-            for _, row in modules.iterrows():
+            xlo = group[trackermask]["simhit_x"].min() - PADDING
+            xhi = group[trackermask]["simhit_x"].max() + PADDING
+            ylo = group[trackermask]["simhit_y"].min() - PADDING
+            yhi = group[trackermask]["simhit_y"].max() + PADDING * 1.5
+            cornermask = (
+                ((self.geo["corner_xy_0_x"] > xlo) & (self.geo["corner_xy_0_x"] < xhi)) |
+                ((self.geo["corner_xy_1_x"] > xlo) & (self.geo["corner_xy_1_x"] < xhi)) |
+                ((self.geo["corner_xy_2_x"] > xlo) & (self.geo["corner_xy_2_x"] < xhi)) |
+                ((self.geo["corner_xy_3_x"] > xlo) & (self.geo["corner_xy_3_x"] < xhi))
+            ) & (
+                ((self.geo["corner_xy_0_y"] > ylo) & (self.geo["corner_xy_0_y"] < yhi)) |
+                ((self.geo["corner_xy_1_y"] > ylo) & (self.geo["corner_xy_1_y"] < yhi)) |
+                ((self.geo["corner_xy_2_y"] > ylo) & (self.geo["corner_xy_2_y"] < yhi)) |
+                ((self.geo["corner_xy_3_y"] > ylo) & (self.geo["corner_xy_3_y"] < yhi))
+            )
+            smarter_modules = self.geo[cornermask][cornercols].drop_duplicates()
+            print(f"Event display mcparticle {i_group}: found {len(modules)} unique nearby modules ({cornermask.sum()} total), len(smarter) = {len(smarter_modules)}")
+            xlims = [xlo, xhi]
+            ylims = [ylo, yhi]
+
+            # for _, row in modules.iterrows():
+            for _, row in smarter_modules.iterrows():
                 corner_xs = [row["corner_xy_0_x"],
                              row["corner_xy_1_x"],
                              row["corner_xy_2_x"],
@@ -152,11 +173,9 @@ class EventDisplays:
                 label="Odd (outer) layers",
                 **ops,
             )
-
-            ax.set_xlim([group[trackermask]["simhit_x"].min() - PADDING,
-                         group[trackermask]["simhit_x"].max() + PADDING])
-            ax.set_ylim([group[trackermask]["simhit_y"].min() - PADDING,
-                         group[trackermask]["simhit_y"].max() + PADDING])
+            # ax.legend(loc="upper left")
+            ax.set_xlim(xlims)
+            ax.set_ylim(ylims)
             ax.set_xlabel("x [mm]")
             ax.set_ylabel("y [mm]")
             ax.set_title(f"{TRACKERNAME[tracker]}, MC {i_group}, $p_T$ = {mc_pt:.1f} GeV, eta = {mc_eta:.2f}")
@@ -164,13 +183,10 @@ class EventDisplays:
             ax.grid(which="both", alpha=0.5)
             ax.set_axisbelow(True)
             if len(layers) < N_LAYERS[tracker]:
-                missing_layers = set(range(N_LAYERS[tracker])) - set(layers)
-                ax.text(
-                    0.5,
-                    0.95,
-                    f"Missing layers {missing_layers}",
-                    transform=ax.transAxes,
-                )
+                missing_layers = sorted(list(set(range(N_LAYERS[tracker])) - set(layers)))
+                missing_layers = ", ".join([str(ml) for ml in missing_layers])
+                ax.text(0.40, 0.50, f"Missing layers: {missing_layers}", transform=ax.transAxes,
+                        bbox=dict(facecolor="white", edgecolor="black", alpha=0.8))
 
         fig.subplots_adjust(left=0.07, right=0.97, top=0.95, bottom=0.09)
         pdf.savefig()
