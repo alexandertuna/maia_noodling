@@ -28,15 +28,15 @@ rcParams.update({
     "grid.linewidth": 0.5,
     "grid.alpha": 0.3,
     "grid.color": "gray",
-    "figure.subplot.left": 0.15,
-    "figure.subplot.bottom": 0.12,
-    "figure.subplot.right": 0.95,
+    "figure.subplot.left": 0.14,
+    "figure.subplot.bottom": 0.09,
+    "figure.subplot.right": 0.97,
     "figure.subplot.top": 0.95,
 })
 
 TWOPI = 2.0 * np.pi
 
-NPHI = 100
+NPHI = 90
 INNER_RADIUS = 800.0 # mm
 OUTER_RADIUS = 804.0 # mm
 MODULE_WIDTH = 30.1 # mm
@@ -45,7 +45,6 @@ PDF = "phi_modules.pdf"
 
 def main():
     df = make_modules(NPHI, INNER_RADIUS, OUTER_RADIUS, MODULE_WIDTH)
-    print(df)
     plot(df, PDF)
 
 
@@ -80,12 +79,23 @@ def make_modules(
     return df
 
 
+def calculate_coverage() -> float:
+    # We're using the small angle approximation: dl = r * dphi
+    dphi_inner = MODULE_WIDTH / INNER_RADIUS * NPHI
+    dphi_outer = MODULE_WIDTH / OUTER_RADIUS * NPHI
+    coverage = (dphi_inner + dphi_outer) / TWOPI
+    return coverage
+
+
 def plot(df: pd.DataFrame, pdfname: str):
     with PdfPages(pdfname) as pdf:
         plot_modules(df, pdf)
 
 
 def plot_modules(df: pd.DataFrame, pdf: PdfPages) -> None:
+    cov = calculate_coverage()
+    print(f"Coverage: {cov:.3f}x")
+
     # full view
     fig, ax = plt.subplots()
     for _, row in df.iterrows():
@@ -97,22 +107,35 @@ def plot_modules(df: pd.DataFrame, pdf: PdfPages) -> None:
         )
     ax.set_xlabel("x [mm]")
     ax.set_ylabel("y [mm]")
+    ax.set_title(f"n(phi)={NPHI}, coverage={cov:.3f}x")
     pdf.savefig()
     plt.close()
 
     # zoom
+    dx = dy = MODULE_WIDTH*3
+    xlim = [INNER_RADIUS - dx, INNER_RADIUS + dx]
+    ylim = [-dy, dy]
     fig, ax = plt.subplots()
     for _, row in df.iterrows():
+        x0, x1, y0, y1 = row["x0"], row["x1"], row["y0"], row["y1"]
+        if (
+            (x0 < xlim[0] and x1 < xlim[0]) or
+            (y0 < ylim[0] and y1 < ylim[0]) or
+            (x0 > xlim[1] and x1 > xlim[1]) or
+            (y0 > ylim[1] and y1 > ylim[1])
+        ):
+            continue
         ax.plot(
             [row["x0"], row["x1"]],
             [row["y0"], row["y1"]],
-            linewidth=3,
+            linewidth=5,
             color="dodgerblue",
         )
     ax.set_xlabel("x [mm]")
     ax.set_ylabel("y [mm]")
-    ax.set_xlim([INNER_RADIUS*0.95, OUTER_RADIUS*1.05])
-    ax.set_ylim([-MODULE_WIDTH*3, MODULE_WIDTH*3])
+    ax.set_title(f"n(phi)={NPHI} gives coverage={cov:.3f}x")
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
     pdf.savefig()
     plt.close()
 
