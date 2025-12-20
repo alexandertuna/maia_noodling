@@ -112,7 +112,7 @@ def gen_command(events: int, num: int, typeevent: str):
 
 
 def gen_command_muongun(events: int, num: int, typeevent: str):
-    pdg = "-13" if num % 2 == 0 else "13"
+    pdg = "13 -13"
     pt = "0 10"
     particles = "10"
     cmd = f"python {CODE}/mucoll-benchmarks/generation/pgun/pgun_lcio.py \
