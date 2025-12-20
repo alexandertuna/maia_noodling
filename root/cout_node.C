@@ -13,6 +13,7 @@ int cout_node() {
   std::vector<float> ys{};
   std::vector<float> zs{};
 
+  // nb: these units are cm
   xs.push_back(-16.332); ys.push_back(-29.999); zs.push_back(-17.951);
   xs.push_back(-7.789); ys.push_back(-33.263); zs.push_back(11.577);
   xs.push_back(-8.063); ys.push_back(33.202); zs.push_back(9.541);
