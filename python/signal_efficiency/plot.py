@@ -26,16 +26,60 @@ class Plotter:
 
     def plot(self):
         with PdfPages(self.pdf) as pdf:
-            self.plot_mcp_pt(pdf)
-            self.plot_mcp_eta(pdf)
-            self.plot_mcp_phi(pdf)
-            self.plot_simhit_time(pdf)
-            self.plot_simhit_time_corrected(pdf)
-            self.plot_simhit_distance(pdf)
-            self.plot_simhit_xy(pdf)
-            self.plot_simhit_rz(pdf)
-            self.plot_efficiency_vs_sim(pdf)
+            self.plot_weird_radius_hits(pdf)
+            # self.plot_mcp_pt(pdf)
+            # self.plot_mcp_eta(pdf)
+            # self.plot_mcp_phi(pdf)
+            # self.plot_simhit_time(pdf)
+            # self.plot_simhit_time_corrected(pdf)
+            # # self.plot_simhit_distance(pdf)
+            # self.plot_simhit_xy(pdf)
+            # self.plot_simhit_rz(pdf)
+            # self.plot_efficiency_vs_sim(pdf)
 
+
+    def plot_weird_radius_hits(self, pdf: PdfPages):
+        for (r_lo, r_hi) in [
+            (140.0, 160.0),
+            (330.0, 350.0),
+            (520.0, 540.0),
+        ]:
+            mask = (
+                self.df["simhit"].astype(bool) &
+                (self.df["simhit_r"] > r_lo) &
+                (self.df["simhit_r"] < r_hi)
+            )
+            feats = [
+                "simhit_r",
+                "simhit_pathlength",
+            ]
+            xlabel = {
+                "simhit_r": "Sim. hit radius [mm]",
+                "simhit_pathlength": "Sim. hit pathlength [mm]",
+            }
+            bins = {
+                "simhit_r": np.linspace(r_lo, r_hi, 201),
+                "simhit_pathlength": np.linspace(0, 0.4, 201),
+            }
+            fig, axs = plt.subplots(figsize=(16, 8), ncols=2)
+            for ax, feat in zip(axs, feats):
+                ax.hist(self.df[mask][feat],
+                        bins=bins[feat],
+                        histtype="stepfilled",
+                        color="dodgerblue",
+                        alpha=0.9,
+                        )
+                ax.tick_params(direction="in", which="both", top=True, right=True)
+                ax.set_xlabel(xlabel[feat])
+                ax.set_ylabel("Counts")
+                ax.set_title(f"Sim. hits with radius {r_lo}-{r_hi} mm")
+                ax.minorticks_on()
+                ax.grid(which="both", alpha=0.1)
+                ax.set_axisbelow(True)
+
+            fig.subplots_adjust(left=0.05, right=0.98, top=0.95, bottom=0.09, wspace=0.15)
+            pdf.savefig()
+            plt.close()
 
 
     def plot_mcp_pt(self, pdf: PdfPages):
