@@ -207,6 +207,9 @@ def convert_one_file(
                     'simhit_x': hit.getPosition()[0],
                     'simhit_y': hit.getPosition()[1],
                     'simhit_z': hit.getPosition()[2],
+                    'simhit_px': hit.getMomentum()[0],
+                    'simhit_py': hit.getMomentum()[1],
+                    'simhit_pz': hit.getMomentum()[2],
                     'simhit_e': hit.getEDep(),
                     'simhit_t': hit.getTime(),
                     'simhit_cellid0': hit.getCellID0(),
@@ -255,6 +258,7 @@ def postprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df["simhit_phi"] = np.arctan2(df["simhit_y"], df["simhit_x"])
     df["simhit_theta"] = np.maximum(np.arctan2(df["simhit_r"], df["simhit_z"]), EPSILON)
     df["simhit_eta"] = -np.log(np.tan(df["simhit_theta"] / 2))
+    df["simhit_pt"] = np.sqrt(df["simhit_px"]**2 + df["simhit_py"]**2)
 
     # remove redundant columns
     df.drop(columns=[
