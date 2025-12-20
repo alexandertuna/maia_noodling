@@ -58,28 +58,6 @@ TEXTS = ["IT L0", "IT L2", "IT L4", "IT L6",
          "OT L0", "OT L2", "OT L4", "OT L6",
          ]
 
-# OT 0
-# NPHI = 46*4 // 2
-# INNER_RADIUS = 819.0 # mm
-# OUTER_RADIUS = 819.0 + 12.0 # mm
-
-# OT 2
-# NPHI = 54*4 // 2
-# INNER_RADIUS = 899.0 # mm
-# OUTER_RADIUS = 899.0 + 12.0 # mm
-
-# OT 4
-# NPHI = 78*4 // 2
-# INNER_RADIUS = 1366.0 # mm
-# OUTER_RADIUS = 1366.0 + 12.0 # mm
-
-# OT 6
-# NPHI = 82*4 // 2
-# INNER_RADIUS = 1446.0 # mm
-# OUTER_RADIUS = 1446.0 + 12.0 # mm
-
-# MODULE_WIDTH = 30.1 # mm
-
 PDF = "phi_modules.pdf"
 
 def main():
@@ -87,17 +65,6 @@ def main():
         for (nphi, inner_radius, outer_radius, module_width) in zip(NPHIS, INNER_RADII, OUTER_RADII, MODULE_WIDTHS):
             df = make_modules(nphi, inner_radius, outer_radius, module_width)
             plot_modules(df, pdf, nphi, inner_radius, outer_radius, module_width, zoom=True)
-
-
-    # dfs = [
-    #     make_modules(nphi, inner_radius, outer_radius, module_width)
-    #     for (nphi, inner_radius, outer_radius, module_width) in
-    #     zip(NPHIS, INNER_RADII, OUTER_RADII, MODULE_WIDTHS)
-    # ]
-    # # df = make_modules(NPHI, INNER_RADIUS, OUTER_RADIUS, MODULE_WIDTH)
-    # with PdfPages(PDF) as pdf:
-    #     for df in dfs:
-    #         plot_modules(df, PDF, nphi, inner_radius, outer_radius, module_width, zoom=True)
 
 
 def make_modules(
@@ -133,20 +100,6 @@ def make_modules(
     return df
 
 
-# def calculate_coverage(NPHI, INNER_RADIUS, OUTER_RADIUS, MODULE_WIDTH) -> float:
-#     # We're using the small angle approximation: dl = r * dphi
-#     dphi_inner = MODULE_WIDTH / INNER_RADIUS * NPHI
-#     dphi_outer = MODULE_WIDTH / OUTER_RADIUS * NPHI
-#     coverage = (dphi_inner + dphi_outer) / TWOPI
-#     return coverage
-
-
-def plot(df: pd.DataFrame, pdfname: str):
-    with PdfPages(pdfname) as pdf:
-        plot_modules(df, pdf, zoom=False)
-        plot_modules(df, pdf, zoom=True)
-
-
 def plot_modules(
         df: pd.DataFrame,
         pdf: PdfPages,
@@ -156,7 +109,7 @@ def plot_modules(
         module_width: float,
         zoom: bool,
     ) -> None:
-    # cov = calculate_coverage()
+
     cov = df["dphi"].sum() / TWOPI
     print(f"Coverage: {cov:.3f}x")
 
@@ -181,34 +134,6 @@ def plot_modules(
         ax.set_ylim(ylim)
     pdf.savefig()
     plt.close()
-
-    # zoom
-    # dx = dy = MODULE_WIDTH*3
-    # xlim = [INNER_RADIUS - dx, INNER_RADIUS + dx]
-    # ylim = [-dy, dy]
-    # fig, ax = plt.subplots()
-    # for _, row in df.iterrows():
-    #     x0, x1, y0, y1 = row["x0"], row["x1"], row["y0"], row["y1"]
-    #     if (
-    #         (x0 < xlim[0] and x1 < xlim[0]) or
-    #         (y0 < ylim[0] and y1 < ylim[0]) or
-    #         (x0 > xlim[1] and x1 > xlim[1]) or
-    #         (y0 > ylim[1] and y1 > ylim[1])
-    #     ):
-    #         continue
-    #     ax.plot(
-    #         [row["x0"], row["x1"]],
-    #         [row["y0"], row["y1"]],
-    #         linewidth=5,
-    #         color="dodgerblue",
-    #     )
-    # ax.set_xlabel("x [mm]")
-    # ax.set_ylabel("y [mm]")
-    # ax.set_title(f"n(phi)={NPHI} gives coverage={cov:.3f}x")
-    # ax.set_xlim(xlim)
-    # ax.set_ylim(ylim)
-    # pdf.savefig()
-    # plt.close()
 
 
 if __name__ == "__main__":
