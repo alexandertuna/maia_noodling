@@ -31,10 +31,11 @@ class SlcioToHitsDataFrame:
 
     def __init__(
             self,
-            slcio_file_paths,
+            slcio_file_paths: list[str],
+            load_geometry: bool,
         ):
         self.slcio_file_paths = slcio_file_paths
-        self.load_geometry = False
+        self.load_geometry = load_geometry
 
 
     def convert(self) -> pd.DataFrame:

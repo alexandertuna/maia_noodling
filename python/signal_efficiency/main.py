@@ -1,3 +1,4 @@
+import argparse
 from glob import glob
 import pandas as pd
 import time
@@ -17,15 +18,17 @@ FNAMES = [
     # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_11_06_21h31m00s/muonGun_pT_0_10_sim_4*.slcio",
 ]
 NOW = time.strftime("%Y_%m_%d_%Hh%Mm%Ss")
-PDF = f"detector_efficiency_NOW.pdf"
+PDF = f"detector_efficiency_{NOW}.pdf"
 DISPLAYS = "event_displays_NOW.pdf"
 PARQUET = f"detector_efficiency_NOW.parquet"
 PRINT_GROUPS = 0
 
 
 def main():
+    ops = options()
     fnames = get_filenames(FNAMES)
-    df = SlcioToHitsDataFrame(slcio_file_paths=fnames).convert()
+    geometry = ops.geometry
+    df = SlcioToHitsDataFrame(slcio_file_paths=fnames, load_geometry=geometry).convert()
 
     # write df to file
     print(f"Writing data frame to {PARQUET}...")
@@ -73,6 +76,12 @@ def main():
 
     plotter = Plotter(df, PDF)
     plotter.plot()
+
+
+def options():
+    parser = argparse.ArgumentParser(usage=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("--geometry", action="store_true", help="Load compact geometry from xml")
+    return parser.parse_args()
 
 
 def get_filenames(fnames):
