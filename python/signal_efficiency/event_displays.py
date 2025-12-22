@@ -35,7 +35,7 @@ class EventDisplays:
         self.df = df
         self.pdf = pdf
         self.plot_if_missing_a_layer = True
-        self.n_displays = 100
+        self.n_displays = 10
         self.geo = pd.read_parquet(PARQUET)
 
 
