@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 import multiprocessing as mp
 
+from constants import BARREL_TRACKER_MAX_ETA
+
 MCPARTICLE = "MCParticle"
 MUON = 13
 SPEED_OF_LIGHT = 299.792458  # mm/ns
@@ -12,9 +14,6 @@ HALF_SENSOR_THICKNESS = 50.0 # um
 EPSILON = 1e-6
 EPSILON_INSIDE_BOUNDS = 1.0
 BARREL_TRACKER_MAX_RADIUS = 1446.0
-BARREL_TRACKER_MAX_Z = 1264.2
-BARREL_TRACKER_MAX_THETA = np.arctan(BARREL_TRACKER_MAX_RADIUS / BARREL_TRACKER_MAX_Z)
-BARREL_TRACKER_MAX_ETA = -np.log(np.tan(BARREL_TRACKER_MAX_THETA / 2.0))
 COLLECTIONS = [
     "InnerTrackerBarrelCollection",
     "OuterTrackerBarrelCollection",

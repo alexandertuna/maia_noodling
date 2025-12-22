@@ -6,6 +6,8 @@ from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import rcParams
 rcParams.update({"font.size": 16})
 
+from constants import BARREL_TRACKER_MAX_ETA
+
 INNER_TRACKER_BARREL = 3
 OUTER_TRACKER_BARREL = 5
 SYSTEMS = [
@@ -26,16 +28,16 @@ class Plotter:
 
     def plot(self):
         with PdfPages(self.pdf) as pdf:
-            self.plot_weird_radius_hits(pdf)
-            # self.plot_mcp_pt(pdf)
-            # self.plot_mcp_eta(pdf)
-            # self.plot_mcp_phi(pdf)
-            # self.plot_simhit_time(pdf)
-            # self.plot_simhit_time_corrected(pdf)
-            # # self.plot_simhit_distance(pdf)
-            # self.plot_simhit_xy(pdf)
-            # self.plot_simhit_rz(pdf)
-            # self.plot_efficiency_vs_sim(pdf)
+            self.plot_mcp_pt(pdf)
+            self.plot_mcp_eta(pdf)
+            self.plot_mcp_phi(pdf)
+            self.plot_simhit_time(pdf)
+            self.plot_simhit_time_corrected(pdf)
+            # self.plot_simhit_distance(pdf)
+            self.plot_simhit_xy(pdf)
+            self.plot_simhit_rz(pdf)
+            self.plot_efficiency_vs_sim(pdf)
+            # self.plot_weird_radius_hits(pdf)
 
 
     def plot_weird_radius_hits(self, pdf: PdfPages):
@@ -95,7 +97,7 @@ class Plotter:
         ax.tick_params(direction="in", which="both", top=True, right=True)
         ax.set_xlabel("Simulated $p_T$ [GeV]")
         ax.set_ylabel("Counts")
-        ax.set_title("Simulated muon gun, $p_T$ 0-10 GeV")
+        ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
         ax.minorticks_on()
         ax.grid(which="both")
         ax.set_axisbelow(True)
@@ -117,7 +119,7 @@ class Plotter:
         ax.tick_params(direction="in", which="both", top=True, right=True)
         ax.set_xlabel("Simulated eta")
         ax.set_ylabel("Counts")
-        ax.set_title("Simulated muon gun, $p_T$ 0-10 GeV")
+        ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
         ax.minorticks_on()
         ax.grid(which="both")
         ax.set_axisbelow(True)
@@ -139,7 +141,7 @@ class Plotter:
         ax.tick_params(direction="in", which="both", top=True, right=True)
         ax.set_xlabel("Simulated phi")
         ax.set_ylabel("Counts")
-        ax.set_title("Simulated muon gun, $p_T$ 0-10 GeV")
+        ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
         ax.minorticks_on()
         ax.grid(which="both")
         ax.set_axisbelow(True)
