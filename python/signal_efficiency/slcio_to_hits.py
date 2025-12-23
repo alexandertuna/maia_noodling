@@ -241,6 +241,7 @@ def convert_one_file(
 
 def postprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     print("Postprocessing DataFrame ...")
+    df["mcp_p"] = np.sqrt(df["mcp_px"]**2 + df["mcp_py"]**2 + df["mcp_pz"]**2)
     df["mcp_pt"] = np.sqrt(df["mcp_px"]**2 + df["mcp_py"]**2)
     df["mcp_theta"] = np.arctan2(df["mcp_pt"], df["mcp_pz"])
     df["mcp_eta"] = -np.log(np.tan(df["mcp_theta"] / 2))
@@ -259,6 +260,8 @@ def postprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df["simhit_theta"] = np.maximum(np.arctan2(df["simhit_r"], df["simhit_z"]), EPSILON)
     df["simhit_eta"] = -np.log(np.tan(df["simhit_theta"] / 2))
     df["simhit_pt"] = np.sqrt(df["simhit_px"]**2 + df["simhit_py"]**2)
+    df["simhit_p"] = np.sqrt(df["simhit_px"]**2 + df["simhit_py"]**2 + df["simhit_pz"]**2)
+    df["simhit_costheta"] = (df["simhit_x"] * df["simhit_px"] + df["simhit_y"] * df["simhit_py"] + df["simhit_z"] * df["simhit_pz"]) / (df["simhit_R"] * df["simhit_p"])
 
     # remove redundant columns
     df.drop(columns=[
