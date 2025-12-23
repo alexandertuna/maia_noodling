@@ -2,9 +2,28 @@ import warnings
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib import colors
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import rcParams
-rcParams.update({"font.size": 16})
+rcParams.update({
+    "font.size": 16,
+    "figure.figsize": (8, 8),
+    "xtick.direction": "in",
+    "ytick.direction": "in",
+    "xtick.top": True,
+    "ytick.right": True,
+    "xtick.minor.visible": True,
+    "ytick.minor.visible": True,
+    "axes.grid": True,
+    "axes.grid.which": "both",
+    "grid.linewidth": 0.5,
+    "grid.alpha": 0.1,
+    "grid.color": "gray",
+    "figure.subplot.left": 0.14,
+    "figure.subplot.bottom": 0.09,
+    "figure.subplot.right": 0.97,
+    "figure.subplot.top": 0.95,
+})
 
 from constants import BARREL_TRACKER_MAX_ETA
 
@@ -36,6 +55,12 @@ class Plotter:
             # self.plot_simhit_distance(pdf)
             self.plot_simhit_xy(pdf)
             self.plot_simhit_rz(pdf)
+            self.plot_simhit_p(pdf)
+            self.plot_simhit_pt(pdf)
+            self.plot_simhit_costheta(pdf)
+            self.plot_simhit_costheta_vs_time(pdf)
+            self.plot_simhit_p_vs_time(pdf)
+            self.plot_simhit_p_vs_costheta(pdf)
             self.plot_efficiency_vs_sim(pdf)
             # self.plot_weird_radius_hits(pdf)
 
@@ -71,12 +96,9 @@ class Plotter:
                         color="dodgerblue",
                         alpha=0.9,
                         )
-                ax.tick_params(direction="in", which="both", top=True, right=True)
                 ax.set_xlabel(xlabel[feat])
                 ax.set_ylabel("Counts")
                 ax.set_title(f"Sim. hits with radius {r_lo}-{r_hi} mm")
-                ax.minorticks_on()
-                ax.grid(which="both", alpha=0.1)
                 ax.set_axisbelow(True)
 
             fig.subplots_adjust(left=0.05, right=0.98, top=0.95, bottom=0.09, wspace=0.15)
@@ -94,12 +116,9 @@ class Plotter:
                 color="dodgerblue",
                 alpha=0.9,
                 )
-        ax.tick_params(direction="in", which="both", top=True, right=True)
         ax.set_xlabel("Simulated $p_T$ [GeV]")
         ax.set_ylabel("Counts")
         ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
-        ax.minorticks_on()
-        ax.grid(which="both")
         ax.set_axisbelow(True)
         fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
         pdf.savefig()
@@ -116,12 +135,9 @@ class Plotter:
                 color="dodgerblue",
                 alpha=0.9,
                 )
-        ax.tick_params(direction="in", which="both", top=True, right=True)
         ax.set_xlabel("Simulated eta")
         ax.set_ylabel("Counts")
         ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
-        ax.minorticks_on()
-        ax.grid(which="both")
         ax.set_axisbelow(True)
         fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
         pdf.savefig()
@@ -138,12 +154,9 @@ class Plotter:
                 color="dodgerblue",
                 alpha=0.9,
                 )
-        ax.tick_params(direction="in", which="both", top=True, right=True)
         ax.set_xlabel("Simulated phi")
         ax.set_ylabel("Counts")
         ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
-        ax.minorticks_on()
-        ax.grid(which="both")
         ax.set_axisbelow(True)
         fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
         pdf.savefig()
@@ -161,11 +174,8 @@ class Plotter:
                 alpha=0.9,
                 label="All hits",
                 )
-        ax.tick_params(direction="in", which="both", top=True, right=True)
         ax.set_xlabel("Sim. hit time [ns]")
         ax.set_ylabel("Counts")
-        ax.minorticks_on()
-        ax.grid(which="both")
         ax.set_axisbelow(True)
         fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
         pdf.savefig()
@@ -187,12 +197,9 @@ class Plotter:
                 )
         # add vertical line at MAX_TIME
         ax.axvline(MAX_TIME, color="red", linestyle="--")
-        ax.tick_params(direction="in", which="both", top=True, right=True)
-        ax.set_xlabel("Sim. hit time, corrected for propagation [ns]")
+        ax.set_xlabel(r"Sim. hit time minus $R/c$ [ns]")
         ax.set_ylabel("Counts")
         ax.set_title(f"Require sim. hit time < {MAX_TIME}ns")
-        ax.minorticks_on()
-        ax.grid(which="both")
         ax.set_axisbelow(True)
         fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
         pdf.savefig()
@@ -211,11 +218,8 @@ class Plotter:
                 color="dodgerblue",
                 alpha=0.9,
                 )
-        ax.tick_params(direction="in", which="both", top=True, right=True)
         ax.set_xlabel("Sim. hit distance to surface [mm]")
         ax.set_ylabel("Counts")
-        ax.minorticks_on()
-        ax.grid(which="both")
         ax.set_axisbelow(True)
         fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
         pdf.savefig()
@@ -239,11 +243,8 @@ class Plotter:
             cmin=0.5,
         )
         fig.colorbar(im, ax=ax, pad=0.01, label="Sim. hits")
-        ax.tick_params(direction="in", which="both", top=True, right=True)
         ax.set_xlabel("Sim. hit x [mm]")
         ax.set_ylabel("Sim. hit y [mm]")
-        ax.minorticks_on()
-        ax.grid(which="both")
         ax.set_axisbelow(True)
         fig.subplots_adjust(left=0.15, right=0.93, top=0.95, bottom=0.09)
         pdf.savefig()
@@ -265,13 +266,149 @@ class Plotter:
             cmin=0.5,
         )
         fig.colorbar(im, ax=ax, pad=0.01, label="Sim. hits")
-        ax.tick_params(direction="in", which="both", top=True, right=True)
         ax.set_xlabel("Sim. hit z [mm]")
         ax.set_ylabel("Sim. hit r [mm]")
-        ax.minorticks_on()
-        ax.grid(which="both")
         ax.set_axisbelow(True)
         fig.subplots_adjust(left=0.15, right=0.93, top=0.95, bottom=0.09)
+        pdf.savefig()
+        plt.close()
+
+
+    def plot_simhit_p(self, pdf: PdfPages):
+        print("Plotting sim hit p / mcp p...")
+        mask = self.df["simhit"].astype(bool)
+        bins = np.linspace(0, 1, 101)
+        fig, ax = plt.subplots(figsize=(8,8))
+        ax.hist(self.df[mask]["simhit_p"] / self.df[mask]["mcp_p"],
+                bins=bins,
+                histtype="stepfilled",
+                color="dodgerblue",
+                alpha=0.9,
+                )
+        ax.set_xlabel("Sim. hit $p$ / Sim. $p$")
+        ax.set_ylabel("Counts")
+        ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
+        ax.set_axisbelow(True)
+        ax.semilogy()
+        pdf.savefig()
+        plt.close()
+
+
+    def plot_simhit_pt(self, pdf: PdfPages):
+        print("Plotting sim hit pt / mcp pt...")
+        mask = self.df["simhit"].astype(bool)
+        bins = np.linspace(0, 1, 101)
+        fig, ax = plt.subplots(figsize=(8,8))
+        ax.hist(self.df[mask]["simhit_pt"] / self.df[mask]["mcp_pt"],
+                bins=bins,
+                histtype="stepfilled",
+                color="dodgerblue",
+                alpha=0.9,
+                )
+        ax.set_xlabel("Sim. hit $p_T$ / Sim. $p_T$")
+        ax.set_ylabel("Counts")
+        ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
+        ax.set_axisbelow(True)
+        ax.semilogy()
+        pdf.savefig()
+        plt.close()
+
+
+    def plot_simhit_costheta(self, pdf: PdfPages):
+        print("Plotting sim hit costheta ...")
+        mask = self.df["simhit"].astype(bool)
+        bins = np.linspace(-1, 1, 101)
+        fig, ax = plt.subplots(figsize=(8,8))
+        ax.hist(self.df[mask]["simhit_costheta"],
+                bins=bins,
+                histtype="stepfilled",
+                color="dodgerblue",
+                alpha=0.9,
+                )
+        ax.set_xlabel(r"Sim. hit cos($\theta$) between $r$ and $p$")
+        ax.set_ylabel("Counts")
+        ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
+        ax.set_axisbelow(True)
+        ax.semilogy()
+        pdf.savefig()
+        plt.close()
+
+
+    def plot_simhit_costheta_vs_time(self, pdf: PdfPages):
+        print("Plotting sim hit costheta vs time ...")
+        mask = self.df["simhit"].astype(bool)
+        bins = [
+            np.linspace(0, 40, 121),
+            np.linspace(-1.05, 1.05, 111),
+        ]
+        for simhit_t in ["simhit_t", "simhit_t_corrected"]:
+            fig, ax = plt.subplots(figsize=(8,8))
+            _, _, _, im = ax.hist2d(
+                self.df[mask][simhit_t],
+                self.df[mask]["simhit_costheta"],
+                bins=bins,
+                cmap="gist_rainbow",
+                cmin=0.5,
+                norm=colors.LogNorm(vmin=1),
+                )
+            xlabel = "Sim. hit time [ns]" + (r" minus $R/c$" if "corrected" in simhit_t else "")
+            fig.colorbar(im, ax=ax, pad=0.01, label="Sim. hits")
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel(r"Sim. hit cos($\theta$) between $r$ and $p$")
+            ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
+            ax.set_axisbelow(True)
+            pdf.savefig()
+            plt.close()
+
+
+    def plot_simhit_p_vs_time(self, pdf: PdfPages):
+        print("Plotting sim hit p vs time ...")
+        mask = self.df["simhit"].astype(bool)
+        bins = [
+            np.linspace(0, 40, 121),
+            np.linspace(-0.05, 1.05, 111),
+        ]
+        for simhit_t in ["simhit_t", "simhit_t_corrected"]:
+            fig, ax = plt.subplots(figsize=(8,8))
+            _, _, _, im = ax.hist2d(
+                self.df[mask][simhit_t],
+                self.df[mask]["simhit_pt"] / self.df[mask]["mcp_pt"],
+                bins=bins,
+                cmap="gist_rainbow",
+                cmin=0.5,
+                norm=colors.LogNorm(vmin=1),
+                )
+            xlabel = "Sim. hit time [ns]" + (r" minus $R/c$" if "corrected" in simhit_t else "")
+            fig.colorbar(im, ax=ax, pad=0.01, label="Sim. hits")
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel("Sim. hit $p$ / Sim. $p$")
+            ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
+            ax.set_axisbelow(True)
+            pdf.savefig()
+            plt.close()
+
+
+    def plot_simhit_p_vs_costheta(self, pdf: PdfPages):
+        print("Plotting sim hit p vs costheta ...")
+        mask = self.df["simhit"].astype(bool)
+        bins = [
+            np.linspace(-1.05, 1.05, 111),
+            np.linspace(-0.05, 1.05, 111),
+        ]
+        fig, ax = plt.subplots(figsize=(8,8))
+        _, _, _, im = ax.hist2d(
+            self.df[mask]["simhit_costheta"],
+            self.df[mask]["simhit_pt"] / self.df[mask]["mcp_pt"],
+            bins=bins,
+            cmap="gist_rainbow",
+            cmin=0.5,
+            norm=colors.LogNorm(vmin=1),
+            )
+        fig.colorbar(im, ax=ax, pad=0.01, label="Sim. hits")
+        ax.set_xlabel(r"Sim. hit cos($\theta$) between $r$ and $p$")
+        ax.set_ylabel("Sim. hit $p$ / Sim. $p$")
+        ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
+        ax.set_axisbelow(True)
         pdf.savefig()
         plt.close()
 
@@ -279,7 +416,7 @@ class Plotter:
     def plot_efficiency_vs_sim(self, pdf: PdfPages):
         bins = {
             "mcp_pt": np.linspace(0, 10, 101),
-            "mcp_eta": np.linspace(-0.9, 0.9, 91),
+            "mcp_eta": np.linspace(-0.8, 0.8, 161),
             "mcp_phi": np.linspace(-3.2, 3.2, 161),
         }
         system_name = {
@@ -337,13 +474,10 @@ class Plotter:
                         linestyle="none",
                         color="dodgerblue",
                     )
-                    ax.set_ylim(0.9, 1.01)
-                    ax.tick_params(direction="in", which="both", top=True, right=True)
+                    ax.set_ylim(0.95, 1.005)
                     ax.set_xlabel(xlabel[kinematic])
                     ax.set_ylabel(f"Sim. hit efficiency with $t_{{corrected}}$ < {MAX_TIME} ns")
                     ax.set_title(f"{system_name[system]}, layer {layer}")
-                    ax.minorticks_on()
-                    ax.grid(which="both")
                     ax.set_axisbelow(True)
                     fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
                     pdf.savefig()
