@@ -4,16 +4,15 @@ import pandas as pd
 import multiprocessing as mp
 
 from constants import BARREL_TRACKER_MAX_ETA
+from constants import BARREL_TRACKER_MAX_RADIUS
+from constants import ONE_GEV, ONE_MM
 
 MCPARTICLE = "MCParticle"
 MUON = 13
 SPEED_OF_LIGHT = 299.792458  # mm/ns
-ONE_MM = 1.0
-ONE_GEV = 1.0
 HALF_SENSOR_THICKNESS = 50.0 # um
 EPSILON = 1e-6
 EPSILON_INSIDE_BOUNDS = 1.0
-BARREL_TRACKER_MAX_RADIUS = 1446.0
 COLLECTIONS = [
     "InnerTrackerBarrelCollection",
     "OuterTrackerBarrelCollection",
