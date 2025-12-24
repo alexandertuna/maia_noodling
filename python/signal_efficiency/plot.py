@@ -277,7 +277,7 @@ class Plotter:
     def plot_simhit_p(self, pdf: PdfPages):
         print("Plotting sim hit p / mcp p...")
         mask = self.df["simhit"].astype(bool)
-        bins = np.linspace(0, 1, 101)
+        bins = np.linspace(-0.05, 1.05, 111)
         fig, ax = plt.subplots(figsize=(8,8))
         ax.hist(self.df[mask]["simhit_p"] / self.df[mask]["mcp_p"],
                 bins=bins,
@@ -297,7 +297,7 @@ class Plotter:
     def plot_simhit_pt(self, pdf: PdfPages):
         print("Plotting sim hit pt / mcp pt...")
         mask = self.df["simhit"].astype(bool)
-        bins = np.linspace(0, 1, 101)
+        bins = np.linspace(-0.05, 1.05, 111)
         fig, ax = plt.subplots(figsize=(8,8))
         ax.hist(self.df[mask]["simhit_pt"] / self.df[mask]["mcp_pt"],
                 bins=bins,
@@ -372,7 +372,7 @@ class Plotter:
             fig, ax = plt.subplots(figsize=(8,8))
             _, _, _, im = ax.hist2d(
                 self.df[mask][simhit_t],
-                self.df[mask]["simhit_pt"] / self.df[mask]["mcp_pt"],
+                self.df[mask]["simhit_p"] / self.df[mask]["mcp_p"],
                 bins=bins,
                 cmap="gist_rainbow",
                 cmin=0.5,
@@ -398,7 +398,7 @@ class Plotter:
         fig, ax = plt.subplots(figsize=(8,8))
         _, _, _, im = ax.hist2d(
             self.df[mask]["simhit_costheta"],
-            self.df[mask]["simhit_pt"] / self.df[mask]["mcp_pt"],
+            self.df[mask]["simhit_p"] / self.df[mask]["mcp_p"],
             bins=bins,
             cmap="gist_rainbow",
             cmin=0.5,
