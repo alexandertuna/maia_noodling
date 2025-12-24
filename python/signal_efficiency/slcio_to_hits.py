@@ -18,6 +18,7 @@ COLLECTIONS = [
     "InnerTrackerBarrelCollection",
     "OuterTrackerBarrelCollection",
 ]
+PARTICLES_OF_INTEREST = [MUON]
 print("BARREL_TRACKER_MAX_ETA", BARREL_TRACKER_MAX_ETA)
 
 MM_TO_CM = 0.1
@@ -111,7 +112,7 @@ def convert_one_file(
         mcp_endpoint_y = [mcp.getEndpoint()[1] for mcp in mcparticles]
         mcp_endpoint_z = [mcp.getEndpoint()[2] for mcp in mcparticles]
         for i_mcp in range(len(mcparticles)):
-            if abs(mcp_pdg[i_mcp]) != MUON:
+            if abs(mcp_pdg[i_mcp]) not in PARTICLES_OF_INTEREST:
                 continue
             rows.append({
                 'simhit': False,
@@ -158,6 +159,8 @@ def convert_one_file(
                 if not mcp in mcparticles:
                     continue
                 i_mcp = mcparticles.index(mcp)
+                if abs(mcp_pdg[i_mcp]) not in PARTICLES_OF_INTEREST:
+                    continue
 
                 # # ------------------------------------------------------------
                 # # try putting cuts here
@@ -240,7 +243,7 @@ def convert_one_file(
 
 
 def postprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-    print("Postprocessing DataFrame ...")
+    # print("Postprocessing DataFrame ...")
     df["mcp_p"] = np.sqrt(df["mcp_px"]**2 + df["mcp_py"]**2 + df["mcp_pz"]**2)
     df["mcp_pt"] = np.sqrt(df["mcp_px"]**2 + df["mcp_py"]**2)
     df["mcp_theta"] = np.arctan2(df["mcp_pt"], df["mcp_pz"])
