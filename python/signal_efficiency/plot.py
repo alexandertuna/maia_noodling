@@ -26,6 +26,8 @@ rcParams.update({
 })
 
 from constants import BARREL_TRACKER_MAX_ETA
+from constants import BARREL_TRACKER_MAX_RADIUS
+from constants import ONE_GEV, ONE_MM
 
 INNER_TRACKER_BARREL = 3
 OUTER_TRACKER_BARREL = 5
@@ -48,6 +50,7 @@ class Plotter:
 
     def plot(self):
         with PdfPages(self.pdf) as pdf:
+            self.title_slide(pdf)
             self.plot_mcp_pt(pdf)
             self.plot_mcp_eta(pdf)
             self.plot_mcp_phi(pdf)
@@ -64,6 +67,27 @@ class Plotter:
             self.plot_simhit_p_vs_costheta(pdf)
             self.plot_efficiency_vs_sim(pdf)
             # self.plot_weird_radius_hits(pdf)
+
+
+    def title_slide(self, pdf: PdfPages):
+        text = "Efficiency denominator"
+        texts = [
+            f" * Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$",
+            f" * non-zero charge",
+            f" * $p_T$ > {ONE_GEV} GeV",
+            f" * Vertex r < {ONE_MM} mm",
+            f" * abs(Vertex z) < {ONE_MM} mm",
+            f" * Endpoint r > {BARREL_TRACKER_MAX_RADIUS} mm",
+            f" * abs($\\eta$) < {BARREL_TRACKER_MAX_ETA}",
+        ]
+        dy = 0.05
+        fig, ax = plt.subplots(figsize=(8, 8))
+        ax.text(0.1, 0.8, text, ha="left")
+        for it, text in enumerate(texts):
+            ax.text(0.1, 0.6 - it*dy, text, ha="left")
+        ax.axis("off")
+        pdf.savefig()
+        plt.close()
 
 
     def plot_weird_radius_hits(self, pdf: PdfPages):
@@ -432,19 +456,17 @@ class Plotter:
 
         # text describing efficiency calculation
         dy = 0.05
-        text_eff = f"Efficiency numerator:"
-        text_mcp = f"Number of MC particles with"
-        text_hit = f" * At least 1 sim. hit on a layer"
-        text_time = f" * $t - R/c$ < {MAX_TIME} ns"
-        text_geo = f" * Inside the bounds of a sensor" if self.inside_bounds else ""
+        text = f"Efficiency numerator:"
+        texts = [
+            f"Number of MC particles with",
+            f"at least 1 sim. hit on a layer which are",
+            f" * Linked to the MC particle",
+            f" * $t - R/c$ < {MAX_TIME} ns",
+            f" * Inside the bounds of a sensor" if self.inside_bounds else "",
+        ]
         fig, ax = plt.subplots(figsize=(8, 8))
-        for it, text in enumerate([
-            text_eff,
-            text_mcp,
-            text_hit,
-            text_time,
-            text_geo,
-        ]):
+        ax.text(0.1, 0.8, text, ha="left")
+        for it, text in enumerate(texts):
             ax.text(0.1, 0.6 - it*dy, text, ha="left")
         ax.axis("off")
         pdf.savefig()
