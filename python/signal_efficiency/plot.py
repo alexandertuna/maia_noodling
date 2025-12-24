@@ -40,9 +40,10 @@ MAX_TIME = 3.0 # ns
 class Plotter:
 
 
-    def __init__(self, df: pd.DataFrame, pdf: str):
+    def __init__(self, df: pd.DataFrame, pdf: str, inside_bounds: bool):
         self.df = df
         self.pdf = pdf
+        self.inside_bounds = inside_bounds
 
 
     def plot(self):
@@ -428,6 +429,26 @@ class Plotter:
             "mcp_eta": "Simulated eta",
             "mcp_phi": "Simulated phi",
         }
+
+        # text describing efficiency calculation
+        dy = 0.05
+        text_eff = f"Efficiency numerator:"
+        text_mcp = f"Number of MC particles with"
+        text_hit = f" * At least 1 sim. hit on a layer"
+        text_time = f" * $t - R/c$ < {MAX_TIME} ns"
+        text_geo = f" * Inside the bounds of a sensor" if self.inside_bounds else ""
+        fig, ax = plt.subplots(figsize=(8, 8))
+        for it, text in enumerate([
+            text_eff,
+            text_mcp,
+            text_hit,
+            text_time,
+            text_geo,
+        ]):
+            ax.text(0.1, 0.6 - it*dy, text, ha="left")
+        ax.axis("off")
+        pdf.savefig()
+        plt.close()
 
         # denominator of efficiency
         mask_denom = ~(self.df["simhit"].astype(bool))
