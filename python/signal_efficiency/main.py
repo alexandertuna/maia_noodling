@@ -28,7 +28,11 @@ def main():
     ops = options()
     fnames = get_filenames(FNAMES)
     geometry = ops.geometry
-    df = SlcioToHitsDataFrame(slcio_file_paths=fnames, load_geometry=geometry).convert()
+
+    # convert slcio files to dataframe
+    converter = SlcioToHitsDataFrame(slcio_file_paths=fnames,
+                                     load_geometry=geometry)
+    df = converter.convert()
 
     # write df to file
     if ops.write_to_parquet:
