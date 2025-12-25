@@ -31,6 +31,7 @@ rcParams.update({
 from constants import BARREL_TRACKER_MAX_ETA
 from constants import BARREL_TRACKER_MAX_RADIUS
 from constants import ONE_GEV, ONE_MM
+from constants import INSIDE_BOUNDS, UNDEFINED_BOUNDS
 from slcio_to_hits import filter_dataframe
 
 INNER_TRACKER_BARREL = 3
@@ -46,10 +47,9 @@ MAX_TIME = 3.0 # ns
 class Plotter:
 
 
-    def __init__(self, df: pd.DataFrame, pdf: str, inside_bounds: bool):
+    def __init__(self, df: pd.DataFrame, pdf: str):
         self.df = df
         self.pdf = pdf
-        self.inside_bounds = inside_bounds
 
 
     def plot(self):
@@ -453,6 +453,11 @@ class Plotter:
         pdf.savefig()
         plt.close()
 
+        # 1d plots showing cut values
+        mask = numerator_mask(self.df, SYSTEMS, LAYERS, MAX_TIME)
+        # fig, ax = plt.subplots(figsize=(8,8), ncols=2, nrows=2)
+        # ax[0, 0].hist(self.df[mask]["simhit_t_corrected"])
+
         # denominator of efficiency
         mask_denom = ~(self.df["simhit"].astype(bool))
         df_denom = self.df[mask_denom]
@@ -513,6 +518,8 @@ def numerator_mask(
         (df["simhit"].astype(bool)) &
         (df["simhit_system"].isin(systems)) &
         (df["simhit_layer"].isin(layers)) &
+        (df["simhit_inside_bounds"].isin([INSIDE_BOUNDS,
+                                          UNDEFINED_BOUNDS])) &
         (df["simhit_t_corrected"] < max_time)
     )
 

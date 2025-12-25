@@ -81,7 +81,7 @@ def main():
     #                       ):
     #     print(df)
 
-    plotter = Plotter(df, PDF, geometry)
+    plotter = Plotter(df, PDF)
     plotter.plot()
 
 
