@@ -295,9 +295,8 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         (np.abs(df["mcp_eta"]) < BARREL_TRACKER_MAX_ETA) &
         (df["simhit_inside_bounds"] | (~df["simhit"]))
     )
-        # (np.abs(df["simhit_distance"]) < HALF_SENSOR_THICKNESS)
     n_pass, n_total = mask.sum(), len(mask)
-    print(f"Keeping {n_pass} / {n_total} rows when filtering ...")
+    print(f"Keeping {n_pass} / {n_total} rows when filtering")
     return df[mask].reset_index(drop=True)
 
 
