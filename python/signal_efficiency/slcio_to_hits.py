@@ -6,6 +6,7 @@ import multiprocessing as mp
 from constants import BARREL_TRACKER_MAX_ETA
 from constants import BARREL_TRACKER_MAX_RADIUS
 from constants import ONE_GEV, ONE_MM
+from constants import OUTSIDE_BOUNDS, INSIDE_BOUNDS, UNDEFINED_BOUNDS
 
 MCPARTICLE = "MCParticle"
 MUON = 13
@@ -124,7 +125,7 @@ def convert_one_file(
                 'simhit_t': 0,
                 'simhit_cellid0': 0,
                 'simhit_pathlength': 0,
-                'simhit_inside_bounds': False,
+                'simhit_inside_bounds': UNDEFINED_BOUNDS,
                 'simhit_distance': 0,
                 'i_mcp': i_mcp,
                 'mcp_px': mcp_px[i_mcp],
@@ -195,10 +196,10 @@ def convert_one_file(
                     pos = dd4hep.rec.Vector3D(hit.getPosition()[0] * MM_TO_CM,
                                             hit.getPosition()[1] * MM_TO_CM,
                                             hit.getPosition()[2] * MM_TO_CM)
-                    inside_bounds = surf.insideBounds(pos) # EPSILON_INSIDE_BOUNDS
+                    inside_bounds = INSIDE_BOUNDS if surf.insideBounds(pos) else OUTSIDE_BOUNDS
                     distance = surf.distance(pos) * CM_TO_MM
                 else:
-                    inside_bounds = True
+                    inside_bounds = UNDEFINED_BOUNDS
                     distance = -1
 
                 # record the hit info
@@ -292,8 +293,7 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         (df["mcp_vertex_r"] < ONE_MM) &
         (np.abs(df["mcp_vertex_z"]) < ONE_MM) &
         (df["mcp_endpoint_r"] > BARREL_TRACKER_MAX_RADIUS) &
-        (np.abs(df["mcp_eta"]) < BARREL_TRACKER_MAX_ETA) &
-        (df["simhit_inside_bounds"] | (~df["simhit"]))
+        (np.abs(df["mcp_eta"]) < BARREL_TRACKER_MAX_ETA)
     )
     n_pass, n_total = mask.sum(), len(mask)
     print(f"Keeping {n_pass} / {n_total} rows when filtering")
