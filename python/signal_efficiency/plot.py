@@ -1,3 +1,5 @@
+import inspect
+import textwrap
 import warnings
 import numpy as np
 import pandas as pd
@@ -28,6 +30,7 @@ rcParams.update({
 from constants import BARREL_TRACKER_MAX_ETA
 from constants import BARREL_TRACKER_MAX_RADIUS
 from constants import ONE_GEV, ONE_MM
+from slcio_to_hits import filter_dataframe
 
 INNER_TRACKER_BARREL = 3
 OUTER_TRACKER_BARREL = 5
@@ -71,6 +74,8 @@ class Plotter:
 
     def title_slide(self, pdf: PdfPages):
         text = "Efficiency denominator"
+        code = inspect.getsource(filter_dataframe)
+        code = textwrap.dedent(code)
         texts = [
             f" * Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$",
             f" * non-zero charge",
@@ -80,11 +85,9 @@ class Plotter:
             f" * Endpoint r > {BARREL_TRACKER_MAX_RADIUS} mm",
             f" * abs($\\eta$) < {BARREL_TRACKER_MAX_ETA}",
         ]
-        dy = 0.05
         fig, ax = plt.subplots(figsize=(8, 8))
-        ax.text(0.1, 0.8, text, ha="left")
-        for it, text in enumerate(texts):
-            ax.text(0.1, 0.6 - it*dy, text, ha="left")
+        ax.text(0.0, 0.8, text, ha="left")
+        ax.text(0.0, 0.7, code, ha="left", va="top", fontfamily="monospace", fontsize=10)
         ax.axis("off")
         pdf.savefig()
         plt.close()
@@ -437,7 +440,6 @@ class Plotter:
         pdf.savefig()
         plt.close()
 
-
     def plot_efficiency_vs_sim(self, pdf: PdfPages):
         bins = {
             "mcp_pt": np.linspace(0, 10, 101),
@@ -457,17 +459,11 @@ class Plotter:
         # text describing efficiency calculation
         dy = 0.05
         text = f"Efficiency numerator:"
-        texts = [
-            f"Number of MC particles with",
-            f"at least 1 sim. hit on a layer which are",
-            f" * Linked to the MC particle",
-            f" * $t - R/c$ < {MAX_TIME} ns",
-            f" * Inside the bounds of a sensor" if self.inside_bounds else "",
-        ]
+        code = inspect.getsource(numerator_mask)
+        code = textwrap.dedent(code)
         fig, ax = plt.subplots(figsize=(8, 8))
-        ax.text(0.1, 0.8, text, ha="left")
-        for it, text in enumerate(texts):
-            ax.text(0.1, 0.6 - it*dy, text, ha="left")
+        ax.text(0.0, 0.8, text, ha="left")
+        ax.text(0.0, 0.7, code, ha="left", va="top", fontfamily="monospace", fontsize=10)
         ax.axis("off")
         pdf.savefig()
         plt.close()
@@ -489,12 +485,7 @@ class Plotter:
 
                 for layer in LAYERS:
 
-                    mask_numer = (
-                        (self.df["simhit"].astype(bool)) &
-                        (self.df["simhit_system"] == system) &
-                        (self.df["simhit_layer"] == layer) &
-                        (self.df["simhit_t_corrected"] < MAX_TIME)
-                    )
+                    mask_numer = numerator_mask(self.df, system, layer, MAX_TIME)
 
                     # dont double-count if >1 hits on a layer
                     subset = ["file", "i_event", "i_mcp", "simhit_system", "simhit_layer"]
@@ -525,4 +516,14 @@ class Plotter:
                     fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
                     pdf.savefig()
                     plt.close()
+
+
+def numerator_mask(df, system, layer, max_time) -> pd.Series:
+    return (
+        (df["i_mcp"] >= 0) &
+        (df["simhit"].astype(bool)) &
+        (df["simhit_system"] == system) &
+        (df["simhit_layer"] == layer) &
+        (df["simhit_t_corrected"] < max_time)
+    )
 
