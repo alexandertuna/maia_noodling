@@ -31,7 +31,7 @@ rcParams.update({
 from constants import BARREL_TRACKER_MAX_ETA
 from constants import BARREL_TRACKER_MAX_RADIUS
 from constants import ONE_GEV, ONE_MM
-from constants import INSIDE_BOUNDS, UNDEFINED_BOUNDS
+from constants import INSIDE_BOUNDS, UNDEFINED_BOUNDS, POSSIBLE_BOUNDS
 from constants import MIN_SIMHIT_PT_FRACTION, MAX_TIME
 from slcio_to_hits import filter_dataframe
 
@@ -426,6 +426,7 @@ class Plotter:
         pdf.savefig()
         plt.close()
 
+
     def plot_efficiency_vs_sim(self, pdf: PdfPages):
         bins = {
             "mcp_pt": np.linspace(0, 10, 101),
@@ -444,12 +445,14 @@ class Plotter:
 
         # text describing efficiency calculation
         text = f"Efficiency numerator:"
-        numer = textwrap.dedent(inspect.getsource(numerator_mask))
-        first = textwrap.dedent(inspect.getsource(first_exit_mask))
+        numer = inspect.getsource(numerator_mask)
+        numer = textwrap.dedent(numer)
+        first = inspect.getsource(first_exit_mask)
+        first = textwrap.dedent(first)
         fig, ax = plt.subplots(figsize=(8, 8))
         ax.text(0.0, 0.8, text, ha="left")
         ax.text(0.0, 0.7, numer, ha="left", va="top", fontfamily="monospace", fontsize=10)
-        ax.text(0.0, 0.4, first, ha="left", va="top", fontfamily="monospace", fontsize=10)
+        # ax.text(0.0, 0.4, first, ha="left", va="top", fontfamily="monospace", fontsize=10)
         ax.axis("off")
         pdf.savefig()
         plt.close()
@@ -459,8 +462,34 @@ class Plotter:
 
         # 1d plots showing cut values
         mask = numerator_mask(self.df, SYSTEMS, LAYERS) & first_exit
-        # fig, ax = plt.subplots(figsize=(8,8), ncols=2, nrows=2)
-        # ax[0, 0].hist(self.df[mask]["simhit_t_corrected"])
+        fig, ax = plt.subplots(figsize=(8,8), ncols=2, nrows=2)
+        ax[0, 0].hist(self.df[mask]["simhit_t_corrected"], bins=np.linspace(0, 10, 101))
+        ax[0, 1].hist(self.df[mask]["simhit_costheta"], bins=np.linspace(-1, 1, 101))
+        ax[1, 0].hist(self.df[mask]["simhit_p"] / self.df[mask]["mcp_p"], bins=np.linspace(0, 1, 101))
+        ax[1, 1].hist(self.df[mask]["simhit_inside_bounds"], bins=np.linspace(min(POSSIBLE_BOUNDS) - 0.5,
+                                                                              max(POSSIBLE_BOUNDS) + 0.5,
+                                                                              len(POSSIBLE_BOUNDS) + 1))
+        ax[0, 0].set_ylabel("Counts")
+        ax[0, 1].set_ylabel("Counts")
+        ax[1, 0].set_ylabel("Counts")
+        ax[1, 1].set_ylabel("Counts")
+        ax[0, 0].semilogy()
+        ax[0, 1].semilogy()
+        ax[1, 0].semilogy()
+        ax[1, 1].semilogy()
+        ax[0, 0].set_ylim([1, None])
+        ax[0, 1].set_ylim([1, None])
+        ax[1, 0].set_ylim([1, None])
+        ax[1, 1].set_ylim([1, None])
+        ax[0, 0].set_xlabel("Sim. hit time minus $R/c$ [ns]")
+        ax[0, 1].set_xlabel(r"Sim. hit cos$\theta$ between $r$ and $p$")
+        ax[1, 0].set_xlabel(r"Sim. hit $p$ / Sim. $p$")
+        ax[1, 1].set_xticks(POSSIBLE_BOUNDS)
+        ax[1, 1].set_xticklabels(["Outside bounds", "Inside bounds", "Undefined"], rotation=10, fontsize=10)
+        fig.suptitle("Distributions after all cuts")
+        fig.subplots_adjust(left=0.1, wspace=0.3)
+        pdf.savefig()
+        plt.close()
 
         # denominator of efficiency
         mask_denom = ~(self.df["simhit"].astype(bool))

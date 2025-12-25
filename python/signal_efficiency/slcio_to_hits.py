@@ -112,6 +112,7 @@ def convert_one_file(
         mcp_endpoint_y = [mcp.getEndpoint()[1] for mcp in mcparticles]
         mcp_endpoint_z = [mcp.getEndpoint()[2] for mcp in mcparticles]
         for i_mcp in range(len(mcparticles)):
+            # big speedup by skipping unwanted particles early
             if abs(mcp_pdg[i_mcp]) not in PARTICLES_OF_INTEREST:
                 continue
             rows.append({
@@ -288,6 +289,7 @@ def postprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
 def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     mask = (
+        (abs(df["mcp_pdg"]).isin(PARTICLES_OF_INTEREST)) &
         (df["mcp_q"] != 0) &
         (df["mcp_pt"] > ONE_GEV) &
         (df["mcp_vertex_r"] < ONE_MM) &
