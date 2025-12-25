@@ -18,6 +18,7 @@ rcParams.update({
     "ytick.minor.visible": True,
     "axes.grid": True,
     "axes.grid.which": "both",
+    "axes.axisbelow": True,
     "grid.linewidth": 0.5,
     "grid.alpha": 0.1,
     "grid.color": "gray",
@@ -127,7 +128,6 @@ class Plotter:
                 ax.set_xlabel(xlabel[feat])
                 ax.set_ylabel("Counts")
                 ax.set_title(f"Sim. hits with radius {r_lo}-{r_hi} mm")
-                ax.set_axisbelow(True)
 
             fig.subplots_adjust(left=0.05, right=0.98, top=0.95, bottom=0.09, wspace=0.15)
             pdf.savefig()
@@ -147,7 +147,6 @@ class Plotter:
         ax.set_xlabel("Simulated $p_T$ [GeV]")
         ax.set_ylabel("Counts")
         ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
-        ax.set_axisbelow(True)
         fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
         pdf.savefig()
         plt.close()
@@ -166,7 +165,6 @@ class Plotter:
         ax.set_xlabel("Simulated eta")
         ax.set_ylabel("Counts")
         ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
-        ax.set_axisbelow(True)
         fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
         pdf.savefig()
         plt.close()
@@ -185,7 +183,6 @@ class Plotter:
         ax.set_xlabel("Simulated phi")
         ax.set_ylabel("Counts")
         ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
-        ax.set_axisbelow(True)
         fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
         pdf.savefig()
         plt.close()
@@ -204,7 +201,6 @@ class Plotter:
                 )
         ax.set_xlabel("Sim. hit time [ns]")
         ax.set_ylabel("Counts")
-        ax.set_axisbelow(True)
         fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
         pdf.savefig()
         ax.semilogy()
@@ -228,7 +224,6 @@ class Plotter:
         ax.set_xlabel(r"Sim. hit time minus $R/c$ [ns]")
         ax.set_ylabel("Counts")
         ax.set_title(f"Require sim. hit time < {MAX_TIME}ns")
-        ax.set_axisbelow(True)
         fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
         pdf.savefig()
         ax.semilogy()
@@ -248,7 +243,6 @@ class Plotter:
                 )
         ax.set_xlabel("Sim. hit distance to surface [mm]")
         ax.set_ylabel("Counts")
-        ax.set_axisbelow(True)
         fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
         pdf.savefig()
         ax.semilogy()
@@ -273,7 +267,6 @@ class Plotter:
         fig.colorbar(im, ax=ax, pad=0.01, label="Sim. hits")
         ax.set_xlabel("Sim. hit x [mm]")
         ax.set_ylabel("Sim. hit y [mm]")
-        ax.set_axisbelow(True)
         fig.subplots_adjust(left=0.15, right=0.93, top=0.95, bottom=0.09)
         pdf.savefig()
         plt.close()
@@ -296,7 +289,6 @@ class Plotter:
         fig.colorbar(im, ax=ax, pad=0.01, label="Sim. hits")
         ax.set_xlabel("Sim. hit z [mm]")
         ax.set_ylabel("Sim. hit r [mm]")
-        ax.set_axisbelow(True)
         fig.subplots_adjust(left=0.15, right=0.93, top=0.95, bottom=0.09)
         pdf.savefig()
         plt.close()
@@ -316,7 +308,6 @@ class Plotter:
         ax.set_xlabel("Sim. hit $p$ / Sim. $p$")
         ax.set_ylabel("Counts")
         ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
-        ax.set_axisbelow(True)
         ax.semilogy()
         pdf.savefig()
         plt.close()
@@ -336,7 +327,6 @@ class Plotter:
         ax.set_xlabel("Sim. hit $p_T$ / Sim. $p_T$")
         ax.set_ylabel("Counts")
         ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
-        ax.set_axisbelow(True)
         ax.semilogy()
         pdf.savefig()
         plt.close()
@@ -356,7 +346,6 @@ class Plotter:
         ax.set_xlabel(r"Sim. hit cos($\theta$) between $r$ and $p$")
         ax.set_ylabel("Counts")
         ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
-        ax.set_axisbelow(True)
         ax.semilogy()
         pdf.savefig()
         plt.close()
@@ -384,7 +373,6 @@ class Plotter:
             ax.set_xlabel(xlabel)
             ax.set_ylabel(r"Sim. hit cos($\theta$) between $r$ and $p$")
             ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
-            ax.set_axisbelow(True)
             pdf.savefig()
             plt.close()
 
@@ -411,7 +399,6 @@ class Plotter:
             ax.set_xlabel(xlabel)
             ax.set_ylabel("Sim. hit $p$ / Sim. $p$")
             ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
-            ax.set_axisbelow(True)
             pdf.savefig()
             plt.close()
 
@@ -436,7 +423,6 @@ class Plotter:
         ax.set_xlabel(r"Sim. hit cos($\theta$) between $r$ and $p$")
         ax.set_ylabel("Sim. hit $p$ / Sim. $p$")
         ax.set_title(f"Simulated muon gun, $p_T$ 0-10 GeV, $|\\eta| < {BARREL_TRACKER_MAX_ETA}$")
-        ax.set_axisbelow(True)
         pdf.savefig()
         plt.close()
 
@@ -512,7 +498,6 @@ class Plotter:
                     ax.set_xlabel(xlabel[kinematic])
                     ax.set_ylabel(f"Sim. hit efficiency with $t_{{corrected}}$ < {MAX_TIME} ns")
                     ax.set_title(f"{system_name[system]}, layer {layer}")
-                    ax.set_axisbelow(True)
                     fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
                     pdf.savefig()
                     plt.close()
