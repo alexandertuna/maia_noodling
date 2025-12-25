@@ -443,7 +443,6 @@ class Plotter:
         }
 
         # text describing efficiency calculation
-        dy = 0.05
         text = f"Efficiency numerator:"
         code = inspect.getsource(numerator_mask)
         code = textwrap.dedent(code)
@@ -471,7 +470,7 @@ class Plotter:
 
                 for layer in LAYERS:
 
-                    mask_numer = numerator_mask(self.df, system, layer, MAX_TIME)
+                    mask_numer = numerator_mask(self.df, [system], [layer], MAX_TIME)
 
                     # dont double-count if >1 hits on a layer
                     subset = ["file", "i_event", "i_mcp", "simhit_system", "simhit_layer"]
@@ -503,12 +502,17 @@ class Plotter:
                     plt.close()
 
 
-def numerator_mask(df, system, layer, max_time) -> pd.Series:
+def numerator_mask(
+    df: pd.DataFrame,
+    systems: list[int],
+    layers: list[int],
+    max_time: float,
+) -> pd.Series:
     return (
         (df["i_mcp"] >= 0) &
         (df["simhit"].astype(bool)) &
-        (df["simhit_system"] == system) &
-        (df["simhit_layer"] == layer) &
+        (df["simhit_system"].isin(systems)) &
+        (df["simhit_layer"].isin(layers)) &
         (df["simhit_t_corrected"] < max_time)
     )
 
