@@ -32,6 +32,7 @@ from constants import BARREL_TRACKER_MAX_ETA
 from constants import BARREL_TRACKER_MAX_RADIUS
 from constants import ONE_GEV, ONE_MM
 from constants import INSIDE_BOUNDS, UNDEFINED_BOUNDS
+from constants import MIN_SIMHIT_PT_FRACTION, MAX_TIME
 from slcio_to_hits import filter_dataframe
 
 INNER_TRACKER_BARREL = 3
@@ -41,7 +42,6 @@ SYSTEMS = [
     OUTER_TRACKER_BARREL,
 ]
 LAYERS = range(8)
-MAX_TIME = 3.0 # ns
 
 
 class Plotter:
@@ -444,17 +444,21 @@ class Plotter:
 
         # text describing efficiency calculation
         text = f"Efficiency numerator:"
-        code = inspect.getsource(numerator_mask)
-        code = textwrap.dedent(code)
+        numer = textwrap.dedent(inspect.getsource(numerator_mask))
+        first = textwrap.dedent(inspect.getsource(first_exit_mask))
         fig, ax = plt.subplots(figsize=(8, 8))
         ax.text(0.0, 0.8, text, ha="left")
-        ax.text(0.0, 0.7, code, ha="left", va="top", fontfamily="monospace", fontsize=10)
+        ax.text(0.0, 0.7, numer, ha="left", va="top", fontfamily="monospace", fontsize=10)
+        ax.text(0.0, 0.4, first, ha="left", va="top", fontfamily="monospace", fontsize=10)
         ax.axis("off")
         pdf.savefig()
         plt.close()
 
+        # mask for first exit / arc / path
+        first_exit = first_exit_mask(self.df)
+
         # 1d plots showing cut values
-        mask = numerator_mask(self.df, SYSTEMS, LAYERS, MAX_TIME)
+        mask = numerator_mask(self.df, SYSTEMS, LAYERS) & first_exit
         # fig, ax = plt.subplots(figsize=(8,8), ncols=2, nrows=2)
         # ax[0, 0].hist(self.df[mask]["simhit_t_corrected"])
 
@@ -475,7 +479,7 @@ class Plotter:
 
                 for layer in LAYERS:
 
-                    mask_numer = numerator_mask(self.df, [system], [layer], MAX_TIME)
+                    mask_numer = numerator_mask(self.df, [system], [layer]) & first_exit
 
                     # dont double-count if >1 hits on a layer
                     subset = ["file", "i_event", "i_mcp", "simhit_system", "simhit_layer"]
@@ -511,7 +515,6 @@ def numerator_mask(
     df: pd.DataFrame,
     systems: list[int],
     layers: list[int],
-    max_time: float,
 ) -> pd.Series:
     return (
         (df["i_mcp"] >= 0) &
@@ -519,7 +522,12 @@ def numerator_mask(
         (df["simhit_system"].isin(systems)) &
         (df["simhit_layer"].isin(layers)) &
         (df["simhit_inside_bounds"].isin([INSIDE_BOUNDS,
-                                          UNDEFINED_BOUNDS])) &
-        (df["simhit_t_corrected"] < max_time)
+                                          UNDEFINED_BOUNDS]))
     )
 
+def first_exit_mask(df: pd.DataFrame) -> pd.Series:
+    return (
+        (df["simhit_costheta"] > 0) &
+        (df["simhit_p"] / df["mcp_p"] > MIN_SIMHIT_PT_FRACTION) &
+        (df["simhit_t_corrected"] < MAX_TIME)
+    )
