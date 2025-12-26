@@ -546,10 +546,27 @@ class Plotter:
 
 
     def plot_doublet_efficiency_vs_sim(self, pdf: PdfPages):
-        bins = np.linspace(0, 10, 101)
+
+        bins = {
+            "mcp_pt": np.linspace(0, 10, 201),
+            "mcp_eta": np.linspace(-0.8, 0.8, 321),
+            "mcp_phi": np.linspace(-3.2, 3.2, 321),
+        }
+        system_name = {
+            INNER_TRACKER_BARREL: "Inner Tracker Barrel",
+            OUTER_TRACKER_BARREL: "Outer Tracker Barrel",
+        }
+        xlabel = {
+            "mcp_pt": "Simulated $p_T$ [GeV]",
+            "mcp_eta": "Simulated eta",
+            "mcp_phi": "Simulated phi",
+        }
 
         # add column for double-layer
         self.df["simhit_layer_div_2"] = self.df["simhit_layer"] // 2
+
+        # mask for first exit / arc / path
+        first_exit = first_exit_mask(self.df)
 
         # denominator of efficiency
         mask_denom = ~(self.df["simhit"].astype(bool))
@@ -557,62 +574,140 @@ class Plotter:
         if df_denom.duplicated().any():
             warnings.warn("Warning: duplicates found in denominator dataframe!")
 
-        system = SYSTEMS[0]
-        double_layer = LAYERS[2:4]
+        debug = False
+        for kinematic in [
+            "mcp_pt",
+            "mcp_eta",
+            "mcp_phi",
+        ]:
 
-        # numerator
-        first_exit = first_exit_mask(self.df)
-        mask_numer = numerator_mask(self.df, [system], double_layer) & first_exit
+            for system in SYSTEMS:
 
-        # calculate doublet efficiency
-        doublet_cols = [
-            "file",
-            "i_event", # the event
-            "i_mcp", # the MC particle
-            "simhit_system", # the system (IT, OT)
-            "simhit_layer_div_2", # the double layer
-            "simhit_module", # the phi-module
-            "simhit_sensor", # the z-sensor
-        ]
-        print("Finding doublets ... ")
-        doublet_groups = self.df[mask_numer].groupby(doublet_cols)
-        print(doublet_groups, len(doublet_groups))
-        print("Found doublets")
-        if True:
-            with pd.option_context("display.min_rows", 50,
-                                   "display.max_rows", 50,
-                                ):
-                for i_doublet, (_, group) in enumerate(doublet_groups):
-                    print(i_doublet)
-                    print(group)
-                    if i_doublet >= 10:
-                        break
-        valid_doublets = doublet_groups["simhit_layer"].nunique().ge(2).reset_index(name="valid_doublet")
-        with pd.option_context("display.min_rows", 50,
-                               "display.max_rows", 50,
-                            ):
-            print(valid_doublets)
+                for double_layers in [
+                    [0, 1],
+                    [2, 3],
+                    [4, 5],
+                    [6, 7],
+                ]:
+                    print(f"Plotting sim hit doublet efficiency vs {kinematic} for {system=} {double_layers=} ...")
 
-        at_least_one_doublet = (
-            valid_doublets
-            .groupby([
-                "file",
-                "i_event",
-                "i_mcp",
-                "simhit_system",
-                "simhit_layer_div_2",
-            ])["valid_doublet"]
-            .any()
-            .reset_index(name="at_least_one_doublet")
-        )
-        with pd.option_context("display.min_rows", 50,
-                               "display.max_rows", 50,
-                            ):
-            print(at_least_one_doublet)
-        
-        n_numer = at_least_one_doublet["at_least_one_doublet"].sum()
-        n_denom = len(df_denom)
-        print(f"Doublet efficiency for {system=} {double_layer=}: {n_numer} / {n_denom} = {n_numer / n_denom:.4f}")
+                    # numerator
+                    mask_numer = numerator_mask(self.df, [system], double_layers) & first_exit
+
+                    # calculate doublet efficiency
+                    doublet_cols = [
+                        "file",
+                        "i_event", # the event
+                        "i_mcp", # the MC particle
+                        "simhit_system", # the system (IT, OT)
+                        "simhit_layer_div_2", # the double layer
+                        "simhit_module", # the phi-module
+                        "simhit_sensor", # the z-sensor
+                    ]
+                    doublet_groups = self.df[mask_numer].groupby(doublet_cols)
+                    if debug:
+                        print(doublet_groups, len(doublet_groups))
+                    if debug:
+                        with pd.option_context("display.min_rows", 50,
+                                               "display.max_rows", 50,
+                                              ):
+                            for i_doublet, (_, group) in enumerate(doublet_groups):
+                                print(group)
+                                if i_doublet >= 20:
+                                    break
+                    valid_doublets = doublet_groups["simhit_layer"].nunique().ge(2).reset_index(name="valid_doublet")
+                    if debug:
+                        with pd.option_context("display.min_rows", 50,
+                                               "display.max_rows", 50,
+                                              ):
+                            print(valid_doublets)
+                    at_least_one_doublet = (
+                        valid_doublets
+                        .groupby([
+                            "file",
+                            "i_event",
+                            "i_mcp",
+                            "simhit_system",
+                            "simhit_layer_div_2",
+                        ])["valid_doublet"]
+                        .any()
+                        .reset_index(name="at_least_one_doublet")
+                    )
+                    if debug:
+                        with pd.option_context("display.min_rows", 50,
+                                               "display.max_rows", 50,
+                                              ):
+                            print(at_least_one_doublet)
+
+                    mcp_kin = (
+                        self.df[mask_numer]
+                        .groupby([
+                            "file",
+                            "i_event",
+                            "i_mcp",
+                            "simhit_system",
+                            "simhit_layer_div_2",
+                        ])[kinematic]
+                        .first()
+                        .reset_index()
+                    )
+                    if debug:
+                        with pd.option_context("display.min_rows", 50,
+                                               "display.max_rows", 50,
+                                              ):
+                            print(mcp_kin)
+
+                    # merge kinematic info
+                    at_least_one_doublet = at_least_one_doublet.merge(
+                        mcp_kin,
+                        on=[
+                            "file",
+                            "i_event",
+                            "i_mcp",
+                            "simhit_system",
+                            "simhit_layer_div_2",
+                        ],
+                        how="left",
+                    )
+                    if debug:
+                        with pd.option_context("display.min_rows", 50,
+                                               "display.max_rows", 50,
+                                              ):
+                            print(at_least_one_doublet)
+
+                    df_numer = at_least_one_doublet[at_least_one_doublet["at_least_one_doublet"].astype(bool)]
+                    if debug:
+                        n_numer = len(df_numer)
+                        n_denom = len(df_denom)
+                        print(f"Doublet efficiency for {system=} {double_layers=}: {n_numer} / {n_denom} = {n_numer / n_denom:.4f}")
+
+                    # efficiency plots
+                    counts_denom, _ = np.histogram(df_denom[kinematic], bins=bins[kinematic])
+                    counts_numer, _ = np.histogram(df_numer[kinematic], bins=bins[kinematic])
+                    efficiency = np.divide(
+                        counts_numer,
+                        counts_denom,
+                        out=np.full_like(counts_denom, 0.0, dtype=float),
+                        where=(counts_numer > 0.0),
+                    )
+                    bin_centers = (bins[kinematic][1:] + bins[kinematic][:-1]) / 2.0
+
+                    fig, ax = plt.subplots(figsize=(8, 8))
+                    ax.plot(
+                        bin_centers,
+                        efficiency,
+                        marker="o",
+                        markersize=2,
+                        linestyle="none",
+                        color="dodgerblue",
+                    )
+                    ax.set_ylim(0.9, 1.005)
+                    ax.set_xlabel(xlabel[kinematic])
+                    ax.set_ylabel(f"Sim. hit double-layer efficiency")
+                    ax.set_title(f"{system_name[system]}, layer {double_layers}")
+                    fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
+                    pdf.savefig()
+                    plt.close()
 
 
 def numerator_mask(
@@ -628,6 +723,7 @@ def numerator_mask(
         (df["simhit_inside_bounds"].isin([INSIDE_BOUNDS,
                                           UNDEFINED_BOUNDS]))
     )
+
 
 def first_exit_mask(df: pd.DataFrame) -> pd.Series:
     return (
