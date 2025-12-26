@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import colors
+from matplotlib.patches import FancyArrowPatch
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import rcParams
 rcParams.update({
@@ -42,6 +43,18 @@ SYSTEMS = [
     OUTER_TRACKER_BARREL,
 ]
 LAYERS = range(8)
+RADIUS = {
+    INNER_TRACKER_BARREL: [127, 127+2, 167, 167+2, 510, 510+2, 550, 550+2],
+    OUTER_TRACKER_BARREL: [819, 819+2, 899, 899+2, 1366, 1366+2, 1446, 1446+2],
+}
+N_SENSORS = {
+    INNER_TRACKER_BARREL: [32, 32, 32, 32, 46, 46, 46, 46],
+    OUTER_TRACKER_BARREL: [42, 42, 42, 42, 42, 42, 42, 42],
+}
+SENSOR_SIZE = {
+    INNER_TRACKER_BARREL: 30.0,
+    OUTER_TRACKER_BARREL: 60.0,
+}
 
 
 class Plotter:
@@ -431,7 +444,7 @@ class Plotter:
     def plot_layer_efficiency_vs_sim(self, pdf: PdfPages):
         bins = {
             "mcp_pt": np.linspace(0, 10, 101),
-            "mcp_eta": np.linspace(-0.8, 0.8, 161),
+            "mcp_eta": np.linspace(-0.7, 0.7, 281),
             "mcp_phi": np.linspace(-3.2, 3.2, 161),
         }
         system_name = {
@@ -551,7 +564,7 @@ class Plotter:
 
         bins = {
             "mcp_pt": np.linspace(0, 10, 201),
-            "mcp_eta": np.linspace(-0.8, 0.8, 321),
+            "mcp_eta": np.linspace(-0.7, 0.7, 281),
             "mcp_phi": np.linspace(-3.2, 3.2, 321),
         }
         system_name = {
@@ -694,25 +707,37 @@ class Plotter:
                     )
                     bin_centers = (bins[kinematic][1:] + bins[kinematic][:-1]) / 2.0
 
-                    fig, ax = plt.subplots(figsize=(8, 8))
-                    ax.plot(
-                        bin_centers,
-                        efficiency,
-                        marker="o",
-                        markersize=2,
-                        linestyle="-",
-                        linewidth=1,
-                        color="dodgerblue",
-                    )
-                    ax.set_xlabel(xlabel[kinematic])
-                    ax.set_ylabel(f"Sim. hit double-layer efficiency")
-                    ax.set_title(f"{system_name[system]}, layer {double_layers}")
-                    ax.set_ylim(0.6, 1.005)
-                    fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
-                    pdf.savefig()
-                    ax.set_ylim(0.945, 1.005)
-                    pdf.savefig()
-                    plt.close()
+                    for ylo, yhi in [
+                        (0.6, 1.04),
+                        (0.945, 1.005),
+                    ]:
+                        fig, ax = plt.subplots(figsize=(8, 8))
+                        ax.plot(
+                            bin_centers,
+                            efficiency,
+                            marker="o",
+                            markersize=2,
+                            linestyle="-",
+                            linewidth=1,
+                            color="dodgerblue",
+                        )
+                        ax.set_xlabel(xlabel[kinematic])
+                        ax.set_ylabel(f"Sim. hit double-layer efficiency")
+                        ax.set_title(f"{system_name[system]}, layer {double_layers}")
+                        ax.set_ylim(ylo, yhi)
+                        if kinematic == "mcp_eta":
+                            etas = get_eta_boundaries([system], double_layers)
+                            etas = etas[(etas > min(bins[kinematic])) & (etas < max(bins[kinematic]))]
+                            max_eff = 1.0
+                            arrowprops = dict(arrowstyle="->", color="red", lw=1)
+                            kwargs = dict(xycoords="data", textcoords="data", arrowprops=arrowprops)
+                            for i_eta, eta in enumerate(etas):
+                                if i_eta == 0:
+                                    ax.text(eta, (max_eff + yhi)/2.0, "Sensor boundaries", color="red", fontsize=10, ha="left", va="bottom")
+                                ax.annotate(text="", xy=(eta, max_eff), xytext=(eta, (max_eff + yhi)/2.0), **kwargs)
+                        fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
+                        pdf.savefig()
+                        plt.close()
 
 
 def numerator_mask(
@@ -736,3 +761,16 @@ def first_exit_mask(df: pd.DataFrame) -> pd.Series:
         (df["simhit_p"] / df["mcp_p"] > MIN_SIMHIT_PT_FRACTION) &
         (df["simhit_t_corrected"] < MAX_TIME)
     )
+
+def get_eta_boundaries(systems: list[int], layers: list[int]) -> np.ndarray:
+    bounds = []
+    for system in systems:
+        for layer in layers:
+            for i_sensor in range(N_SENSORS[system][layer] // 2):
+                z = i_sensor * SENSOR_SIZE[system]
+                r = RADIUS[system][layer]
+                theta = np.arctan2(r, z)
+                eta = -np.log(np.tan(theta / 2.0))
+                bounds.append(eta)
+                bounds.append(-eta)
+    return np.array(list(sorted(set(bounds))))
