@@ -533,7 +533,9 @@ class Plotter:
                         bin_centers,
                         efficiency,
                         marker="o",
-                        linestyle="none",
+                        markersize=2,
+                        linestyle="-",
+                        linewidth=1,
                         color="dodgerblue",
                     )
                     ax.set_ylim(0.95, 1.005)
@@ -698,14 +700,17 @@ class Plotter:
                         efficiency,
                         marker="o",
                         markersize=2,
-                        linestyle="none",
+                        linestyle="-",
+                        linewidth=1,
                         color="dodgerblue",
                     )
-                    ax.set_ylim(0.9, 1.005)
                     ax.set_xlabel(xlabel[kinematic])
                     ax.set_ylabel(f"Sim. hit double-layer efficiency")
                     ax.set_title(f"{system_name[system]}, layer {double_layers}")
+                    ax.set_ylim(0.6, 1.005)
                     fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
+                    pdf.savefig()
+                    ax.set_ylim(0.945, 1.005)
                     pdf.savefig()
                     plt.close()
 
