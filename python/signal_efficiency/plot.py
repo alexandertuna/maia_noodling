@@ -32,7 +32,7 @@ from constants import BARREL_TRACKER_MAX_ETA
 from constants import BARREL_TRACKER_MAX_RADIUS
 from constants import ONE_GEV, ONE_MM
 from constants import INSIDE_BOUNDS, UNDEFINED_BOUNDS, POSSIBLE_BOUNDS
-from constants import MIN_SIMHIT_PT_FRACTION, MAX_TIME
+from constants import MIN_SIMHIT_PT_FRACTION, MAX_TIME, MIN_COSTHETA
 from slcio_to_hits import filter_dataframe
 
 INNER_TRACKER_BARREL = 3
@@ -56,21 +56,22 @@ class Plotter:
         with PdfPages(self.pdf) as pdf:
             self.title_slide(pdf)
             self.plot_mcp_pt(pdf)
-            self.plot_mcp_eta(pdf)
-            self.plot_mcp_phi(pdf)
-            self.plot_simhit_time(pdf)
-            self.plot_simhit_time_corrected(pdf)
-            # self.plot_simhit_distance(pdf)
-            self.plot_simhit_xy(pdf)
-            self.plot_simhit_rz(pdf)
-            self.plot_simhit_p(pdf)
-            self.plot_simhit_pt(pdf)
-            self.plot_simhit_costheta(pdf)
-            self.plot_simhit_costheta_vs_time(pdf)
-            self.plot_simhit_p_vs_time(pdf)
-            self.plot_simhit_p_vs_costheta(pdf)
-            self.plot_efficiency_vs_sim(pdf)
+            # self.plot_mcp_eta(pdf)
+            # self.plot_mcp_phi(pdf)
+            # self.plot_simhit_time(pdf)
+            # self.plot_simhit_time_corrected(pdf)
+            # # self.plot_simhit_distance(pdf)
+            # self.plot_simhit_xy(pdf)
+            # self.plot_simhit_rz(pdf)
+            # self.plot_simhit_p(pdf)
+            # self.plot_simhit_pt(pdf)
+            # self.plot_simhit_costheta(pdf)
+            # self.plot_simhit_costheta_vs_time(pdf)
+            # self.plot_simhit_p_vs_time(pdf)
+            # self.plot_simhit_p_vs_costheta(pdf)
+            self.plot_layer_efficiency_vs_sim(pdf)
             # self.plot_weird_radius_hits(pdf)
+            self.plot_doublet_efficiency_vs_sim(pdf)
 
 
     def title_slide(self, pdf: PdfPages):
@@ -427,7 +428,7 @@ class Plotter:
         plt.close()
 
 
-    def plot_efficiency_vs_sim(self, pdf: PdfPages):
+    def plot_layer_efficiency_vs_sim(self, pdf: PdfPages):
         bins = {
             "mcp_pt": np.linspace(0, 10, 101),
             "mcp_eta": np.linspace(-0.8, 0.8, 161),
@@ -450,9 +451,13 @@ class Plotter:
         first = inspect.getsource(first_exit_mask)
         first = textwrap.dedent(first)
         fig, ax = plt.subplots(figsize=(8, 8))
-        ax.text(0.0, 0.8, text, ha="left")
-        ax.text(0.0, 0.7, numer, ha="left", va="top", fontfamily="monospace", fontsize=10)
-        # ax.text(0.0, 0.4, first, ha="left", va="top", fontfamily="monospace", fontsize=10)
+        args = {"ha":"left", "va":"top", "fontfamily":"monospace", "fontsize":10}
+        ax.text(0.0, 0.9, text, **args)
+        ax.text(0.0, 0.8, numer, **args)
+        ax.text(0.0, 0.4, first, **args)
+        ax.text(0.0, 0.20, f"{MIN_COSTHETA=}", **args)
+        ax.text(0.0, 0.15, f"{MIN_SIMHIT_PT_FRACTION=}", **args)
+        ax.text(0.0, 0.10, f"{MAX_TIME=}", **args)
         ax.axis("off")
         pdf.savefig()
         plt.close()
@@ -540,6 +545,76 @@ class Plotter:
                     plt.close()
 
 
+    def plot_doublet_efficiency_vs_sim(self, pdf: PdfPages):
+        bins = np.linspace(0, 10, 101)
+
+        # add column for double-layer
+        self.df["simhit_layer_div_2"] = self.df["simhit_layer"] // 2
+
+        # denominator of efficiency
+        mask_denom = ~(self.df["simhit"].astype(bool))
+        df_denom = self.df[mask_denom]
+        if df_denom.duplicated().any():
+            warnings.warn("Warning: duplicates found in denominator dataframe!")
+
+        system = SYSTEMS[0]
+        double_layer = LAYERS[2:4]
+
+        # numerator
+        first_exit = first_exit_mask(self.df)
+        mask_numer = numerator_mask(self.df, [system], double_layer) & first_exit
+
+        # calculate doublet efficiency
+        doublet_cols = [
+            "file",
+            "i_event", # the event
+            "i_mcp", # the MC particle
+            "simhit_system", # the system (IT, OT)
+            "simhit_layer_div_2", # the double layer
+            "simhit_module", # the phi-module
+            "simhit_sensor", # the z-sensor
+        ]
+        print("Finding doublets ... ")
+        doublet_groups = self.df[mask_numer].groupby(doublet_cols)
+        print(doublet_groups, len(doublet_groups))
+        print("Found doublets")
+        if True:
+            with pd.option_context("display.min_rows", 50,
+                                   "display.max_rows", 50,
+                                ):
+                for i_doublet, (_, group) in enumerate(doublet_groups):
+                    print(i_doublet)
+                    print(group)
+                    if i_doublet >= 10:
+                        break
+        valid_doublets = doublet_groups["simhit_layer"].nunique().ge(2).reset_index(name="valid_doublet")
+        with pd.option_context("display.min_rows", 50,
+                               "display.max_rows", 50,
+                            ):
+            print(valid_doublets)
+
+        at_least_one_doublet = (
+            valid_doublets
+            .groupby([
+                "file",
+                "i_event",
+                "i_mcp",
+                "simhit_system",
+                "simhit_layer_div_2",
+            ])["valid_doublet"]
+            .any()
+            .reset_index(name="at_least_one_doublet")
+        )
+        with pd.option_context("display.min_rows", 50,
+                               "display.max_rows", 50,
+                            ):
+            print(at_least_one_doublet)
+        
+        n_numer = at_least_one_doublet["at_least_one_doublet"].sum()
+        n_denom = len(df_denom)
+        print(f"Doublet efficiency for {system=} {double_layer=}: {n_numer} / {n_denom} = {n_numer / n_denom:.4f}")
+
+
 def numerator_mask(
     df: pd.DataFrame,
     systems: list[int],
@@ -556,7 +631,7 @@ def numerator_mask(
 
 def first_exit_mask(df: pd.DataFrame) -> pd.Series:
     return (
-        (df["simhit_costheta"] > 0) &
+        (df["simhit_costheta"] > MIN_COSTHETA) &
         (df["simhit_p"] / df["mcp_p"] > MIN_SIMHIT_PT_FRACTION) &
         (df["simhit_t_corrected"] < MAX_TIME)
     )
