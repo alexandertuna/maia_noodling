@@ -55,7 +55,10 @@ SENSOR_SIZE = {
     INNER_TRACKER_BARREL: 30.0,
     OUTER_TRACKER_BARREL: 60.0,
 }
-
+N_MODULES = {
+    INNER_TRACKER_BARREL: [15*2, 15*2, 20*2, 20*2, 58*2, 58*2, 62*2, 62*2],
+    OUTER_TRACKER_BARREL: [48*2, 48*2, 52*2, 52*2, 80*2, 80*2, 84*2, 84*2],
+}
 
 class Plotter:
 
@@ -725,17 +728,16 @@ class Plotter:
                         ax.set_ylabel(f"Sim. hit double-layer efficiency")
                         ax.set_title(f"{system_name[system]}, layer {double_layers}")
                         ax.set_ylim(ylo, yhi)
-                        if kinematic == "mcp_eta":
-                            etas = get_eta_boundaries([system], double_layers)
-                            etas = etas[(etas > min(bins[kinematic])) & (etas < max(bins[kinematic]))]
+                        if kinematic in ["mcp_eta", "mcp_phi"]:
+                            bounds = get_boundaries(kinematic, [system], double_layers)
+                            bounds = bounds[(bounds > min(bins[kinematic])) & (bounds < max(bins[kinematic]))]
                             max_eff = 1.0
                             arrowprops = dict(arrowstyle="->", color="red", lw=1)
                             kwargs = dict(xycoords="data", textcoords="data", arrowprops=arrowprops)
-                            for i_eta, eta in enumerate(etas):
-                                if i_eta == 0:
-                                    ax.text(eta, (max_eff + yhi)/2.0, "Sensor boundaries", color="red", fontsize=10, ha="left", va="bottom")
-                                ax.annotate(text="", xy=(eta, max_eff), xytext=(eta, (max_eff + yhi)/2.0), **kwargs)
-                        fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
+                            for i_bound, bound in enumerate(bounds):
+                                if i_bound == 0:
+                                    ax.text(bound, (max_eff + yhi)/2.0, "Sensor boundaries", color="red", fontsize=10, ha="left", va="bottom")
+                                ax.annotate(text="", xy=(bound, max_eff), xytext=(bound, (max_eff + yhi)/2.0), **kwargs)
                         pdf.savefig()
                         plt.close()
 
@@ -762,6 +764,16 @@ def first_exit_mask(df: pd.DataFrame) -> pd.Series:
         (df["simhit_t_corrected"] < MAX_TIME)
     )
 
+
+def get_boundaries(kinematic: str, systems: list[int], layers: list[int]) -> np.ndarray:
+    if kinematic == "mcp_eta":
+        return get_eta_boundaries(systems, layers)
+    elif kinematic == "mcp_phi":
+        return get_phi_boundaries(systems, layers)
+    else:
+        raise ValueError(f"Unknown kinematic for boundaries: {kinematic}")
+
+
 def get_eta_boundaries(systems: list[int], layers: list[int]) -> np.ndarray:
     bounds = []
     for system in systems:
@@ -773,4 +785,16 @@ def get_eta_boundaries(systems: list[int], layers: list[int]) -> np.ndarray:
                 eta = -np.log(np.tan(theta / 2.0))
                 bounds.append(eta)
                 bounds.append(-eta)
+    return np.array(list(sorted(set(bounds))))
+
+def get_phi_boundaries(systems: list[int], layers: list[int]) -> np.ndarray:
+    bounds = []
+    for system in systems:
+        for layer in layers:
+            n_modules = N_MODULES[system][layer]
+            for i_module in range(n_modules):
+                phi = (2.0 * np.pi / n_modules) * (i_module + 0.5)
+                if phi > np.pi:
+                    phi -= 2.0 * np.pi
+                bounds.append(phi)
     return np.array(list(sorted(set(bounds))))
