@@ -11,13 +11,13 @@ from matplotlib import rcParams
 import xml.etree.ElementTree as ET
 rcParams.update({'font.size': 16})
 
-FNAME = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_11_06_21h31m00s/muonGun_pT_0_10_digi_10*.slcio"
+FNAME = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_10*.slcio"
 
 INNER_TRACKER_BARREL = 3
 OUTER_TRACKER_BARREL = 5
 
 InnerTracker_Barrel_DoubleLayer_Gap = 2.0 # mm
-OuterTracker_Barrel_DoubleLayer_Gap = 6.0 # mm
+OuterTracker_Barrel_DoubleLayer_Gap = 2.0 # mm
 
 TRACKERS = [
     # "VertexBarrelCollection",
@@ -31,11 +31,6 @@ TRACKERS = [
 INNER_XML = "/ceph/users/atuna/work/maia/k4geo/MuColl/MAIA/compact/MAIA_v0/InnerTrackerBarrelModuleDown.xml"
 OUTER_XML = "/ceph/users/atuna/work/maia/k4geo/MuColl/MAIA/compact/MAIA_v0/OuterTrackerBarrelModuleDown.xml"
 
-NSENSORS = {
-    INNER_TRACKER_BARREL: [32, 32, 32, 32, 46, 46, 46, 46],
-    OUTER_TRACKER_BARREL: [84, 84, 84, 84, 84, 84, 84, 84],
-}
-
 
 def options():
     parser = argparse.ArgumentParser(usage=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -45,7 +40,7 @@ def options():
                         help="Path to XML file with inner tracker material stack data")
     parser.add_argument("--outer_xml", type=str, default=OUTER_XML,
                         help="Path to XML file with outer tracker material stack data")
-    parser.add_argument("--pdf", type=str, default="maia_doublet_v0.pdf",
+    parser.add_argument("--pdf", type=str, default="maia_doublet_v1.pdf",
                         help="Path to output PDF file")
     parser.add_argument("--plot_xy", action="store_true",
                         help="Enable plotting of XY geometry")
@@ -168,7 +163,23 @@ def plot_material_xml(xml, pdf):
     plt.close()
 
 
+def get_n_sensors(df: pd.DataFrame) -> dict[int, list[int]]:
+    NSENSORS = {}
+    for system in df["system"].unique():
+        NSENSORS[system] = []
+        for layer in sorted(df[df["system"] == system]["layer"].unique()):
+            n_sensors = df[
+                (df["system"] == system) &
+                (df["layer"] == layer)
+            ]["sensor"].nunique()
+            NSENSORS[system].append(n_sensors)
+    return NSENSORS
+
+
 def plot_barrel_rz(df: pd.DataFrame, pdf: PdfPages) -> None:
+
+    NSENSORS = get_n_sensors(df)
+    print(f"NSENSORS: {NSENSORS}")
 
     colors = {
         INNER_TRACKER_BARREL: [
@@ -228,7 +239,7 @@ def plot_barrel_rz(df: pd.DataFrame, pdf: PdfPages) -> None:
 
             # text annotations
             if layer % 2 == 1 and module_mod_2 == 1 and sensor % 2 == 0:
-                ax.text(z_min, r_avg, f"{int(sensor):02}", ha=ha, va=va, fontsize=3.5)
+                ax.text(z_min, r_avg, f"{int(sensor):02}", ha=ha, va=va, fontsize=3.5 if system == INNER_TRACKER_BARREL else 7.0)
             if layer % 2 == 0 and sensor == 0 and module_mod_2 == 0:
                 if system == INNER_TRACKER_BARREL:
                     dr, dz = -5, -260
@@ -240,9 +251,7 @@ def plot_barrel_rz(df: pd.DataFrame, pdf: PdfPages) -> None:
                     raise Exception("What?")
                 ax.text(z_min + dz, r_avg + dr, f"{acronym}, L{layer}-L{layer+1}", ha=ha, va=va, fontsize=8)
             if sensor == NSENSORS[system][layer] - 1 and layer % 2 == 0: # and module_mod_2 == 0:
-                dz, dr = 10, 0
-                if system == INNER_TRACKER_BARREL:
-                    dr = -7 if module_mod_2 == 0 else -2
+                dz, dr = 10, -7 if module_mod_2 == 0 else -2
                 ax.text(z_max + dz, r_avg + dr, f"Module % 2 = {module_mod_2}", ha=ha, va=va, fontsize=3)
 
         ax.text(0.02, 1.01, '"Sensor" (z-coordinate)', transform=ax.transAxes)
@@ -295,8 +304,8 @@ def plot_barrel_xy(df: pd.DataFrame, pdf: PdfPages) -> None:
         [-1550, 1550, -1550, 1550],
         [100, 195, -50, 50],
         [480, 580, -50, 50],
-        [765, 955, -50, 50],
-        [1315, 1505, -50, 50],
+        [765, 955, -100, 100],
+        [1315, 1505, -100, 100],
     ]):
         print(f"Plotting barrel XY section {it} ...")
         fig, ax = plt.subplots(figsize=(8, 8))
@@ -360,19 +369,19 @@ def plot_barrel_xy(df: pd.DataFrame, pdf: PdfPages) -> None:
             va = "center"
             gap = OuterTracker_Barrel_DoubleLayer_Gap
             gap = f"Doublet gap: {int(gap)}mm"
-            ax.text(790, 0, "OT, L0", va=va)
-            ax.text(833, 0, "OT, L1", va=va)
-            ax.text(870, 0, "OT, L2", va=va)
-            ax.text(915, 0, "OT, L3", va=va)
+            ax.text(794, 0, "OT, L0", va=va)
+            ax.text(824, 0, "OT, L1", va=va)
+            ax.text(874, 0, "OT, L2", va=va)
+            ax.text(904, 0, "OT, L3", va=va)
             ax.text(0.02, 1.01, gap, transform=ax.transAxes)
         elif it == 5:
             va = "center"
             gap = OuterTracker_Barrel_DoubleLayer_Gap
             gap = f"Doublet gap: {int(gap)}mm"
-            ax.text(1335, 0, "OT, L4", va=va)
-            ax.text(1380, 0, "OT, L5", va=va)
-            ax.text(1415, 0, "OT, L6", va=va)
-            ax.text(1460, 0, "OT, L7", va=va)
+            ax.text(1341, 0, "OT, L4", va=va)
+            ax.text(1371, 0, "OT, L5", va=va)
+            ax.text(1421, 0, "OT, L6", va=va)
+            ax.text(1451, 0, "OT, L7", va=va)
             ax.text(0.02, 1.01, gap, transform=ax.transAxes)
         else:
             raise Exception("What?")
@@ -394,7 +403,7 @@ def get_line_width(system: int, zoom: bool) -> float:
     if system == INNER_TRACKER_BARREL:
         return 0.3 * multiplier
     elif system == OUTER_TRACKER_BARREL:
-        return 0.7 * multiplier
+        return 0.3 * multiplier
     else:
         raise Exception(f"Unknown system: {system}")
 
