@@ -10,6 +10,11 @@ from plot import Plotter
 FNAMES = [
     # v01
     "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_1*.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_1*.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_2*.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_3*.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_4*.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_5*.slcio",
 
     # v00
     # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_11_06_21h31m00s/muonGun_pT_0_10_sim_1*.slcio",
@@ -28,6 +33,8 @@ def main():
     ops = options()
     fnames = get_filenames(FNAMES)
     geometry = ops.geometry
+    if geometry:
+        fnames = fnames[:200] # temporary limit for memory purposes
 
     # convert slcio files to dataframe
     converter = SlcioToHitsDataFrame(slcio_file_paths=fnames,
