@@ -250,6 +250,7 @@ def postprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df["mcp_theta"] = np.arctan2(df["mcp_pt"], df["mcp_pz"])
     df["mcp_eta"] = -np.log(np.tan(df["mcp_theta"] / 2))
     df["mcp_phi"] = np.arctan2(df["mcp_py"], df["mcp_px"])
+    df["mcp_q_over_pt"] = df["mcp_q"] / df["mcp_pt"]
     df["mcp_vertex_r"] = np.sqrt(df["mcp_vertex_x"]**2 + df["mcp_vertex_y"]**2)
     df["mcp_endpoint_r"] = np.sqrt(df["mcp_endpoint_x"]**2 + df["mcp_endpoint_y"]**2)
     df["simhit_r"] = np.sqrt(df["simhit_x"]**2 + df["simhit_y"]**2)
@@ -266,6 +267,7 @@ def postprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df["simhit_pt"] = np.sqrt(df["simhit_px"]**2 + df["simhit_py"]**2)
     df["simhit_p"] = np.sqrt(df["simhit_px"]**2 + df["simhit_py"]**2 + df["simhit_pz"]**2)
     df["simhit_costheta"] = (df["simhit_x"] * df["simhit_px"] + df["simhit_y"] * df["simhit_py"] + df["simhit_z"] * df["simhit_pz"]) / (df["simhit_R"] * df["simhit_p"])
+    df["simhit_layer_div_2"] = df["simhit_layer"] // 2
 
     # remove redundant columns
     df.drop(columns=[
