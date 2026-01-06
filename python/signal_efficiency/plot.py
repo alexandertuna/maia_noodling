@@ -105,7 +105,8 @@ class Plotter:
 
     def plot(self):
         with PdfPages(self.pdf) as pdf:
-            self.title_slide(pdf)
+            self.data_format(pdf)
+            self.efficiency_denominator(pdf)
             self.plot_mcp_pt(pdf)
             # self.plot_mcp_eta(pdf)
             # self.plot_mcp_phi(pdf)
@@ -123,10 +124,38 @@ class Plotter:
             ############ self.plot_layer_efficiency_vs_sim(pdf)
             # self.plot_weird_radius_hits(pdf)
             ############ self.plot_r_phi_mod(pdf)
-            self.plot_doublet_efficiency_vs_sim(pdf)
+            # self.plot_doublet_efficiency_vs_sim(pdf)
 
 
-    def title_slide(self, pdf: PdfPages):
+    def data_format(self, pdf: PdfPages):
+        text = "Data format: Pandas DataFrame"
+        cols = [
+            "file",
+            "i_event",
+            "i_mcp",
+            "simhit",
+            "mcp_pt",
+            "mcp_eta",
+            "mcp_phi",
+            "mcp_pdg",
+            "simhit_system",
+            "simhit_layer",
+            "simhit_module",
+            "simhit_sensor",
+        ]
+        dstr = self.df.to_string(
+            index=False,
+            columns=cols,
+            max_rows=60,
+        )
+        fig, ax = plt.subplots(figsize=(8, 8))
+        ax.text(-0.12, 0.95, text, ha="left")
+        ax.text(-0.12, 0.90, dstr, ha="left", va="top", fontfamily="monospace", fontsize=6)
+        ax.axis("off")
+        pdf.savefig()
+        plt.close()
+
+    def efficiency_denominator(self, pdf: PdfPages):
         text = "Efficiency denominator"
         code = inspect.getsource(filter_dataframe)
         code = textwrap.dedent(code)
