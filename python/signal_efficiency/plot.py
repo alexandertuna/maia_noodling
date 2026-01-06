@@ -59,6 +59,10 @@ N_MODULES = {
     INNER_TRACKER_BARREL: [15*2, 15*2, 20*2, 20*2, 58*2, 58*2, 62*2, 62*2],
     OUTER_TRACKER_BARREL: [48*2, 48*2, 52*2, 52*2, 80*2, 80*2, 84*2, 84*2],
 }
+SYSTEM_ABBREV = {
+    INNER_TRACKER_BARREL: "ITB",
+    OUTER_TRACKER_BARREL: "OTB",
+}
 
 class Plotter:
 
@@ -66,6 +70,36 @@ class Plotter:
     def __init__(self, df: pd.DataFrame, pdf: str):
         self.df = df
         self.pdf = pdf
+        self.nphi = 8
+        self.post_process()
+
+
+    def post_process(self):
+
+        # phi_mod for plotting wrapped-around phi modules
+        for system in SYSTEMS:
+            for layer in LAYERS:
+                abbrev = SYSTEM_ABBREV[system]
+                n_modules = N_MODULES[system][layer]
+                period = (2 * np.pi) / (n_modules / self.nphi)
+                self.df[f"mcp_phi_mod_{abbrev}_{layer}"] = (self.df["mcp_phi"] + 2*np.pi) % period
+
+        # phi_mod for plotting wrapped-around phi modules
+        lookup = (
+            pd.DataFrame(
+                [(sys, layer, N_MODULES[sys][layer])
+                for sys in N_MODULES
+                for layer in range(len(N_MODULES[sys]))],
+                columns=["simhit_system", "simhit_layer", "n_modules"],
+            )
+        )
+        relevant_cols = ["simhit_system", "simhit_layer"]
+        n_modules = (
+            self.df[relevant_cols]
+            .merge(lookup, on=relevant_cols, how="left")["n_modules"]
+        )
+        period = (2 * np.pi) / (n_modules / self.nphi)
+        self.df[f"simhit_phi_mod"] = (self.df["simhit_phi"] + 2*np.pi) % period
 
 
     def plot(self):
@@ -85,8 +119,9 @@ class Plotter:
             # self.plot_simhit_costheta_vs_time(pdf)
             # self.plot_simhit_p_vs_time(pdf)
             # self.plot_simhit_p_vs_costheta(pdf)
-            self.plot_layer_efficiency_vs_sim(pdf)
+            ############ self.plot_layer_efficiency_vs_sim(pdf)
             # self.plot_weird_radius_hits(pdf)
+            self.plot_r_phi_mod(pdf)
             self.plot_doublet_efficiency_vs_sim(pdf)
 
 
@@ -448,7 +483,9 @@ class Plotter:
         bins = {
             "mcp_pt": np.linspace(0, 10, 101),
             "mcp_eta": np.linspace(-0.7, 0.7, 281),
-            "mcp_phi": np.linspace(-3.2, 3.2, 161),
+            "mcp_phi": np.linspace(-3.2, 3.2, 1601),
+            ("mcp_pt", "mcp_phi"): [np.linspace(0, 10, 11),
+                                    np.linspace(-3.2, 3.2, 1601)],
         }
         system_name = {
             INNER_TRACKER_BARREL: "Inner Tracker Barrel",
@@ -471,9 +508,9 @@ class Plotter:
         ax.text(0.0, 0.9, text, **args)
         ax.text(0.0, 0.8, numer, **args)
         ax.text(0.0, 0.4, first, **args)
-        ax.text(0.0, 0.20, f"{MIN_COSTHETA=}", **args)
-        ax.text(0.0, 0.15, f"{MIN_SIMHIT_PT_FRACTION=}", **args)
-        ax.text(0.0, 0.10, f"{MAX_TIME=}", **args)
+        ax.text(0.0, 0.20, f"MIN_COSTHETA={MIN_COSTHETA}", **args)
+        ax.text(0.0, 0.15, f"MIN_SIMHIT_PT_FRACTION={MIN_SIMHIT_PT_FRACTION}", **args)
+        ax.text(0.0, 0.10, f"MAX_TIME={MAX_TIME}", **args)
         ax.axis("off")
         pdf.savefig()
         plt.close()
@@ -522,6 +559,7 @@ class Plotter:
             "mcp_pt",
             "mcp_eta",
             "mcp_phi",
+            ("mcp_pt", "mcp_phi"),
         ]:
 
             print(f"Plotting sim hit efficiency vs {kinematic}...")
@@ -529,46 +567,142 @@ class Plotter:
 
                 for layer in LAYERS:
 
+                    # nb: dont double-count if >1 hits on a layer
                     mask_numer = numerator_mask(self.df, [system], [layer]) & first_exit
-
-                    # dont double-count if >1 hits on a layer
                     subset = ["file", "i_event", "i_mcp", "simhit_system", "simhit_layer"]
                     df_numer = self.df[mask_numer].drop_duplicates(subset=subset)
-                    counts_denom, _ = np.histogram(df_denom[kinematic], bins=bins[kinematic])
-                    counts_numer, _ = np.histogram(df_numer[kinematic], bins=bins[kinematic])
-                    efficiency = np.divide(
-                        counts_numer,
-                        counts_denom,
-                        out=np.full_like(counts_denom, 0.0, dtype=float),
-                        where=(counts_numer > 0.0),
-                    )
-                    bin_centers = (bins[kinematic][1:] + bins[kinematic][:-1]) / 2.0
 
-                    fig, ax = plt.subplots(figsize=(8, 8))
-                    ax.plot(
-                        bin_centers,
-                        efficiency,
-                        marker="o",
-                        markersize=2,
-                        linestyle="-",
-                        linewidth=1,
-                        color="dodgerblue",
-                    )
-                    ax.set_ylim(0.95, 1.005)
-                    ax.set_xlabel(xlabel[kinematic])
-                    ax.set_ylabel(f"Sim. hit efficiency with $t_{{corrected}}$ < {MAX_TIME} ns")
-                    ax.set_title(f"{system_name[system]}, layer {layer}")
-                    fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
-                    pdf.savefig()
-                    plt.close()
+                    is2d = isinstance(kinematic, tuple) and len(kinematic) == 2
+
+                    # calculate efficiency
+                    if is2d:
+                        counts_denom, _, _ = np.histogram2d(
+                            df_denom[kinematic[0]],
+                            df_denom[kinematic[1]],
+                            bins=bins[kinematic],
+                        )
+                        counts_numer, _, _ = np.histogram2d(
+                            df_numer[kinematic[0]],
+                            df_numer[kinematic[1]],
+                            bins=bins[kinematic],
+                        )
+                        efficiency = np.divide(
+                            counts_numer,
+                            counts_denom,
+                            out=np.full_like(counts_denom, 0.0, dtype=float),
+                            where=(counts_numer > 0.0),
+                        )
+                        bin_centers_0 = (bins[kinematic][0][1:] + bins[kinematic][0][:-1]) / 2.0
+                        bin_centers_1 = (bins[kinematic][1][1:] + bins[kinematic][1][:-1]) / 2.0
+
+                        fig, ax = plt.subplots(figsize=(8, 8))
+                        im = ax.imshow(
+                            efficiency.T,
+                            origin="lower",
+                            extent=[
+                                bin_centers_0[0],
+                                bin_centers_0[-1],
+                                bin_centers_1[0],
+                                bin_centers_1[-1],
+                            ],
+                            aspect="auto",
+                            cmap="afmhot",
+                            vmin=0.95,
+                            vmax=1.005,
+                        )
+                        fig.colorbar(im, ax=ax, pad=0.01, label="Sim. hit efficiency")
+                        ax.set_xlabel(xlabel[kinematic[0]])
+                        ax.set_ylabel(xlabel[kinematic[1]])
+                        ax.set_title(f"{system_name[system]}, layer {layer}")
+                        fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
+                        pdf.savefig()
+                        plt.close()
+
+                    else:
+                        counts_denom, _ = np.histogram(df_denom[kinematic], bins=bins[kinematic])
+                        counts_numer, _ = np.histogram(df_numer[kinematic], bins=bins[kinematic])
+                        efficiency = np.divide(
+                            counts_numer,
+                            counts_denom,
+                            out=np.full_like(counts_denom, 0.0, dtype=float),
+                            where=(counts_numer > 0.0),
+                        )
+                        bin_centers = (bins[kinematic][1:] + bins[kinematic][:-1]) / 2.0
+
+                        fig, ax = plt.subplots(figsize=(8, 8))
+                        ax.plot(
+                            bin_centers,
+                            efficiency,
+                            marker="o",
+                            markersize=2,
+                            linestyle="-",
+                            linewidth=1,
+                            color="dodgerblue",
+                        )
+                        ax.set_ylim(0.95, 1.005)
+                        ax.set_xlabel(xlabel[kinematic])
+                        ax.set_ylabel(f"Sim. hit efficiency with $t_{{corrected}}$ < {MAX_TIME} ns")
+                        ax.set_title(f"{system_name[system]}, layer {layer}")
+                        fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
+                        pdf.savefig()
+                        plt.close()
+
+
+    def plot_r_phi_mod(self, pdf: PdfPages):
+
+        first_exit = first_exit_mask(self.df)
+
+        for system in SYSTEMS:
+
+            for double_layers in [
+                [0, 1],
+                [2, 3],
+                [4, 5],
+                [6, 7],
+            ]:
+
+                print("Plotting sim hit rphi when modding ...")
+                layer_mask = (
+                    (self.df["simhit"].astype(bool)) &
+                    (self.df["simhit_inside_bounds"].isin([INSIDE_BOUNDS, UNDEFINED_BOUNDS])) &
+                    (self.df["simhit_system"] == system) &
+                    (self.df["simhit_layer_div_2"].isin([dl // 2 for dl in double_layers]))
+                )
+                mask = layer_mask & first_exit
+                fig, ax = plt.subplots(figsize=(8, 8))
+                _, _, _, im = ax.hist2d(
+                    self.df[mask][f"simhit_phi_mod"],
+                    self.df[mask][f"simhit_r"],
+                    bins=[200, 200],
+                    cmap="gist_rainbow",
+                    cmin=0.5,
+                )
+                fig.colorbar(im, ax=ax, pad=0.01, label="Sim. hits")
+                ax.set_xlabel("Sim. hit phi mod something [rad]")
+                ax.set_ylabel("Sim. hit r [mm]")
+                ax.set_title(f"System {system}, layer {double_layers}")
+                pdf.savefig()
+                plt.close()
 
 
     def plot_doublet_efficiency_vs_sim(self, pdf: PdfPages):
 
         bins = {
-            "mcp_pt": np.linspace(0, 10, 201),
-            "mcp_eta": np.linspace(-0.7, 0.7, 281),
-            "mcp_phi": np.linspace(-3.2, 3.2, 321),
+            f"mcp_pt": np.linspace(0, 10, 201),
+            f"mcp_eta": np.linspace(-0.7, 0.7, 281),
+            f"mcp_phi": np.linspace(-3.2, 3.2, 321),
+            f"mcp_phi_mod_{self.nphi}": None,
+            # "mcp_phi_mod_2pi_div_8": np.linspace(0, 0.8, 321),
+            (f"mcp_pt", f"mcp_phi"): [np.linspace(0, 10, 11),
+                                      np.linspace(-3.2, 3.2, 1601)],
+            (f"mcp_q_over_pt", f"mcp_phi_mod_{self.nphi}"): [np.linspace(-1, 1, 21),
+                                                             None],
+            # (f"mcp_q_over_pt", "mcp_phi_mod_2pi_div_8"): [np.linspace(-1, 1, 21),
+            #                                              np.linspace(0, 0.8, 1601)],
+            (f"mcp_q_over_pt", f"mcp_eta"): [np.linspace(-1, 1, 101),
+                                           np.linspace(-0.7, 0.7, 141)],
+            (f"mcp_q_over_pt", f"mcp_phi"): [np.linspace(-1, 1, 101),
+                                           np.linspace(-3.2, 3.2, 81)],
         }
         system_name = {
             INNER_TRACKER_BARREL: "Inner Tracker Barrel",
@@ -578,10 +712,25 @@ class Plotter:
             "mcp_pt": "Simulated $p_T$ [GeV]",
             "mcp_eta": "Simulated eta",
             "mcp_phi": "Simulated phi",
+            "mcp_q_over_pt": "Simulated $q/p_T$ [1/GeV]",
+            "mcp_phi_mod": "Simulated phi mod something",
+            # "mcp_phi_mod_2pi_div_8": r"Simulated phi mod $2\pi / 8$",
         }
+        for system in SYSTEMS:
+            for layer in LAYERS:
+                abbrev = SYSTEM_ABBREV[system]
+                n_modules = N_MODULES[system][layer]
+                phi_interval = 2 * np.pi / (n_modules / self.nphi)
+                expectation = f"mcp_phi_mod_{abbrev}_{layer}"
+                the_bins = np.linspace(0, phi_interval, 201)
+                bins[expectation] = the_bins
+                bins[ ("mcp_q_over_pt", expectation) ] = [np.linspace(-1, 1, 201), the_bins]
+                xlabel[expectation] = f"Simulated phi mod {phi_interval:.4f} [rad]"
+
 
         # add column for double-layer
-        self.df["simhit_layer_div_2"] = self.df["simhit_layer"] // 2
+        # self.df["mcp_phi_mod_2pi_div_8"] = (self.df["mcp_phi"] + (2 * np.pi)) % (2*np.pi / 8)
+        # self.df["simhit_phi_mod_2pi_div_8"] = (self.df["simhit_phi"] + (2 * np.pi)) % (2*np.pi / 8)
 
         # mask for first exit / arc / path
         first_exit = first_exit_mask(self.df)
@@ -594,9 +743,23 @@ class Plotter:
 
         debug = False
         for kinematic in [
-            "mcp_pt",
-            "mcp_eta",
+            # "mcp_pt",
+            # "mcp_eta",
             "mcp_phi",
+            "mcp_phi_mod_ITB_0",
+            "mcp_phi_mod_ITB_2",
+            "mcp_phi_mod_ITB_4",
+            "mcp_phi_mod_ITB_6",
+            # "mcp_phi_mod_2pi_div_8",
+            # ("mcp_pt", "mcp_phi"),
+            # ("mcp_q_over_pt", "mcp_eta"),
+            # ("mcp_q_over_pt", "mcp_phi"),
+            # ("mcp_q_over_pt", f"mcp_phi_mod_{self.nphi}"),
+            # ("mcp_q_over_pt", "mcp_phi_mod_2pi_div_8"),
+            ("mcp_q_over_pt", f"mcp_phi_mod_ITB_0"),
+            ("mcp_q_over_pt", f"mcp_phi_mod_ITB_2"),
+            ("mcp_q_over_pt", f"mcp_phi_mod_ITB_4"),
+            ("mcp_q_over_pt", f"mcp_phi_mod_ITB_6"),
         ]:
 
             for system in SYSTEMS:
@@ -607,12 +770,59 @@ class Plotter:
                     [4, 5],
                     [6, 7],
                 ]:
+                    # check if 1d or 2d plots
+                    is2d = isinstance(kinematic, tuple) and len(kinematic) == 2
+                    abbrev = SYSTEM_ABBREV[system]
+
+                    # special case: modded phi
+                    expectation = f"mcp_phi_mod_{abbrev}_{double_layers[0]}"
+                    if not is2d:
+                        if kinematic.startswith("mcp_phi_mod") and kinematic != expectation:
+                                continue
+                    else:
+                        ok = True
+                        for dim in range(2):
+                            if (kinematic[dim].startswith("mcp_phi_mod") and kinematic[dim] != expectation):
+                                ok = False
+                        if not ok:
+                            continue
+
+                    # announcement
                     print(f"Plotting sim hit doublet efficiency vs {kinematic} for {system=} {double_layers=} ...")
+
+                    # special circumstances: modding phi
+                    # if kinematic == "mcp_phi_mod" or (is2d and "mcp_phi_mod" in kinematic):
+                    #     n_modules = N_MODULES[system][double_layers[0]]
+                    #     phi_interval = 2 * np.pi / (n_modules / self.nphi)
+
+                    #     abbrev = SYSTEM_ABBREV[system]
+                    #     kinematic = f"mcp_phi_mod_{abbrev}_{double_layers[0]}"
+
+                    #     # self.df["mcp_phi_mod"] = (self.df["mcp_phi"] + 2 * np.pi) % phi_interval
+                    #     # with pd.option_context("display.min_rows", 20,
+                    #     #                        "display.max_rows", 20,
+                    #     #                       ):
+                    #     #     print("="*50, kinematic, system, double_layers)
+                    #     #     print(self.df)
+                    #     # df_denom = self.df[mask_denom]
+                    #     the_bins = np.linspace(0, phi_interval, 201)
+                    #     if not is2d:
+                    #         bins[kinematic] = the_bins
+                    #     else:
+                    #         if "mcp_phi_mod" in kinematic[0]:
+                    #             bins[kinematic][0] = the_bins
+                    #         elif "mcp_phi_mod" in kinematic[1]:
+                    #             bins[kinematic][1] = the_bins
+                    #         else:
+                    #             raise ValueError(f"Unexpected kinematic with mcp_phi_mod (is2d)")
 
                     # numerator
                     mask_numer = numerator_mask(self.df, [system], double_layers) & first_exit
 
+                    # TUNA: remove debug statements and add helpful comments
+
                     # calculate doublet efficiency
+                    two_layers = 2
                     doublet_cols = [
                         "file",
                         "i_event", # the event
@@ -623,22 +833,22 @@ class Plotter:
                         "simhit_sensor", # the z-sensor
                     ]
                     doublet_groups = self.df[mask_numer].groupby(doublet_cols)
-                    if debug:
-                        print(doublet_groups, len(doublet_groups))
-                    if debug:
-                        with pd.option_context("display.min_rows", 50,
-                                               "display.max_rows", 50,
-                                              ):
-                            for i_doublet, (_, group) in enumerate(doublet_groups):
-                                print(group)
-                                if i_doublet >= 20:
-                                    break
-                    valid_doublets = doublet_groups["simhit_layer"].nunique().ge(2).reset_index(name="valid_doublet")
-                    if debug:
-                        with pd.option_context("display.min_rows", 50,
-                                               "display.max_rows", 50,
-                                              ):
-                            print(valid_doublets)
+                    # if debug:
+                    #     print(doublet_groups, len(doublet_groups))
+                    # if debug:
+                    #     with pd.option_context("display.min_rows", 50,
+                    #                            "display.max_rows", 50,
+                    #                           ):
+                    #         for i_doublet, (_, group) in enumerate(doublet_groups):
+                    #             print(group)
+                    #             if i_doublet >= 20:
+                    #                 break
+                    valid_doublets = doublet_groups["simhit_layer"].nunique().ge(two_layers).reset_index(name="valid_doublet")
+                    # if debug:
+                    #     with pd.option_context("display.min_rows", 50,
+                    #                            "display.max_rows", 50,
+                    #                           ):
+                    #         print(valid_doublets)
                     at_least_one_doublet = (
                         valid_doublets
                         .groupby([
@@ -651,11 +861,11 @@ class Plotter:
                         .any()
                         .reset_index(name="at_least_one_doublet")
                     )
-                    if debug:
-                        with pd.option_context("display.min_rows", 50,
-                                               "display.max_rows", 50,
-                                              ):
-                            print(at_least_one_doublet)
+                    # if debug:
+                    #     with pd.option_context("display.min_rows", 50,
+                    #                            "display.max_rows", 50,
+                    #                           ):
+                    #         print(at_least_one_doublet)
 
                     mcp_kin = (
                         self.df[mask_numer]
@@ -665,15 +875,15 @@ class Plotter:
                             "i_mcp",
                             "simhit_system",
                             "simhit_layer_div_2",
-                        ])[kinematic]
+                        ])[kinematic if not is2d else list(kinematic)]
                         .first()
                         .reset_index()
                     )
-                    if debug:
-                        with pd.option_context("display.min_rows", 50,
-                                               "display.max_rows", 50,
-                                              ):
-                            print(mcp_kin)
+                    # if debug:
+                    #     with pd.option_context("display.min_rows", 50,
+                    #                            "display.max_rows", 50,
+                    #                           ):
+                    #         print(mcp_kin)
 
                     # merge kinematic info
                     at_least_one_doublet = at_least_one_doublet.merge(
@@ -687,59 +897,143 @@ class Plotter:
                         ],
                         how="left",
                     )
-                    if debug:
-                        with pd.option_context("display.min_rows", 50,
-                                               "display.max_rows", 50,
-                                              ):
-                            print(at_least_one_doublet)
+                    # if debug:
+                    #     with pd.option_context("display.min_rows", 50,
+                    #                            "display.max_rows", 50,
+                    #                           ):
+                    #         print(at_least_one_doublet)
 
                     df_numer = at_least_one_doublet[at_least_one_doublet["at_least_one_doublet"].astype(bool)]
-                    if debug:
-                        n_numer = len(df_numer)
-                        n_denom = len(df_denom)
-                        print(f"Doublet efficiency for {system=} {double_layers=}: {n_numer} / {n_denom} = {n_numer / n_denom:.4f}")
+                    # if debug:
+                    #     n_numer = len(df_numer)
+                    #     n_denom = len(df_denom)
+                    #     print(f"Doublet efficiency for {system=} {double_layers=}: {n_numer} / {n_denom} = {n_numer / n_denom:.4f}")
 
-                    # efficiency plots
-                    counts_denom, _ = np.histogram(df_denom[kinematic], bins=bins[kinematic])
-                    counts_numer, _ = np.histogram(df_numer[kinematic], bins=bins[kinematic])
-                    efficiency = np.divide(
-                        counts_numer,
-                        counts_denom,
-                        out=np.full_like(counts_denom, 0.0, dtype=float),
-                        where=(counts_numer > 0.0),
-                    )
-                    bin_centers = (bins[kinematic][1:] + bins[kinematic][:-1]) / 2.0
+                    # TUNA: remove this but make sure the plot exists
+                    # --------------------------
+                    # if kinematic == "mcp_phi_mod_2pi_div_8":
+                    #     print("Plotting sim hit xy when calculated with vs phi mod 2pi/8 ...")
+                    #     n_modules = N_MODULES[system][double_layers[0]]
+                    #     tmp_mask = (
+                    #         (self.df["simhit"].astype(bool)) &
+                    #         (self.df["simhit_inside_bounds"].isin([INSIDE_BOUNDS, UNDEFINED_BOUNDS])) &
+                    #         (self.df["simhit_system"] == system) &
+                    #         (self.df["simhit_layer_div_2"].isin([dl // 2 for dl in double_layers]))
+                    #     )
+                    #     tmp_df = self.df[tmp_mask & first_exit]
+                    #     n_to_show = 8
+                    #     tmp_phi = (tmp_df["simhit_phi"] + 2 * np.pi) % (2 * np.pi / (n_modules / n_to_show))
+                    #     # the_x = np.cos(tmp_df[kinematic]) * tmp_df["simhit_r"]
+                    #     # the_y = np.sin(tmp_df[kinematic]) * tmp_df["simhit_r"]
+                    #     fig, ax = plt.subplots(figsize=(8, 8))
+                    #     _, _, _, im = ax.hist2d(
+                    #         # the_x,
+                    #         # the_y,
+                    #         # bins=[np.linspace(0, 1500, 501),
+                    #         #       np.linspace(0, 1500, 501)],
+                    #         tmp_phi,
+                    #         tmp_df["simhit_r"],
+                    #         bins=[200, 200],
+                    #         cmap="gist_rainbow",
+                    #         cmin=0.5,
+                    #     )
+                    #     fig.colorbar(im, ax=ax, pad=0.01, label="Sim. hits")
+                    #     ax.set_xlabel("Sim. hit phi mod 2pi/8 [rad]")
+                    #     ax.set_ylabel("Sim. hit r [mm]")
+                    #     # ax.set_xlabel("x [mm]")
+                    #     # ax.set_ylabel("y [mm]")
+                    #     ax.set_title(f"{system_name[system]}, layer {double_layers}")
+                    #     pdf.savefig()
+                    #     plt.close()
+                    # --------------------------
 
-                    for ylo, yhi in [
-                        (0.6, 1.04),
-                        (0.945, 1.005),
-                    ]:
-                        fig, ax = plt.subplots(figsize=(8, 8))
-                        ax.plot(
-                            bin_centers,
-                            efficiency,
-                            marker="o",
-                            markersize=2,
-                            linestyle="-",
-                            linewidth=1,
-                            color="dodgerblue",
+
+                    # calculate efficiency
+                    if is2d:
+                        counts_denom, _, _ = np.histogram2d(
+                            df_denom[kinematic[0]],
+                            df_denom[kinematic[1]],
+                            bins=bins[kinematic],
                         )
-                        ax.set_xlabel(xlabel[kinematic])
-                        ax.set_ylabel(f"Sim. hit double-layer efficiency")
+                        counts_numer, _, _ = np.histogram2d(
+                            df_numer[kinematic[0]],
+                            df_numer[kinematic[1]],
+                            bins=bins[kinematic],
+                        )
+                        efficiency = np.divide(
+                            counts_numer,
+                            counts_denom,
+                            out=np.full_like(counts_denom, 0.0, dtype=float),
+                            where=(counts_numer > 0.0),
+                        )
+                        bin_centers_0 = (bins[kinematic][0][1:] + bins[kinematic][0][:-1]) / 2.0
+                        bin_centers_1 = (bins[kinematic][1][1:] + bins[kinematic][1][:-1]) / 2.0
+
+                        fig, ax = plt.subplots(figsize=(8, 8))
+                        im = ax.imshow(
+                            efficiency.T,
+                            origin="lower",
+                            extent=[
+                                bin_centers_0[0],
+                                bin_centers_0[-1],
+                                bin_centers_1[0],
+                                bin_centers_1[-1],
+                            ],
+                            aspect="auto",
+                            cmap="afmhot",
+                            vmin=0.945,
+                            vmax=1.005,
+                        )
+                        fig.colorbar(im, ax=ax, pad=0.01, label="Sim. hit double-layer efficiency")
+                        ax.set_xlabel(xlabel[kinematic[0]])
+                        ax.set_ylabel(xlabel[kinematic[1]])
                         ax.set_title(f"{system_name[system]}, layer {double_layers}")
-                        ax.set_ylim(ylo, yhi)
-                        if kinematic in ["mcp_eta", "mcp_phi"]:
-                            bounds = get_boundaries(kinematic, [system], double_layers)
-                            bounds = bounds[(bounds > min(bins[kinematic])) & (bounds < max(bins[kinematic]))]
-                            max_eff = 1.0
-                            arrowprops = dict(arrowstyle="->", color="red", lw=1)
-                            kwargs = dict(xycoords="data", textcoords="data", arrowprops=arrowprops)
-                            for i_bound, bound in enumerate(bounds):
-                                if i_bound == 0:
-                                    ax.text(bound, (max_eff + yhi)/2.0, "Sensor boundaries", color="red", fontsize=10, ha="left", va="bottom")
-                                ax.annotate(text="", xy=(bound, max_eff), xytext=(bound, (max_eff + yhi)/2.0), **kwargs)
                         pdf.savefig()
                         plt.close()
+
+                    else:
+
+                        # efficiency plots
+                        counts_denom, _ = np.histogram(df_denom[kinematic], bins=bins[kinematic])
+                        counts_numer, _ = np.histogram(df_numer[kinematic], bins=bins[kinematic])
+                        efficiency = np.divide(
+                            counts_numer,
+                            counts_denom,
+                            out=np.full_like(counts_denom, 0.0, dtype=float),
+                            where=(counts_numer > 0.0),
+                        )
+                        bin_centers = (bins[kinematic][1:] + bins[kinematic][:-1]) / 2.0
+
+                        for ylo, yhi in [
+                            (0.6, 1.04),
+                            (0.945, 1.005),
+                        ]:
+                            fig, ax = plt.subplots(figsize=(8, 8))
+                            ax.plot(
+                                bin_centers,
+                                efficiency,
+                                marker="o",
+                                markersize=2,
+                                linestyle="-",
+                                linewidth=1,
+                                color="dodgerblue",
+                            )
+                            ax.set_xlabel(xlabel[kinematic])
+                            ax.set_ylabel(f"Sim. hit double-layer efficiency")
+                            ax.set_title(f"{system_name[system]}, layer {double_layers}")
+                            ax.set_ylim(ylo, yhi)
+                            if kinematic in ["mcp_eta", "mcp_phi"]:
+                                bounds = get_boundaries(kinematic, [system], double_layers)
+                                bounds = bounds[(bounds > min(bins[kinematic])) & (bounds < max(bins[kinematic]))]
+                                max_eff = 1.0
+                                arrowprops = dict(arrowstyle="->", color="red", lw=1)
+                                kwargs = dict(xycoords="data", textcoords="data", arrowprops=arrowprops)
+                                for i_bound, bound in enumerate(bounds):
+                                    if i_bound == 0:
+                                        ax.text(bound, (max_eff + yhi)/2.0, "Sensor boundaries", color="red", fontsize=10, ha="left", va="bottom")
+                                    ax.annotate(text="", xy=(bound, max_eff), xytext=(bound, (max_eff + yhi)/2.0), **kwargs)
+                            pdf.savefig()
+                            plt.close()
 
 
 def numerator_mask(
@@ -786,6 +1080,7 @@ def get_eta_boundaries(systems: list[int], layers: list[int]) -> np.ndarray:
                 bounds.append(eta)
                 bounds.append(-eta)
     return np.array(list(sorted(set(bounds))))
+
 
 def get_phi_boundaries(systems: list[int], layers: list[int]) -> np.ndarray:
     bounds = []
