@@ -129,7 +129,7 @@ class Plotter:
 
     def data_format(self, pdf: PdfPages):
         text = "Data format: Pandas DataFrame"
-        cols = [
+        columns = [
             "file",
             "i_event",
             "i_mcp",
@@ -141,19 +141,21 @@ class Plotter:
             "simhit_system",
             "simhit_layer",
             "simhit_module",
-            "simhit_sensor",
         ]
         dstr = self.df.to_string(
-            index=False,
-            columns=cols,
-            max_rows=60,
+            columns=columns,
+            max_rows=50,
         )
+        cols = "All columns: " + ", ".join([str(col) for col in self.df.columns.tolist()])
+        cols = textwrap.fill(cols, width=150)
         fig, ax = plt.subplots(figsize=(8, 8))
         ax.text(-0.12, 0.95, text, ha="left")
         ax.text(-0.12, 0.90, dstr, ha="left", va="top", fontfamily="monospace", fontsize=6)
+        ax.text(-0.12, 0.05, cols, ha="left", va="top", fontfamily="monospace", fontsize=6)
         ax.axis("off")
         pdf.savefig()
         plt.close()
+
 
     def efficiency_denominator(self, pdf: PdfPages):
         text = "Efficiency denominator"
