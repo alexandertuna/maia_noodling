@@ -754,7 +754,7 @@ class Plotter:
             # ("mcp_q_over_pt", "mcp_phi_mod_ITB_6"),
         ]:
 
-            for system in SYSTEMS[:1]:
+            for system in SYSTEMS:
 
                 for double_layers in [
                     [0, 1],
@@ -780,7 +780,7 @@ class Plotter:
                             continue
 
                     # announcement
-                    print(f"Plotting sim hit doublet efficiency vs {kinematic} for {system=} {double_layers=} ...")
+                    print(f"Plotting sim hit doublet efficiency vs {kinematic} for system={system} double_layers={double_layers} ...")
 
                     # numerator
                     mask_numer = numerator_mask(self.df, [system], double_layers) & first_exit
