@@ -124,8 +124,8 @@ class Plotter:
             # self.plot_simhit_p_vs_costheta(pdf)
             self.plot_layer_efficiency_vs_sim(pdf)
             # self.plot_weird_radius_hits(pdf)
-            self.plot_r_phi_mod(pdf)
             self.plot_doublet_efficiency_vs_sim(pdf)
+            self.plot_r_phi_mod(pdf)
 
 
     def data_format(self, pdf: PdfPages):
@@ -776,6 +776,9 @@ class Plotter:
             ("mcp_q_over_pt", "mcp_phi"),
             ("mcp_eta", "mcp_phi"),
             ("mcp_eta", "mcp_phi_mod_ITB_0"),
+            # ("mcp_eta", "mcp_phi_mod_ITB_2"),
+            # ("mcp_eta", "mcp_phi_mod_ITB_4"),
+            # ("mcp_eta", "mcp_phi_mod_ITB_6"),
             ("mcp_q_over_pt", "mcp_phi_mod_ITB_0"),
             # ("mcp_q_over_pt", "mcp_phi_mod_ITB_2"),
             # ("mcp_q_over_pt", "mcp_phi_mod_ITB_4"),
@@ -909,8 +912,9 @@ class Plotter:
                         bin_centers = (bins[kinematic][1:] + bins[kinematic][:-1]) / 2.0
 
                         for ylo, yhi in [
-                            (0.6, 1.04),
-                            (0.945, 1.005),
+                            (0.86, 1.01),
+                            # (0.6, 1.04),
+                            # (0.945, 1.005),
                         ]:
                             fig, ax = plt.subplots(figsize=(8, 8))
                             ax.plot(
