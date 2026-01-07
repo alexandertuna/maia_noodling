@@ -107,6 +107,7 @@ class Plotter:
         with PdfPages(self.pdf) as pdf:
             self.data_format(pdf)
             self.efficiency_denominator(pdf)
+            self.efficiency_numerator(pdf)
             self.plot_mcp_pt(pdf)
             # self.plot_mcp_eta(pdf)
             # self.plot_mcp_phi(pdf)
@@ -121,7 +122,7 @@ class Plotter:
             # self.plot_simhit_costheta_vs_time(pdf)
             # self.plot_simhit_p_vs_time(pdf)
             # self.plot_simhit_p_vs_costheta(pdf)
-            ############ self.plot_layer_efficiency_vs_sim(pdf)
+            self.plot_layer_efficiency_vs_sim(pdf)
             # self.plot_weird_radius_hits(pdf)
             ############ self.plot_r_phi_mod(pdf)
             # self.plot_doublet_efficiency_vs_sim(pdf)
@@ -173,6 +174,25 @@ class Plotter:
         fig, ax = plt.subplots(figsize=(8, 8))
         ax.text(0.0, 0.8, text, ha="left")
         ax.text(0.0, 0.7, code, ha="left", va="top", fontfamily="monospace", fontsize=10)
+        ax.axis("off")
+        pdf.savefig()
+        plt.close()
+
+
+    def efficiency_numerator(self, pdf: PdfPages):
+        text = f"Efficiency numerator:"
+        numer = inspect.getsource(numerator_mask)
+        numer = textwrap.dedent(numer)
+        first = inspect.getsource(first_exit_mask)
+        first = textwrap.dedent(first)
+        fig, ax = plt.subplots(figsize=(8, 8))
+        args = {"ha":"left", "va":"top", "fontfamily":"monospace", "fontsize":10}
+        ax.text(0.0, 0.9, text, **args)
+        ax.text(0.0, 0.8, numer, **args)
+        ax.text(0.0, 0.4, first, **args)
+        ax.text(0.0, 0.20, f"MIN_COSTHETA={MIN_COSTHETA}", **args)
+        ax.text(0.0, 0.15, f"MIN_SIMHIT_PT_FRACTION={MIN_SIMHIT_PT_FRACTION}", **args)
+        ax.text(0.0, 0.10, f"MAX_TIME={MAX_TIME}", **args)
         ax.axis("off")
         pdf.savefig()
         plt.close()
@@ -515,9 +535,11 @@ class Plotter:
         bins = {
             "mcp_pt": np.linspace(0, 10, 101),
             "mcp_eta": np.linspace(-0.7, 0.7, 281),
-            "mcp_phi": np.linspace(-3.2, 3.2, 1601),
-            ("mcp_pt", "mcp_phi"): [np.linspace(0, 10, 11),
-                                    np.linspace(-3.2, 3.2, 1601)],
+            "mcp_phi": np.linspace(-3.2, 3.2, 161),
+            ("mcp_pt", "mcp_phi"): [np.linspace(0, 10, 101),
+                                    np.linspace(-3.2, 3.2, 161)],
+            ("mcp_eta", "mcp_phi"): [np.linspace(-0.7, 0.7, 281),
+                                     np.linspace(-3.2, 3.2, 161)],
         }
         system_name = {
             INNER_TRACKER_BARREL: "Inner Tracker Barrel",
@@ -528,24 +550,6 @@ class Plotter:
             "mcp_eta": "Simulated eta",
             "mcp_phi": "Simulated phi",
         }
-
-        # text describing efficiency calculation
-        text = f"Efficiency numerator:"
-        numer = inspect.getsource(numerator_mask)
-        numer = textwrap.dedent(numer)
-        first = inspect.getsource(first_exit_mask)
-        first = textwrap.dedent(first)
-        fig, ax = plt.subplots(figsize=(8, 8))
-        args = {"ha":"left", "va":"top", "fontfamily":"monospace", "fontsize":10}
-        ax.text(0.0, 0.9, text, **args)
-        ax.text(0.0, 0.8, numer, **args)
-        ax.text(0.0, 0.4, first, **args)
-        ax.text(0.0, 0.20, f"MIN_COSTHETA={MIN_COSTHETA}", **args)
-        ax.text(0.0, 0.15, f"MIN_SIMHIT_PT_FRACTION={MIN_SIMHIT_PT_FRACTION}", **args)
-        ax.text(0.0, 0.10, f"MAX_TIME={MAX_TIME}", **args)
-        ax.axis("off")
-        pdf.savefig()
-        plt.close()
 
         # mask for first exit / arc / path
         first_exit = first_exit_mask(self.df)
@@ -592,6 +596,7 @@ class Plotter:
             "mcp_eta",
             "mcp_phi",
             ("mcp_pt", "mcp_phi"),
+            ("mcp_eta", "mcp_phi"),
         ]:
 
             print(f"Plotting sim hit efficiency vs {kinematic}...")
@@ -622,27 +627,19 @@ class Plotter:
                             counts_numer,
                             counts_denom,
                             out=np.full_like(counts_denom, 0.0, dtype=float),
-                            where=(counts_numer > 0.0),
+                            where=(counts_denom > 0.0),
                         )
-                        bin_centers_0 = (bins[kinematic][0][1:] + bins[kinematic][0][:-1]) / 2.0
-                        bin_centers_1 = (bins[kinematic][1][1:] + bins[kinematic][1][:-1]) / 2.0
-
+                        xedges, yedges = bins[kinematic]
                         fig, ax = plt.subplots(figsize=(8, 8))
-                        im = ax.imshow(
+                        mesh = ax.pcolormesh(
+                            xedges,
+                            yedges,
                             efficiency.T,
-                            origin="lower",
-                            extent=[
-                                bin_centers_0[0],
-                                bin_centers_0[-1],
-                                bin_centers_1[0],
-                                bin_centers_1[-1],
-                            ],
-                            aspect="auto",
                             cmap="afmhot",
-                            vmin=0.95,
+                            vmin=0.945,
                             vmax=1.005,
                         )
-                        fig.colorbar(im, ax=ax, pad=0.01, label="Sim. hit efficiency")
+                        fig.colorbar(mesh, ax=ax, pad=0.01, label="Sim. hit double-layer efficiency")
                         ax.set_xlabel(xlabel[kinematic[0]])
                         ax.set_ylabel(xlabel[kinematic[1]])
                         ax.set_title(f"{system_name[system]}, layer {layer}")
