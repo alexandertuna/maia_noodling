@@ -109,8 +109,8 @@ class Plotter:
             self.efficiency_denominator(pdf)
             self.efficiency_numerator(pdf)
             self.plot_mcp_pt(pdf)
-            # self.plot_mcp_eta(pdf)
-            # self.plot_mcp_phi(pdf)
+            self.plot_mcp_eta(pdf)
+            self.plot_mcp_phi(pdf)
             # self.plot_simhit_time(pdf)
             # self.plot_simhit_time_corrected(pdf)
             # # self.plot_simhit_distance(pdf)
@@ -124,8 +124,8 @@ class Plotter:
             # self.plot_simhit_p_vs_costheta(pdf)
             self.plot_layer_efficiency_vs_sim(pdf)
             # self.plot_weird_radius_hits(pdf)
-            ############ self.plot_r_phi_mod(pdf)
-            # self.plot_doublet_efficiency_vs_sim(pdf)
+            self.plot_r_phi_mod(pdf)
+            self.plot_doublet_efficiency_vs_sim(pdf)
 
 
     def data_format(self, pdf: PdfPages):
