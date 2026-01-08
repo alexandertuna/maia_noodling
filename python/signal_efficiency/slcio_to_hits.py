@@ -8,6 +8,10 @@ from constants import BARREL_TRACKER_MAX_RADIUS
 from constants import ONE_GEV, ONE_MM
 from constants import OUTSIDE_BOUNDS, INSIDE_BOUNDS, UNDEFINED_BOUNDS
 
+_detector = None
+_surfman = None
+_maps = None
+
 MCPARTICLE = "MCParticle"
 MUON = 13
 SPEED_OF_LIGHT = 299.792458  # mm/ns
@@ -48,7 +52,8 @@ class SlcioToHitsDataFrame:
 
     def convert_all_files(self) -> pd.DataFrame:
         print(f"Converting {len(self.slcio_file_paths)} slcio files to a DataFrame ...")
-        with mp.Pool() as pool:
+        init_function = init_worker if self.load_geometry else init_dummy
+        with mp.Pool(initializer=init_function) as pool:
             n_map = len(self.slcio_file_paths)
             load_geometry = [self.load_geometry]*n_map
             all_hits_dfs = pool.starmap(
@@ -59,6 +64,23 @@ class SlcioToHitsDataFrame:
             )
         print("Merging DataFrames ...")
         return pd.concat(all_hits_dfs, ignore_index=True)
+
+
+def init_dummy():
+    pass
+
+
+def init_worker():
+    global _detector, _surfman, _maps
+    import dd4hep, DDRec
+    _detector = dd4hep.Detector.getInstance()
+    _detector.fromCompact(XML)
+    _surfman = DDRec.SurfaceManager(_detector)
+    dets = {
+        "InnerTrackerBarrelCollection": _detector.detector("InnerTrackerBarrel"),
+        "OuterTrackerBarrelCollection": _detector.detector("OuterTrackerBarrel"),
+    }
+    _maps = {name: _surfman.map(det.name()) for name, det in dets.items()}
 
 
 def convert_one_file(
@@ -73,19 +95,6 @@ def convert_one_file(
     if load_geometry:
         import dd4hep
         import DDRec
-
-    # setup the detector
-    if load_geometry:
-        detector = dd4hep.Detector.getInstance()
-        detector.fromCompact(XML)
-        surfman = DDRec.SurfaceManager(detector)
-        dets = {}
-        dets["InnerTrackerBarrelCollection"] = detector.detector("InnerTrackerBarrel")
-        dets["OuterTrackerBarrelCollection"] = detector.detector("OuterTrackerBarrel")
-        maps = {}
-        for name, det in dets.items():
-            maps[name] = surfman.map(det.name())
-            print(f"Number of surfaces in {name} map:", len(maps[name]))
 
     # open the SLCIO file
     reader = pyLCIO.IOIMPL.LCFactory.getInstance().createLCReader()
@@ -163,40 +172,12 @@ def convert_one_file(
                 if abs(mcp_pdg[i_mcp]) not in PARTICLES_OF_INTEREST:
                     continue
 
-                # # ------------------------------------------------------------
-                # # try putting cuts here
-                # """
-                # (df["mcp_q"] != 0) &
-                # (df["mcp_vertex_r"] < ONE_MM) &
-                # (df["mcp_vertex_z"] < ONE_MM) &
-                # (df["mcp_endpoint_r"] > BARREL_TRACKER_MAX_RADIUS) &
-                # (np.abs(df["mcp_eta"]) < BARREL_TRACKER_MAX_ETA)
-                # """
-                # if abs(mcp_pdg[i_mcp]) != MUON:
-                #     continue
-                # mcp_vertex_r = np.sqrt(mcp_vertex_x[i_mcp]**2 + mcp_vertex_y[i_mcp]**2)
-                # if mcp_vertex_r >= ONE_MM:
-                #     continue
-                # if abs(mcp_vertex_z[i_mcp]) >= ONE_MM:
-                #     continue
-                # mcp_endpoint_r = np.sqrt(mcp_endpoint_x[i_mcp]**2 + mcp_endpoint_y[i_mcp]**2)
-                # if mcp_endpoint_r <= BARREL_TRACKER_MAX_RADIUS:
-                #     continue
-                # mcp_theta = np.arctan2(
-                #     np.sqrt(mcp_px[i_mcp]**2 + mcp_py[i_mcp]**2),
-                #     mcp_pz[i_mcp],
-                # )
-                # mcp_eta = -np.log(np.tan(mcp_theta / 2.0))
-                # if abs(mcp_eta) >= BARREL_TRACKER_MAX_ETA:
-                #     continue
-                # # ------------------------------------------------------------
-
                 # hit/surface relations
                 if load_geometry:
-                    surf = maps[collection].find(hit.getCellID0()).second
+                    surf = _maps[collection].find(hit.getCellID0()).second
                     pos = dd4hep.rec.Vector3D(hit.getPosition()[0] * MM_TO_CM,
-                                            hit.getPosition()[1] * MM_TO_CM,
-                                            hit.getPosition()[2] * MM_TO_CM)
+                                              hit.getPosition()[1] * MM_TO_CM,
+                                              hit.getPosition()[2] * MM_TO_CM)
                     inside_bounds = INSIDE_BOUNDS if surf.insideBounds(pos) else OUTSIDE_BOUNDS
                     distance = surf.distance(pos) * CM_TO_MM
                 else:
