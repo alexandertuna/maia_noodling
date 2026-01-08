@@ -9,7 +9,7 @@ from plot import Plotter
 
 FNAMES = [
     # v01
-    "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_1*.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_*.slcio",
     # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_1*.slcio",
     # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_2*.slcio",
     # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_3*.slcio",
@@ -23,9 +23,7 @@ FNAMES = [
     # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_11_06_21h31m00s/muonGun_pT_0_10_sim_4*.slcio",
 ]
 NOW = time.strftime("%Y_%m_%d_%Hh%Mm%Ss")
-PDF = f"detector_efficiency_NOW.pdf"
-DISPLAYS = "event_displays_NOW.pdf"
-PARQUET = f"detector_efficiency_NOW.parquet"
+DISPLAYS = f"event_displays_{NOW}.pdf"
 PRINT_GROUPS = 0
 
 
@@ -33,18 +31,24 @@ def main():
     ops = options()
     fnames = get_filenames(FNAMES)
     geometry = ops.geometry
-    if geometry:
-        fnames = fnames[:200] # temporary limit for memory purposes
+    parquet = ops.parquet
+    pdf = ops.pdf
 
     # convert slcio files to dataframe
-    converter = SlcioToHitsDataFrame(slcio_file_paths=fnames,
-                                     load_geometry=geometry)
-    df = converter.convert()
+    if ops.load_from_parquet:
+        print(f"Loading data frame from {parquet}...")
+        df = pd.read_parquet(parquet)
+        print(f"Loaded data frame with {len(df)} rows.")
+    else:
+        print(f"Converting {len(fnames)} slcio files to data frame...")
+        converter = SlcioToHitsDataFrame(slcio_file_paths=fnames,
+                                        load_geometry=geometry)
+        df = converter.convert()
 
     # write df to file
     if ops.write_to_parquet:
-        print(f"Writing data frame to {PARQUET}...")
-        df.to_parquet(PARQUET)
+        print(f"Writing data frame to {parquet}...")
+        df.to_parquet(parquet)
 
     # show some info
     group_cols = ["file", "i_event", "i_mcp"]
@@ -88,7 +92,7 @@ def main():
     #                       ):
     #     print(df)
 
-    plotter = Plotter(df, PDF)
+    plotter = Plotter(df, pdf)
     plotter.plot()
 
 
@@ -97,6 +101,9 @@ def options():
     parser.add_argument("--geometry", action="store_true", help="Load compact geometry from xml")
     parser.add_argument("--event-displays", action="store_true", help="Make event displays")
     parser.add_argument("--write-to-parquet", action="store_true", help="Write dataframe to parquet file")
+    parser.add_argument("--load-from-parquet", action="store_true", help="Load dataframe from parquet file")
+    parser.add_argument("--parquet", default="detector_efficiency.parquet", help="Parquet file path")
+    parser.add_argument("--pdf", default="detector_efficiency.pdf", help="PDF file path")
     return parser.parse_args()
 
 
