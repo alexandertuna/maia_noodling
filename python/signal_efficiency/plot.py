@@ -78,6 +78,7 @@ class Plotter:
     def post_process(self):
 
         # phi_mod for plotting wrapped-around phi modules
+        print("Post-processing dataframe: adding mcp_phi_mod ...")
         for system in SYSTEMS:
             for layer in LAYERS:
                 abbrev = SYSTEM_ABBREV[system]
@@ -86,6 +87,7 @@ class Plotter:
                 self.df[f"mcp_phi_mod_{abbrev}_{layer}"] = (self.df["mcp_phi"] + 2 * np.pi) % period
 
         # phi_mod for plotting wrapped-around phi modules
+        print("Post-processing dataframe: adding simhit_phi_mod ...")
         lookup = (
             pd.DataFrame(
                 [(sys, layer, N_MODULES[sys][layer])
@@ -104,6 +106,7 @@ class Plotter:
 
 
     def plot(self):
+        print(f"Writing plots to {self.pdf} ...")
         with PdfPages(self.pdf) as pdf:
             self.data_format(pdf)
             self.efficiency_denominator(pdf)
