@@ -954,7 +954,7 @@ class Plotter:
         bins = {
             True: {
                 INNER_TRACKER_BARREL: np.linspace(-25, 25, 201),
-                OUTER_TRACKER_BARREL: np.linspace(-150, 150, 201),
+                OUTER_TRACKER_BARREL: np.linspace(-400, 400, 201),
             },
             False: {
                 INNER_TRACKER_BARREL: np.linspace(-6, 6, 201),
