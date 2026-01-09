@@ -112,8 +112,8 @@ class Plotter:
             self.efficiency_denominator(pdf)
             self.efficiency_numerator(pdf)
             self.plot_mcp_pt(pdf)
-            self.plot_mcp_eta(pdf)
-            self.plot_mcp_phi(pdf)
+            # self.plot_mcp_eta(pdf)
+            # self.plot_mcp_phi(pdf)
             # self.plot_simhit_time(pdf)
             # self.plot_simhit_time_corrected(pdf)
             # # self.plot_simhit_distance(pdf)
@@ -125,10 +125,11 @@ class Plotter:
             # self.plot_simhit_costheta_vs_time(pdf)
             # self.plot_simhit_p_vs_time(pdf)
             # self.plot_simhit_p_vs_costheta(pdf)
-            self.plot_layer_efficiency_vs_sim(pdf)
+            # self.plot_layer_efficiency_vs_sim(pdf)
             # self.plot_weird_radius_hits(pdf)
-            self.plot_doublet_efficiency_vs_sim(pdf)
-            self.plot_r_phi_mod(pdf)
+            # self.plot_doublet_efficiency_vs_sim(pdf)
+            # self.plot_r_phi_mod(pdf)
+            self.plot_doublet_deltaz(pdf)
 
 
     def data_format(self, pdf: PdfPages):
@@ -820,7 +821,7 @@ class Plotter:
                     mask_numer = numerator_mask(self.df, [system], double_layers) & first_exit
 
                     # calculate doublet efficiency
-                    # this is a lot of vector algebra
+                    # this is a lot of vectorized algebra
                     two_layers = 2
                     doublet_cols = [
                         "file",
@@ -945,6 +946,101 @@ class Plotter:
                                     ax.annotate(text="", xy=(bound, max_eff), xytext=(bound, (max_eff + yhi)/2.0), **kwargs)
                             pdf.savefig()
                             plt.close()
+
+
+    def plot_doublet_deltaz(self, pdf: PdfPages):
+
+        # binning
+        bins = {
+            True: {
+                INNER_TRACKER_BARREL: np.linspace(-25, 25, 201),
+                OUTER_TRACKER_BARREL: np.linspace(-150, 150, 201),
+            },
+            False: {
+                INNER_TRACKER_BARREL: np.linspace(-6, 6, 201),
+                OUTER_TRACKER_BARREL: np.linspace(-60, 60, 201),
+            },
+        }
+
+        # mask for first exit / arc / path
+        first_exit = first_exit_mask(self.df)
+
+        for semilogy in [False, True]:
+
+            for system in SYSTEMS:
+
+                for double_layers in [
+                    [0, 1],
+                    [2, 3],
+                    [4, 5],
+                    [6, 7],
+                ]:
+
+                    print(f"Plotting sim hit delta z for system={system} double_layers={double_layers} ...")
+                    mask = numerator_mask(self.df, [system], double_layers) & first_exit
+
+                    # this is a lot of vectorized algebra
+                    doublet_cols = [
+                        "file",
+                        "i_event", # the event
+                        "i_mcp", # the MC particle
+                        "simhit_system", # the system (IT, OT)
+                        "simhit_layer_div_2", # the double layer
+                        "simhit_module", # the phi-module
+                        "simhit_sensor", # the z-sensor
+                    ]
+
+                    # calculating dz
+                    df = self.df[mask].copy()
+                    lower_cols = doublet_cols + ["simhit_r_lower", "simhit_z_lower"]
+                    upper_cols = doublet_cols + ["simhit_r_upper", "simhit_z_upper"]
+                    lower = (df[df["simhit_layer_mod_2"] == 0]
+                                .rename(columns={"simhit_r":"simhit_r_lower",
+                                                 "simhit_z":"simhit_z_lower"})
+                                [lower_cols])
+                    upper = (df[df["simhit_layer_mod_2"] == 1]
+                            .rename(columns={"simhit_r":"simhit_r_upper",
+                                             "simhit_z":"simhit_z_upper"})
+                                [upper_cols])
+                    doublets = lower.merge(upper, on=doublet_cols, how="inner")
+                    slope = np.divide(doublets["simhit_z_upper"] - doublets["simhit_z_lower"],
+                                     doublets["simhit_r_upper"] - doublets["simhit_r_lower"])
+                    doublets["intercept_rz"] = doublets["simhit_z_lower"] - doublets["simhit_r_lower"] * slope
+
+                    # simple calcs
+                    median = np.median(doublets["intercept_rz"])
+                    mean = np.mean(doublets["intercept_rz"])
+                    std = np.std(doublets["intercept_rz"])
+                    interval68p3 = np.percentile(np.abs(doublets["intercept_rz"]), 68.3)
+                    interval95p5 = np.percentile(np.abs(doublets["intercept_rz"]), 95.5)
+                    interval99p7 = np.percentile(np.abs(doublets["intercept_rz"]), 99.7)
+
+                    # plot it
+                    fig, ax = plt.subplots(figsize=(8, 8))
+                    ax.hist(doublets["intercept_rz"],
+                            bins=bins[semilogy][system],
+                            histtype="stepfilled",
+                            color="green",
+                            alpha=0.9,
+                            )
+                    ax.set_xlabel("Doublet fit intercept z [mm]")
+                    ax.set_ylabel("Counts")
+                    ax.set_title(f"Simulated muon gun, system {system}, double layers {double_layers}")
+                    ax.text(0.70, 0.80, "\n".join([
+                                f"Median: {median:.2f} mm",
+                                f"Mean: {mean:.2f} mm",
+                                f"Std: {std:.2f} mm",
+                                f"68.3% interval: {interval68p3:.2f} mm",
+                                f"95.5% interval: {interval95p5:.2f} mm",
+                                f"99.7% interval: {interval99p7:.2f} mm",
+                            ]),
+                            transform=ax.transAxes,
+                            fontsize=10,
+                            )
+                    if semilogy:
+                        ax.semilogy()
+                    pdf.savefig()
+                    plt.close()
 
 
 def numerator_mask(
