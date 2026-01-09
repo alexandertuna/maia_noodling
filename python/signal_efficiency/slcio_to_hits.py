@@ -249,6 +249,7 @@ def postprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df["simhit_p"] = np.sqrt(df["simhit_px"]**2 + df["simhit_py"]**2 + df["simhit_pz"]**2)
     df["simhit_costheta"] = (df["simhit_x"] * df["simhit_px"] + df["simhit_y"] * df["simhit_py"] + df["simhit_z"] * df["simhit_pz"]) / (df["simhit_R"] * df["simhit_p"])
     df["simhit_layer_div_2"] = df["simhit_layer"] // 2
+    df["simhit_layer_mod_2"] = df["simhit_layer"] % 2
 
     # remove redundant columns
     df.drop(columns=[
