@@ -15,7 +15,7 @@ ls ./
 # constants
 CODE=/ceph/users/atuna/work/maia
 STEER=${CODE}/SteeringMacros/Util/steer_pruneBIB_CONDOR.py
-DATA=$(pwd)
+DATA=${CODE}/maia_noodling/experiments/simulate_bib.2026_01_07_22h00m00s
 echo "CODE=${CODE}"
 echo "STEER=${STEER}"
 echo "DATA=${DATA}"
