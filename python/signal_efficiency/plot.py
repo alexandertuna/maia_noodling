@@ -129,7 +129,8 @@ class Plotter:
             # self.plot_weird_radius_hits(pdf)
             # self.plot_doublet_efficiency_vs_sim(pdf)
             # self.plot_r_phi_mod(pdf)
-            self.plot_doublet_deltaz(pdf)
+            self.plot_doublet_rz(pdf)
+            self.plot_doublet_xy(pdf)
 
 
     def data_format(self, pdf: PdfPages):
@@ -948,7 +949,7 @@ class Plotter:
                             plt.close()
 
 
-    def plot_doublet_deltaz(self, pdf: PdfPages):
+    def plot_doublet_rz(self, pdf: PdfPages):
 
         # binning
         bins = {
@@ -1004,7 +1005,7 @@ class Plotter:
                                 [upper_cols])
                     doublets = lower.merge(upper, on=doublet_cols, how="inner")
                     slope = np.divide(doublets["simhit_z_upper"] - doublets["simhit_z_lower"],
-                                     doublets["simhit_r_upper"] - doublets["simhit_r_lower"])
+                                      doublets["simhit_r_upper"] - doublets["simhit_r_lower"])
                     doublets["intercept_rz"] = doublets["simhit_z_lower"] - doublets["simhit_r_lower"] * slope
 
                     # simple calcs
@@ -1021,6 +1022,8 @@ class Plotter:
                             bins=bins[semilogy][system],
                             histtype="stepfilled",
                             color="green",
+                            edgecolor="black",
+                            linewidth=1.0,
                             alpha=0.9,
                             )
                     ax.set_xlabel("Doublet fit intercept z [mm]")
@@ -1033,6 +1036,106 @@ class Plotter:
                                 f"68.3% interval: {interval68p3:.2f} mm",
                                 f"95.5% interval: {interval95p5:.2f} mm",
                                 f"99.7% interval: {interval99p7:.2f} mm",
+                            ]),
+                            transform=ax.transAxes,
+                            fontsize=10,
+                            )
+                    if semilogy:
+                        ax.semilogy()
+                    pdf.savefig()
+                    plt.close()
+
+
+    def plot_doublet_xy(self, pdf: PdfPages):
+
+        # binning
+        bins = {
+            True: {
+                INNER_TRACKER_BARREL: np.linspace(-np.pi / 2.0, np.pi / 2.0, 201),
+                OUTER_TRACKER_BARREL: np.linspace(-np.pi / 2.0, np.pi / 2.0, 201),
+            },
+            False: {
+                INNER_TRACKER_BARREL: np.linspace(-np.pi / 2.0, np.pi / 2.0, 201),
+                OUTER_TRACKER_BARREL: np.linspace(-np.pi / 2.0, np.pi / 2.0, 201),
+            },
+        }
+
+        # mask for first exit / arc / path
+        first_exit = first_exit_mask(self.df)
+
+        for semilogy in [False, True]:
+
+            for system in SYSTEMS:
+
+                for double_layers in [
+                    [0, 1],
+                    [2, 3],
+                    [4, 5],
+                    [6, 7],
+                ]:
+
+                    print(f"Plotting sim hit delta phi for system={system} double_layers={double_layers} ...")
+                    mask = numerator_mask(self.df, [system], double_layers) & first_exit
+
+                    # this is a lot of vectorized algebra
+                    doublet_cols = [
+                        "file",
+                        "i_event", # the event
+                        "i_mcp", # the MC particle
+                        "simhit_system", # the system (IT, OT)
+                        "simhit_layer_div_2", # the double layer
+                        "simhit_module", # the phi-module
+                        "simhit_sensor", # the z-sensor
+                    ]
+
+                    # calculating dphi (phi local minus phi global)
+                    df = self.df[mask].copy()
+                    lower_cols = doublet_cols + ["simhit_x_lower", "simhit_y_lower"]
+                    upper_cols = doublet_cols + ["simhit_x_upper", "simhit_y_upper"]
+                    lower = (df[df["simhit_layer_mod_2"] == 0]
+                                .rename(columns={"simhit_x":"simhit_x_lower",
+                                                 "simhit_y":"simhit_y_lower"})
+                                [lower_cols])
+                    upper = (df[df["simhit_layer_mod_2"] == 1]
+                            .rename(columns={"simhit_x":"simhit_x_upper",
+                                             "simhit_y":"simhit_y_upper"})
+                                [upper_cols])
+                    doublets = lower.merge(upper, on=doublet_cols, how="inner")
+                    phi_local = np.arctan2(doublets["simhit_y_upper"] - doublets["simhit_y_lower"],
+                                           doublets["simhit_x_upper"] - doublets["simhit_x_lower"])
+                    phi_global = np.arctan2((doublets["simhit_y_lower"] + doublets["simhit_y_upper"]) / 2.0,
+                                            (doublets["simhit_x_lower"] + doublets["simhit_x_upper"]) / 2.0)
+                    doublets["dphi"] = phi_local - phi_global
+                    doublets["dphi"] = (doublets["dphi"] + np.pi) % (2 * np.pi) - np.pi
+
+                    # simple calcs
+                    median = np.median(doublets["dphi"])
+                    mean = np.mean(doublets["dphi"])
+                    std = np.std(doublets["dphi"])
+                    interval68p3 = np.percentile(np.abs(doublets["dphi"]), 68.3)
+                    interval95p5 = np.percentile(np.abs(doublets["dphi"]), 95.5)
+                    interval99p7 = np.percentile(np.abs(doublets["dphi"]), 99.7)
+
+                    # plot it
+                    fig, ax = plt.subplots(figsize=(8, 8))
+                    ax.hist(doublets["dphi"],
+                            bins=bins[semilogy][system],
+                            histtype="stepfilled",
+                            color="red",
+                            edgecolor="black",
+                            linewidth=1.0,
+                            alpha=0.9,
+                            )
+                    ax.set_xlabel("Doublet fit dphi [rad]")
+                    ax.set_ylabel("Counts")
+                    ax.set_title(f"Simulated muon gun, system {system}, double layers {double_layers}")
+                    ax.text(0.70, 0.80, "\n".join([
+                                f"Median: {median:.2f} rad",
+                                f"Mean: {mean:.2f} rad",
+                                f"Std: {std:.2f} rad",
+                                f"68.3% interval: {interval68p3:.2f} rad",
+                                f"95.5% interval: {interval95p5:.2f} rad",
+                                f"99.7% interval: {interval99p7:.2f} rad",
                             ]),
                             transform=ax.transAxes,
                             fontsize=10,
