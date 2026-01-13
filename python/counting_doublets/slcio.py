@@ -151,7 +151,7 @@ def convert_one_file(
 
             for i_hit, hit in enumerate(col):
 
-                if i_hit % 1000000 == 0:
+                if i_hit > 0 and i_hit % 1000000 == 0:
                     print(f"Processing file {os.path.basename(slcio_file_path)} "
                           f"event {i_event} collection {collection} "
                           f"hit {i_hit}/{n_hit} ...")
@@ -160,6 +160,10 @@ def convert_one_file(
                 # ONLY OT LAYERS 0 AND 1 FOR NOW
                 if (np.right_shift(hit.getCellID0(), 7) & 0b11_1111) not in [0, 1]:
                     continue
+
+                # associated MCParticle
+                mcp = hit.getMCParticle()
+                i_mcp = mcparticles.index(mcp) if mcp in mcparticles else -1
 
                 # hit/surface relations
                 if load_geometry:
@@ -177,18 +181,19 @@ def convert_one_file(
                 simhits.append({
                     'file': os.path.basename(slcio_file_path),
                     'i_event': i_event,
+                    'i_mcp': i_mcp,
                     'simhit_x': hit.getPosition()[0],
                     'simhit_y': hit.getPosition()[1],
                     'simhit_z': hit.getPosition()[2],
                     'simhit_px': hit.getMomentum()[0],
                     'simhit_py': hit.getMomentum()[1],
                     'simhit_pz': hit.getMomentum()[2],
-                    'simhit_e': hit.getEDep(),
-                    'simhit_t': hit.getTime(),
                     'simhit_cellid0': hit.getCellID0(),
-                    'simhit_pathlength': hit.getPathLength(),
-                    'simhit_inside_bounds': inside_bounds,
-                    'simhit_distance': distance,
+                    'simhit_t': hit.getTime(),
+                    # 'simhit_e': hit.getEDep(),
+                    # 'simhit_pathlength': hit.getPathLength(),
+                    # 'simhit_inside_bounds': inside_bounds,
+                    # 'simhit_distance': distance,
                 })
 
     # Close
@@ -254,6 +259,11 @@ def postprocess_simhits(df: pd.DataFrame) -> pd.DataFrame:
     df.drop(columns=[
         # "simhit_x",
         # "simhit_y",
+        "simhit_px",
+        "simhit_py",
+        "simhit_pz",
+        "simhit_p",
+        "simhit_theta",
         "simhit_R",
         "simhit_theta",
         # "simhit_cellid0",
@@ -278,6 +288,7 @@ def sort_simhits(df: pd.DataFrame) -> pd.DataFrame:
     columns = [
         "file",
         "i_event",
+        "i_mcp",
         "simhit_system",
         "simhit_layer",
         "simhit_module",
