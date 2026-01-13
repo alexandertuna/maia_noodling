@@ -94,7 +94,7 @@ def convert_one_file(
     reader.open(slcio_file_path)
 
     # list for holding all hits
-    rows = []
+    simhits = []
 
     # loop over all events in the slcio file
     for i_event, event in enumerate(reader):
@@ -130,7 +130,7 @@ def convert_one_file(
                     distance = -1
 
                 # record the hit info
-                rows.append({
+                simhits.append({
                     'file': os.path.basename(slcio_file_path),
                     'i_event': i_event,
                     'simhit_x': hit.getPosition()[0],
@@ -152,7 +152,7 @@ def convert_one_file(
 
     # Convert the list of hits to a pandas DataFrame and postprocess
     print("Creating DataFrame ...")
-    df = pd.DataFrame(rows)
+    df = pd.DataFrame(simhits)
     return postprocess_dataframe(df)
 
 
