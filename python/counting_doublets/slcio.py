@@ -153,10 +153,10 @@ def convert_one_file(
     # Convert the list of hits to a pandas DataFrame and postprocess
     print("Creating DataFrame ...")
     df = pd.DataFrame(simhits)
-    return postprocess_dataframe(df)
+    return postprocess_simhits(df)
 
 
-def postprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+def postprocess_simhits(df: pd.DataFrame) -> pd.DataFrame:
     print("Postprocessing DataFrame ...")
     df["simhit_r"] = np.sqrt(df["simhit_x"]**2 + df["simhit_y"]**2)
     df["simhit_R"] = np.sqrt(df["simhit_x"]**2 + df["simhit_y"]**2 + df["simhit_z"]**2)
