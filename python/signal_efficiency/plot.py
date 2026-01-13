@@ -129,8 +129,9 @@ class Plotter:
             # self.plot_weird_radius_hits(pdf)
             # self.plot_doublet_efficiency_vs_sim(pdf)
             # self.plot_r_phi_mod(pdf)
-            self.plot_doublet_rz(pdf)
-            self.plot_doublet_xy(pdf)
+            # self.plot_doublet_rz(pdf)
+            # self.plot_doublet_xy(pdf)
+            self.plot_doublet_xy_vs_pt(pdf)
 
 
     def data_format(self, pdf: PdfPages):
@@ -1130,18 +1131,91 @@ class Plotter:
                     ax.set_ylabel("Counts")
                     ax.set_title(f"Simulated muon gun, system {system}, double layers {double_layers}")
                     ax.text(0.70, 0.80, "\n".join([
-                                f"Median: {median:.2f} rad",
-                                f"Mean: {mean:.2f} rad",
-                                f"Std: {std:.2f} rad",
-                                f"68.3% interval: {interval68p3:.2f} rad",
-                                f"95.5% interval: {interval95p5:.2f} rad",
-                                f"99.7% interval: {interval99p7:.2f} rad",
+                                f"Median: {median:.3f} rad",
+                                f"Mean: {mean:.3f} rad",
+                                f"Std: {std:.3f} rad",
+                                f"68.3% interval: {interval68p3:.3f} rad",
+                                f"95.5% interval: {interval95p5:.3f} rad",
+                                f"99.7% interval: {interval99p7:.3f} rad",
                             ]),
                             transform=ax.transAxes,
                             fontsize=10,
                             )
                     if semilogy:
                         ax.semilogy()
+                    pdf.savefig()
+                    plt.close()
+
+
+    def plot_doublet_xy_vs_pt(self, pdf: PdfPages):
+
+        # mask for first exit / arc / path
+        first_exit = first_exit_mask(self.df)
+
+        bins = [
+            np.linspace(0, 10, 201),  # pt bins
+            np.linspace(-np.pi / 3.0, np.pi / 3.0, 201),  # dphi bins
+        ]
+
+        for logz in [False]:
+
+            for system in SYSTEMS:
+
+                for double_layers in [
+                    [0, 1],
+                    [2, 3],
+                    [4, 5],
+                    [6, 7],
+                ]:
+
+                    print(f"Plotting sim hit delta phi vs pt for system={system} double_layers={double_layers} ...")
+                    mask = numerator_mask(self.df, [system], double_layers) & first_exit
+
+                    # this is a lot of vectorized algebra
+                    doublet_cols = [
+                        "file",
+                        "i_event", # the event
+                        "i_mcp", # the MC particle
+                        "mcp_pt", # the MC particle pt
+                        "simhit_system", # the system (IT, OT)
+                        "simhit_layer_div_2", # the double layer
+                        "simhit_module", # the phi-module
+                        "simhit_sensor", # the z-sensor
+                    ]
+
+                    # calculating dphi (phi local minus phi global)
+                    df = self.df[mask].copy()
+                    lower_cols = doublet_cols + ["simhit_x_lower", "simhit_y_lower"]
+                    upper_cols = doublet_cols + ["simhit_x_upper", "simhit_y_upper"]
+                    lower = (df[df["simhit_layer_mod_2"] == 0]
+                                .rename(columns={"simhit_x":"simhit_x_lower",
+                                                 "simhit_y":"simhit_y_lower"})
+                                [lower_cols])
+                    upper = (df[df["simhit_layer_mod_2"] == 1]
+                            .rename(columns={"simhit_x":"simhit_x_upper",
+                                             "simhit_y":"simhit_y_upper"})
+                                [upper_cols])
+                    doublets = lower.merge(upper, on=doublet_cols, how="inner")
+                    phi_local = np.arctan2(doublets["simhit_y_upper"] - doublets["simhit_y_lower"],
+                                           doublets["simhit_x_upper"] - doublets["simhit_x_lower"])
+                    phi_global = np.arctan2((doublets["simhit_y_lower"] + doublets["simhit_y_upper"]) / 2.0,
+                                            (doublets["simhit_x_lower"] + doublets["simhit_x_upper"]) / 2.0)
+                    doublets["dphi"] = phi_local - phi_global
+                    doublets["dphi"] = (doublets["dphi"] + np.pi) % (2 * np.pi) - np.pi
+
+                    # plot it
+                    fig, ax = plt.subplots(figsize=(8, 8))
+                    _, _, _, im = ax.hist2d(doublets["mcp_pt"],
+                                            doublets["dphi"],
+                                            bins=bins,
+                                            cmin=0.5,
+                                            cmap="gist_rainbow",
+                                            norm=colors.LogNorm() if logz else None,
+                                            )
+                    fig.colorbar(im, ax=ax, pad=0.01, label="Sim. hits")
+                    ax.set_xlabel(r"Sim. $p_T$ [GeV]")
+                    ax.set_ylabel("Doublet dphi [rad]")
+                    ax.set_title(f"Simulated muon gun, system {system}, double layers {double_layers}")
                     pdf.savefig()
                     plt.close()
 
