@@ -5,8 +5,8 @@ import time
 class DoubletMaker:
 
 
-    def __init__(self, df: pd.DataFrame):
-        self.df = self.make_doublets(df)
+    def __init__(self, simhits: pd.DataFrame):
+        self.df = self.make_doublets(simhits)
 
 
     def make_doublets(self, df: pd.DataFrame) -> pd.DataFrame:

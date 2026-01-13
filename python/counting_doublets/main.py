@@ -18,10 +18,11 @@ def main():
 
     converter = SlcioToHitsDataFrame(slcio_file_paths=fnames,
                                      load_geometry=geometry)
-    df = converter.convert()
-    # print(df)
+    mcps, simhits = converter.convert()
+    print(mcps)
+    print(simhits)
 
-    doublets = DoubletMaker(df=df).df
+    doublets = DoubletMaker(simhits=simhits).df
     # print(doublets)
 
     # print("Creating timelapse gif ...")
@@ -30,8 +31,8 @@ def main():
 
 def options():
     parser = argparse.ArgumentParser(usage=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--geometry", action="store_true", help="Load compact geometry from xml")
     parser.add_argument("-i", default=FNAMES, help="Input slcio file or glob pattern")
+    parser.add_argument("--geometry", action="store_true", help="Load compact geometry from xml")
     return parser.parse_args()
 
 

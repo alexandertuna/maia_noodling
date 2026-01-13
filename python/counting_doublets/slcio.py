@@ -42,9 +42,10 @@ class SlcioToHitsDataFrame:
 
 
     def convert(self) -> pd.DataFrame:
-        df = self.convert_all_files()
-        df = sort_dataframe(df)
-        return df
+        mcps, simhits = self.convert_all_files()
+        mcps = sort_mcps(mcps)
+        simhits = sort_simhits(simhits)
+        return mcps, simhits
 
 
     def convert_all_files(self) -> pd.DataFrame:
@@ -53,14 +54,17 @@ class SlcioToHitsDataFrame:
         with mp.Pool(initializer=init_function) as pool:
             n_map = len(self.slcio_file_paths)
             load_geometry = [self.load_geometry]*n_map
-            all_hits_dfs = pool.starmap(
+            results = pool.starmap(
                 convert_one_file,
                 zip(self.slcio_file_paths,
                     load_geometry,
                 )
             )
         print("Merging DataFrames ...")
-        return pd.concat(all_hits_dfs, ignore_index=True)
+        return [
+            pd.concat([res[0] for res in results], ignore_index=True),
+            pd.concat([res[1] for res in results], ignore_index=True),
+        ]
 
 
 def init_dummy():
@@ -200,7 +204,7 @@ def convert_one_file(
     mcps = postprocess_mcps(mcps)
     simhits = postprocess_simhits(simhits)
 
-    return simhits
+    return mcps, simhits
 
 
 def postprocess_mcps(df: pd.DataFrame) -> pd.DataFrame:
@@ -259,7 +263,17 @@ def postprocess_simhits(df: pd.DataFrame) -> pd.DataFrame:
     return df[sorted(df.columns)]
 
 
-def sort_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+def sort_mcps(df: pd.DataFrame) -> pd.DataFrame:
+    print("Sorting DataFrame ...")
+    columns = [
+        "file",
+        "i_event",
+        "i_mcp",
+    ]
+    return df.sort_values(by=columns).reset_index(drop=True)
+
+
+def sort_simhits(df: pd.DataFrame) -> pd.DataFrame:
     print("Sorting DataFrame ...")
     columns = [
         "file",
