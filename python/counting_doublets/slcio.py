@@ -12,12 +12,16 @@ _maps = None
 EPSILON = 1e-6
 MCPARTICLE = "MCParticle"
 MUON = 13
+MUON_NEUTRINO = 14
 SPEED_OF_LIGHT = 299.792458  # mm/ns
 COLLECTIONS = [
     # "InnerTrackerBarrelCollection",
     "OuterTrackerBarrelCollection",
 ]
-PARTICLES_OF_INTEREST = [MUON]
+PARTICLES_OF_INTEREST = [
+    MUON,
+    MUON_NEUTRINO,
+]
 
 MM_TO_CM = 0.1
 CM_TO_MM = 10.0
@@ -94,10 +98,46 @@ def convert_one_file(
     reader.open(slcio_file_path)
 
     # list for holding all hits
+    mcps = []
     simhits = []
 
     # loop over all events in the slcio file
     for i_event, event in enumerate(reader):
+
+        # inspect MCParticles
+        mcparticles = list(event.getCollection(MCPARTICLE))
+        mcp_px = [mcp.getMomentum()[0] for mcp in mcparticles]
+        mcp_py = [mcp.getMomentum()[1] for mcp in mcparticles]
+        mcp_pz = [mcp.getMomentum()[2] for mcp in mcparticles]
+        mcp_m = [mcp.getMass() for mcp in mcparticles]
+        mcp_q = [mcp.getCharge() for mcp in mcparticles]
+        mcp_pdg = [mcp.getPDG() for mcp in mcparticles]
+        mcp_vertex_x = [mcp.getVertex()[0] for mcp in mcparticles]
+        mcp_vertex_y = [mcp.getVertex()[1] for mcp in mcparticles]
+        mcp_vertex_z = [mcp.getVertex()[2] for mcp in mcparticles]
+        mcp_endpoint_x = [mcp.getEndpoint()[0] for mcp in mcparticles]
+        mcp_endpoint_y = [mcp.getEndpoint()[1] for mcp in mcparticles]
+        mcp_endpoint_z = [mcp.getEndpoint()[2] for mcp in mcparticles]
+        for i_mcp in range(len(mcparticles)):
+            if abs(mcp_pdg[i_mcp]) not in PARTICLES_OF_INTEREST:
+                continue
+            mcps.append({
+                'file': os.path.basename(slcio_file_path),
+                'i_event': i_event,
+                'i_mcp': i_mcp,
+                'mcp_px': mcp_px[i_mcp],
+                'mcp_py': mcp_py[i_mcp],
+                'mcp_pz': mcp_pz[i_mcp],
+                'mcp_m': mcp_m[i_mcp],
+                'mcp_q': mcp_q[i_mcp],
+                'mcp_pdg': mcp_pdg[i_mcp],
+                'mcp_vertex_x': mcp_vertex_x[i_mcp],
+                'mcp_vertex_y': mcp_vertex_y[i_mcp],
+                'mcp_vertex_z': mcp_vertex_z[i_mcp],
+                'mcp_endpoint_x': mcp_endpoint_x[i_mcp],
+                'mcp_endpoint_y': mcp_endpoint_y[i_mcp],
+                'mcp_endpoint_z': mcp_endpoint_z[i_mcp],
+            })
 
         # inspect tracking detectors
         for collection in COLLECTIONS:
@@ -147,13 +187,44 @@ def convert_one_file(
                     'simhit_distance': distance,
                 })
 
-    # Close the 
+    # Close
     reader.close()
 
     # Convert the list of hits to a pandas DataFrame and postprocess
-    print("Creating DataFrame ...")
-    df = pd.DataFrame(simhits)
-    return postprocess_simhits(df)
+    print("Creating DataFrames ...")
+    mcps = pd.DataFrame(mcps)
+    simhits = pd.DataFrame(simhits)
+
+    # And postprocess
+    print("Postprocessing DataFrames ...")
+    mcps = postprocess_mcps(mcps)
+    simhits = postprocess_simhits(simhits)
+
+    return simhits
+
+
+def postprocess_mcps(df: pd.DataFrame) -> pd.DataFrame:
+    df["mcp_pt"] = np.sqrt(df["mcp_px"]**2 + df["mcp_py"]**2)
+    df["mcp_theta"] = np.arctan2(df["mcp_pt"], df["mcp_pz"])
+    df["mcp_eta"] = -np.log(np.tan(df["mcp_theta"] / 2))
+    df["mcp_phi"] = np.arctan2(df["mcp_py"], df["mcp_px"])
+    df["mcp_q_over_pt"] = df["mcp_q"] / df["mcp_pt"]
+    df["mcp_vertex_r"] = np.sqrt(df["mcp_vertex_x"]**2 + df["mcp_vertex_y"]**2)
+    df["mcp_endpoint_r"] = np.sqrt(df["mcp_endpoint_x"]**2 + df["mcp_endpoint_y"]**2)
+
+    # remove redundant columns
+    df.drop(columns=[
+        "mcp_px",
+        "mcp_py",
+        "mcp_theta",
+        "mcp_vertex_x",
+        "mcp_vertex_y",
+        "mcp_endpoint_x",
+        "mcp_endpoint_y",
+    ], inplace=True)
+
+    # sort columns alphabetically
+    return df[sorted(df.columns)]
 
 
 def postprocess_simhits(df: pd.DataFrame) -> pd.DataFrame:
