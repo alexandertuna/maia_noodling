@@ -31,35 +31,46 @@ class DoubletMaker:
 
             if len(group) < 3:
                 continue
-            if i_group > 100000:
-                break
-            if i_group % 1 == 0:
+            # if i_group > 10:
+            #     break
+            if i_group % 100 == 0:
                 print(f"Processing group {i_group+1}/{len(groups)} at {time.strftime('%Y-%m-%d %H:%M:%S')}...")
 
-            lower_cols = doublet_cols + ["simhit_r_lower",
-                                         "simhit_z_lower",
-                                         "simhit_x_lower",
-                                         "simhit_y_lower"
-                                         ]
-            upper_cols = doublet_cols + ["simhit_r_upper",
-                                         "simhit_z_upper",
-                                         "simhit_x_upper",
-                                         "simhit_y_upper"
-                                         ]
+            lower_cols = doublet_cols + [
+                "i_mcp_lower",
+                "simhit_r_lower",
+                "simhit_z_lower",
+                "simhit_x_lower",
+                "simhit_y_lower"
+                ]
+            upper_cols = doublet_cols + [
+                "i_mcp_upper",
+                "simhit_r_upper",
+                "simhit_z_upper",
+                "simhit_x_upper",
+                "simhit_y_upper"
+                ]
             lower_mask = group["simhit_layer_mod_2"] == 0
             upper_mask = group["simhit_layer_mod_2"] == 1
 
-            print("Getting lower and upper hits ...")
-            lower = (group[lower_mask].rename(columns={"simhit_r":"simhit_r_lower",
-                                                       "simhit_z":"simhit_z_lower",
-                                                       "simhit_x":"simhit_x_lower",
-                                                       "simhit_y":"simhit_y_lower"})[lower_cols])
-            upper = (group[upper_mask].rename(columns={"simhit_r":"simhit_r_upper",
-                                                       "simhit_z":"simhit_z_upper",
-                                                       "simhit_x":"simhit_x_upper",
-                                                       "simhit_y":"simhit_y_upper"})[upper_cols])
+            # print("Getting lower and upper hits ...")
+            lower = (group[lower_mask].rename(columns={
+                "i_mcp":"i_mcp_lower",
+                "simhit_r":"simhit_r_lower",
+                "simhit_z":"simhit_z_lower",
+                "simhit_x":"simhit_x_lower",
+                "simhit_y":"simhit_y_lower",
+            })[lower_cols])
+            upper = (group[upper_mask].rename(columns={
+                "i_mcp":"i_mcp_upper",
+                "simhit_r":"simhit_r_upper",
+                "simhit_z":"simhit_z_upper",
+                "simhit_x":"simhit_x_upper",
+                "simhit_y":"simhit_y_upper",
+            })[upper_cols])
+
             # inner join to find doublets
-            print("Joining ...")
+            # print("Joining ...")
             doublets = lower.merge(upper, on=doublet_cols, how="inner")
 
             # rz
@@ -81,12 +92,12 @@ class DoubletMaker:
             condition = condition_rz & condition_xy
 
             # print
-            print(f"Found {len(lower)} lower hits")
-            print(f"Found {len(upper)} upper hits")
-            print(f"Found {len(doublets)} doublets total in group {i_group+1}/{len(groups)}")
-            print(f" rz cut: {np.sum(condition_rz)} aka {np.sum(condition_rz) / len(doublets)} efficiency")
-            print(f" xy cut: {np.sum(condition_xy)} aka {np.sum(condition_xy) / len(doublets)} efficiency")
-            print(f" rz & xy: {np.sum(condition)} aka {np.sum(condition) / len(doublets)} efficiency")
+            # print(f"Found {len(lower)} lower hits")
+            # print(f"Found {len(upper)} upper hits")
+            # print(f"Found {len(doublets)} doublets total in group {i_group+1}/{len(groups)}")
+            # print(f" rz cut: {np.sum(condition_rz)} aka {np.sum(condition_rz) / len(doublets)} efficiency")
+            # print(f" xy cut: {np.sum(condition_xy)} aka {np.sum(condition_xy) / len(doublets)} efficiency")
+            # print(f" rz & xy: {np.sum(condition)} aka {np.sum(condition) / len(doublets)} efficiency")
             doublets = doublets[condition]
 
             # if len(doublets) > 0:
