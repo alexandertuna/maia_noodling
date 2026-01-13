@@ -1,3 +1,6 @@
+MUON = 13
+ANTIMUON = -MUON
+
 ONE_MM = 1.0
 ONE_GEV = 1.0
 
