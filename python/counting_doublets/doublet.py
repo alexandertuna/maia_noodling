@@ -33,7 +33,7 @@ class DoubletMaker:
                 continue
             # if i_group > 10:
             #     break
-            if i_group % 100 == 0:
+            if i_group % 1000 == 0:
                 print(f"Processing group {i_group+1}/{len(groups)} at {time.strftime('%Y-%m-%d %H:%M:%S')}...")
 
             lower_cols = doublet_cols + [
