@@ -1,5 +1,6 @@
 import argparse
 from glob import glob
+import os
 import pandas as pd
 
 from slcio import SlcioToHitsDataFrame
@@ -12,10 +13,10 @@ FNAMES = [
     # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2026_01_08_13h45m00s/prod_00/neutrinoGun_digi_1.slcio",
 
     # neutrinoGun 10%
-    # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2026_01_11_21h02m00s/prod_00/neutrinoGun_digi_1.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2026_01_11_21h02m00s/neutrinoGun_digi_1.slcio",
 
     # muonGun
-    "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_10*.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_100.slcio",
 ]
 
 
@@ -23,6 +24,8 @@ def main():
     ops = options()
     fnames = get_filenames(ops.i)
     geometry = ops.geometry
+    signal = any("muonGun" in os.path.basename(fname) for fname in fnames)
+    print(f"Detected {'signal' if signal else 'background'} files.")
 
     converter = SlcioToHitsDataFrame(slcio_file_paths=fnames,
                                      load_geometry=geometry)
@@ -34,6 +37,7 @@ def main():
     # print(doublets)
 
     plotter = Plotter(
+        signal=signal,
         mcps=mcps,
         doublets=doublets,
         pdf="doublets.pdf",
