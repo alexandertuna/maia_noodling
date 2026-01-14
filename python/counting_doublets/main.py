@@ -5,9 +5,17 @@ import pandas as pd
 from slcio import SlcioToHitsDataFrame
 from timelapse import Timelapse
 from doublet import DoubletMaker
+from plot import Plotter
 
 FNAMES = [
-    "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2026_01_08_13h45m00s/prod_00/neutrinoGun_digi_1.slcio",
+    # neutrinoGun 100%
+    # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2026_01_08_13h45m00s/prod_00/neutrinoGun_digi_1.slcio",
+
+    # neutrinoGun 10%
+    # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2026_01_11_21h02m00s/prod_00/neutrinoGun_digi_1.slcio",
+
+    # muonGun
+    "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_10*.slcio",
 ]
 
 
@@ -24,6 +32,15 @@ def main():
 
     doublets = DoubletMaker(simhits=simhits).df
     # print(doublets)
+
+    plotter = Plotter(
+        mcps=mcps,
+        doublets=doublets,
+        pdf="doublets.pdf",
+    )
+    plotter.plot()
+
+
 
     # print("Creating timelapse gif ...")
     # tl = Timelapse(df=df, event=0, gif="event.gif")
