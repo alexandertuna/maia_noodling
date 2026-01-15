@@ -16,3 +16,40 @@ POSSIBLE_BOUNDS = [OUTSIDE_BOUNDS, INSIDE_BOUNDS, UNDEFINED_BOUNDS]
 MIN_COSTHETA = 0.0
 MIN_SIMHIT_PT_FRACTION = 0.7
 MAX_TIME = 3.0 # in ns
+
+INNER_TRACKER_BARREL = 3
+OUTER_TRACKER_BARREL = 5
+SYSTEMS = [
+    # INNER_TRACKER_BARREL,
+    OUTER_TRACKER_BARREL,
+]
+LAYERS = [
+    0,
+    1,
+    # 2,
+    # 3,
+    # 4,
+    # 5,
+    # 6,
+    # 7,
+]
+DOUBLELAYERS = [
+    0,
+    # 1,
+    # 2,
+    # 3,
+]
+REQ_PASSTHROUGH = "no cuts"
+REQ_RZ = "rz req."
+REQ_XY = "xy req."
+REQ_RZ_XY = "both req."
+DOUBLET_REQS = [
+    REQ_PASSTHROUGH,
+    REQ_XY,
+    REQ_RZ,
+    REQ_RZ_XY,
+]
+NICKNAMES = {
+    INNER_TRACKER_BARREL: "ITB",
+    OUTER_TRACKER_BARREL: "OTB",
+}
