@@ -6,11 +6,12 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 plt.rcParams.update({"font.size": 16})
 
-FILE_SIM = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2025_10_17_10h40m00s/BIB10TeV/sim_mm/BIB_sim_1.slcio"
+# FILE_SIM = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2025_10_17_10h40m00s/BIB10TeV/sim_mm/BIB_sim_1.slcio"
+FILE_SIM = "/ceph/users/atuna/work/maia/maia_noodling/samples/v00/neutrinoGun/neutrinoGun_digi_0.slcio"
 FILE_DIGI = "/ceph/users/atuna/work/maia/maia_noodling/samples/v00/neutrinoGun/neutrinoGun_digi_0.slcio"
 
 COLL_SIM = "InnerTrackerBarrelCollection"
-COLL_DIGI = "InnerTrackerBarrelCollection"
+COLL_DIGI = "IBTrackerHits"
 
 SPEED_OF_LIGHT = 299.792458  # mm/ns
 
@@ -47,7 +48,7 @@ def plot(df: pd.DataFrame, label: str, pdf: PdfPages):
     bins = np.linspace(-5, 15, 401)
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.hist(
-        df["hit_time_corrected"],
+        df["hit_time_corrected" if COLL_SIM in label else "hit_time"],
         bins=bins,
         histtype="stepfilled",
         alpha=0.9,
