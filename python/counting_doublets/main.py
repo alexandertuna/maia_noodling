@@ -10,13 +10,13 @@ from plot import Plotter
 
 FNAMES = [
     # neutrinoGun 100%
-    # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2026_01_08_13h45m00s/prod_00/neutrinoGun_digi_1.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun/neutrinoGun_digi_1.slcio",
 
     # neutrinoGun 10%
-    "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2026_01_11_21h02m00s/neutrinoGun_digi_1.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_0.10/neutrinoGun_digi_1.slcio",
 
     # muonGun
-    # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_100.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_10*.slcio",
 ]
 
 
@@ -25,20 +25,37 @@ def main():
     fnames = get_filenames(ops.i)
     geometry = ops.geometry
     signal = any("muonGun" in os.path.basename(fname) for fname in fnames)
-    print(f"Detected {'signal' if signal else 'background'} files.")
+    print(f"Detected {'signal' if signal else 'background'} files")
 
     converter = SlcioToHitsDataFrame(slcio_file_paths=fnames,
                                      load_geometry=geometry)
     mcps, simhits = converter.convert()
+    print("MC Particles:")
     print(mcps)
+    print("Sim hits:")
     print(simhits)
 
     doublets = DoubletMaker(simhits=simhits).df
-    # print(doublets)
+    if not signal:
+        # drop simhit_r_upper, ... for a speedup
+        print("Dropping simhit_{x,y,z}_{upper,lower} columns from doublets ...")
+        doublets = doublets.drop(columns=[
+            "simhit_r_upper",
+            "simhit_r_lower",
+            "simhit_x_upper",
+            "simhit_x_lower",
+            "simhit_y_upper",
+            "simhit_y_lower",
+            "simhit_z_upper",
+            "simhit_z_lower",
+        ])
+    print("Doublets:")
+    print(doublets)
 
     plotter = Plotter(
         signal=signal,
         mcps=mcps,
+        simhits=simhits,
         doublets=doublets,
         pdf="doublets.pdf",
     )
