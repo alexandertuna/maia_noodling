@@ -101,7 +101,7 @@ def digi(events: int, num: int, typeevent: str, data: str, bib: bool, ip: bool):
 
 
 def gen_command(events: int, num: int, typeevent: str):
-    if typeevent == "muonGun_pT_0_10":
+    if typeevent in ["muonGun_pT_0_10", "muonGun_pT_2p0_2p1"]:
         return gen_command_muongun(events, num, typeevent)
     elif typeevent == "neutrinoGun":
         return gen_command_neutrinogun(events, num, typeevent)
@@ -113,7 +113,12 @@ def gen_command(events: int, num: int, typeevent: str):
 
 def gen_command_muongun(events: int, num: int, typeevent: str):
     pdg = "13 -13"
-    pt = "0 10"
+    if typeevent == "muonGun_pT_0_10":
+        pt = "0 10"
+    elif typeevent == "muonGun_pT_2p0_2p1":
+        pt = "2.0 2.1"
+    else:
+        raise ValueError(f"Unknown muonGun typeevent: {typeevent}")
     particles = "10"
     cmd = f"python {CODE}/mucoll-benchmarks/generation/pgun/pgun_lcio.py \
     -s {num} \
@@ -184,6 +189,7 @@ def digi_command(events: int, num: int, typeevent: str, steer: str, data: str, b
 
 def get_suffix(typeevent: str):
     if typeevent in ["muonGun_pT_0_10",
+                     "muonGun_pT_2p0_2p1",
                      "neutrinoGun",
                      ]:
         return "slcio"
