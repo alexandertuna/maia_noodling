@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import colors
-from matplotlib.patches import FancyArrowPatch
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import rcParams
 rcParams.update({
@@ -18,7 +17,7 @@ rcParams.update({
     "ytick.minor.visible": True,
     "axes.grid": True,
     "axes.grid.which": "both",
-    "axes.axisbelow": True,
+    # "axes.axisbelow": True,
     "grid.linewidth": 0.5,
     "grid.alpha": 0.1,
     "grid.color": "gray",
@@ -27,11 +26,15 @@ rcParams.update({
     "figure.subplot.right": 0.97,
     "figure.subplot.top": 0.95,
 })
+print(rcParams)
 
 from constants import MUON, ANTIMUON
 from constants import BARREL_TRACKER_MAX_ETA
 from constants import BARREL_TRACKER_MAX_RADIUS
 from constants import ONE_POINT_FIVE_GEV, ONE_MM
+from constants import SYSTEMS, DOUBLELAYERS, LAYERS, NICKNAMES
+from constants import REQ_PASSTHROUGH, REQ_RZ, REQ_XY, REQ_RZ_XY
+from constants import DOUBLET_REQS
 
 
 class Plotter:
@@ -40,11 +43,13 @@ class Plotter:
         self,
         signal: bool,
         mcps: pd.DataFrame,
+        simhits: pd.DataFrame,
         doublets: pd.DataFrame,
         pdf: str,
     ):
         self.signal = signal
         self.mcps = mcps
+        self.simhits = simhits
         self.doublets = doublets
         self.pdf = pdf
 
@@ -52,9 +57,110 @@ class Plotter:
     def plot(self):
         print(f"Writing plots to {self.pdf} ...")
         with PdfPages(self.pdf) as pdf:
+            self.plot_layer_occupancy(pdf)
+            self.plot_doublet_occupancy(pdf)
             if self.signal:
                 self.write_denominator_info(pdf)
                 self.plot_efficiency_vs_kinematics(pdf)
+
+
+    def plot_layer_occupancy(self, pdf: PdfPages):
+        for system in SYSTEMS:
+            for layer in LAYERS:
+                mask = (
+                    (self.simhits["simhit_system"] == system) &
+                    (self.simhits["simhit_layer"] == layer)
+                )
+                print(f"Occupancy of {NICKNAMES[system]} layer {layer}: {mask.sum()} sim hits")
+                simhits = self.simhits[mask]
+                bins = [
+                    np.arange(-0.5, simhits["simhit_module"].max()+1.5, 1),
+                    np.arange(-0.5, simhits["simhit_sensor"].max()+1.5, 1),
+                ]
+                fig, ax = plt.subplots()
+                _, _, _, im = ax.hist2d(
+                    simhits["simhit_module"],
+                    simhits["simhit_sensor"],
+                    bins=bins,
+                    cmap="gist_rainbow",
+                    norm=colors.LogNorm(vmin=0.9),
+                )
+
+                # Major ticks (decades)
+                # Minor ticks (2–9 per decade)
+
+                ax.set_xlabel("Phi module")
+                ax.set_ylabel("Z sensor")
+                ax.set_title(f"{NICKNAMES[system]}, layer {layer}")
+                cbar = fig.colorbar(im, ax=ax, pad=0.01, label="Number of sim. hits")
+                # cbar.ax.minorticks_on()
+                # cbar.ax.tick_params(which='minor', length=4, color='black')
+                # cbar.ax.yaxis.set_major_locator(LogLocator(base=10))
+                # cbar.ax.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
+                # cbar.ax.yaxis.set_minor_formatter(NullFormatter())
+                # cbar.ax.tick_params(which="minor", color="black")
+                # print(cbar.ax.yaxis.get_scale())
+                pdf.savefig()
+                plt.close()
+
+
+    def requirements(self, req: str) -> tuple[str, pd.DataFrame]:
+        # return description and mask
+        if req == REQ_PASSTHROUGH:
+            text = "No requirement"
+            mask = np.ones(len(self.doublets), dtype=bool)
+        elif req == REQ_XY:
+            text = "|dphi| < 0.55rad"
+            mask = np.abs(self.doublets["dphi"]) < 0.55
+        elif req == REQ_RZ:
+            text = "|dz| < 60mm"
+            mask = np.abs(self.doublets["intercept_rz"]) < 60
+        elif req == REQ_RZ_XY:
+            text = "|dphi| < 0.55rad, |dz| < 60mm"
+            mask = (
+                (np.abs(self.doublets["intercept_rz"]) < 60) &
+                (np.abs(self.doublets["dphi"]) < 0.55)
+            )
+        else:
+            raise ValueError(f"Unknown requirement: {req}")
+        return text, mask
+
+
+    def plot_doublet_occupancy(self, pdf: PdfPages):
+        for system in SYSTEMS:
+            for doublelayer in DOUBLELAYERS:
+                zmax = None
+                for req in DOUBLET_REQS:
+                    req_text, req_mask = self.requirements(req)
+                    print(f"Occupancy of {NICKNAMES[system]} doublelayer {doublelayer}, {req}: {req_mask.sum()} doublets")
+                    layers = [doublelayer * 2, doublelayer * 2 + 1]
+                    mask = (
+                        (self.doublets["simhit_system"] == system) &
+                        (self.doublets["simhit_layer_div_2"] == doublelayer) &
+                        req_mask
+                    )
+                    doublets = self.doublets[mask]
+                    bins = [
+                        np.arange(-0.5, doublets["simhit_module"].max()+1.5, 1),
+                        np.arange(-0.5, doublets["simhit_sensor"].max()+1.5, 1),
+                    ]
+                    fig, ax = plt.subplots()
+                    h2d, _, _, im = ax.hist2d(
+                        doublets["simhit_module"],
+                        doublets["simhit_sensor"],
+                        bins=bins,
+                        cmap="gist_rainbow",
+                        norm=colors.LogNorm(vmin=0.9),
+                    )
+                    if zmax is None:
+                        zmax = h2d.max()
+                    im.set_clim(0.9, zmax)
+                    ax.set_xlabel("Phi module")
+                    ax.set_ylabel("Z sensor")
+                    ax.set_title(f"{NICKNAMES[system]}, layers {layers}, {req_text}")
+                    fig.colorbar(im, ax=ax, label="Number of doublets", pad=0.01)
+                    pdf.savefig()
+                    plt.close()
 
 
     def write_denominator_info(self, pdf: PdfPages):
