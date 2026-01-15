@@ -10,6 +10,7 @@ class DoubletMaker:
 
 
     def make_doublets(self, df: pd.DataFrame) -> pd.DataFrame:
+        print("Making doublets ...")
         doublelayer_cols = [
             "file",
             "i_event", # the event
@@ -98,7 +99,7 @@ class DoubletMaker:
             # print(f" rz cut: {np.sum(condition_rz)} aka {np.sum(condition_rz) / len(doublets)} efficiency")
             # print(f" xy cut: {np.sum(condition_xy)} aka {np.sum(condition_xy) / len(doublets)} efficiency")
             # print(f" rz & xy: {np.sum(condition)} aka {np.sum(condition) / len(doublets)} efficiency")
-            doublets = doublets[condition]
+            # doublets = doublets[condition]
 
             # if len(doublets) > 0:
             #     print(f"Doublets found in event {cols[1]}: system {cols[2]}, layer {cols[3]}, module {cols[4]}, sensor {cols[5]}")
