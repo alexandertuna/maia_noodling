@@ -2,7 +2,7 @@
 
 CODE=/ceph/users/atuna/work/maia
 # export MARLIN_DLL=$(readlink -e ${CODE}/MyBIBUtils/build/lib/libMyBIBUtils.so):${MARLIN_DLL}
-for NUM in {100..199}; do
+for NUM in {300..599}; do
     time python ${CODE}/maia_noodling/python/digitize_muons.py --gen --sim --num ${NUM} --events 1000 --typeevent muonGun_pT_2p0_2p1 --data $(pwd)
     rm -f lctuple_*
 done
