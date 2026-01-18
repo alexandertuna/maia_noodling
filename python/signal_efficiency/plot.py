@@ -132,6 +132,7 @@ class Plotter:
             # self.plot_doublet_rz(pdf)
             # self.plot_doublet_xy(pdf)
             self.plot_doublet_xy_vs_pt(pdf)
+            self.plot_doublet_rzangle_vs_deltaz(pdf)
 
 
     def data_format(self, pdf: PdfPages):
@@ -1215,6 +1216,91 @@ class Plotter:
                     fig.colorbar(im, ax=ax, pad=0.01, label="Sim. hits")
                     ax.set_xlabel(r"Sim. $p_T$ [GeV]")
                     ax.set_ylabel("Doublet dphi [rad]")
+                    ax.set_title(f"Simulated muon gun, system {system}, double layers {double_layers}")
+                    pdf.savefig()
+                    plt.close()
+
+
+    def plot_doublet_rzangle_vs_deltaz(self, pdf: PdfPages):
+
+        # mask for first exit / arc / path
+        first_exit = first_exit_mask(self.df)
+
+        bins = {
+            INNER_TRACKER_BARREL: {
+                (0, 1): [np.linspace(-0.2, 0.2, 201), np.linspace(-0.0015, 0.0015, 201)],
+                (2, 3): [np.linspace(-0.2, 0.2, 201), np.linspace(-0.0015, 0.0015, 201)],
+                (4, 5): [np.linspace(-0.2, 0.2, 201), np.linspace(-0.0015, 0.0015, 201)],
+                (6, 7): [np.linspace(-0.2, 0.2, 201), np.linspace(-0.0015, 0.0015, 201)],
+            },
+            OUTER_TRACKER_BARREL: {
+                (0, 1): [np.linspace(-6, 6, 201), np.linspace(-0.003, 0.003, 201)],
+                (2, 3): [np.linspace(-6, 6, 201), np.linspace(-0.003, 0.003, 201)],
+                (4, 5): [np.linspace(-6, 6, 201), np.linspace(-0.003, 0.003, 201)],
+                (6, 7): [np.linspace(-6, 6, 201), np.linspace(-0.003, 0.003, 201)],
+            },
+        }
+
+        for logz in [False]:
+
+            for system in SYSTEMS:
+
+                for double_layers in [
+                    [0, 1],
+                    [2, 3],
+                    [4, 5],
+                    [6, 7],
+                ]:
+
+                    print(f"Plotting sim hit delta theta vs delta z for system={system} double_layers={double_layers} ...")
+                    mask = numerator_mask(self.df, [system], double_layers) & first_exit
+
+                    # this is a lot of vectorized algebra
+                    doublet_cols = [
+                        "file",
+                        "i_event", # the event
+                        "i_mcp", # the MC particle
+                        "simhit_system", # the system (IT, OT)
+                        "simhit_layer_div_2", # the double layer
+                        "simhit_module", # the phi-module
+                        "simhit_sensor", # the z-sensor
+                    ]
+
+                    # calculating dtheta (theta local minus theta global)
+                    df = self.df[mask].copy()
+                    lower_cols = doublet_cols + ["simhit_z_lower", "simhit_r_lower"]
+                    upper_cols = doublet_cols + ["simhit_z_upper", "simhit_r_upper"]
+                    lower = (df[df["simhit_layer_mod_2"] == 0]
+                                .rename(columns={"simhit_z":"simhit_z_lower",
+                                                 "simhit_r":"simhit_r_lower"})
+                                [lower_cols])
+                    upper = (df[df["simhit_layer_mod_2"] == 1]
+                                .rename(columns={"simhit_z":"simhit_z_upper",
+                                                 "simhit_r":"simhit_r_upper"})
+                                [upper_cols])
+                    doublets = lower.merge(upper, on=doublet_cols, how="inner")
+                    slope = np.divide(doublets["simhit_z_upper"] - doublets["simhit_z_lower"],
+                                      doublets["simhit_r_upper"] - doublets["simhit_r_lower"])
+                    theta_local = np.arctan2(doublets["simhit_z_upper"] - doublets["simhit_z_lower"],
+                                             doublets["simhit_r_upper"] - doublets["simhit_r_lower"])
+                    theta_global = np.arctan2((doublets["simhit_z_lower"] + doublets["simhit_z_upper"]) / 2.0,
+                                              (doublets["simhit_r_lower"] + doublets["simhit_r_upper"]) / 2.0)
+                    doublets["dtheta"] = theta_local - theta_global
+                    doublets["dtheta"] = (doublets["dtheta"] + np.pi) % (2 * np.pi) - np.pi
+                    doublets["intercept_rz"] = doublets["simhit_z_lower"] - doublets["simhit_r_lower"] * slope
+
+                    # plot it
+                    fig, ax = plt.subplots(figsize=(8, 8))
+                    _, _, _, im = ax.hist2d(doublets["intercept_rz"],
+                                            doublets["dtheta"],
+                                            bins=bins[system][tuple(double_layers)],
+                                            cmin=0.5,
+                                            cmap="gist_rainbow",
+                                            norm=colors.LogNorm() if logz else None,
+                                            )
+                    fig.colorbar(im, ax=ax, pad=0.01, label="Sim. hits")
+                    ax.set_xlabel("Doublet dz (rz) [mm]")
+                    ax.set_ylabel("Doublet dtheta(rz) [rad]")
                     ax.set_title(f"Simulated muon gun, system {system}, double layers {double_layers}")
                     pdf.savefig()
                     plt.close()
