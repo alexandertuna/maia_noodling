@@ -312,13 +312,14 @@ class Plotter:
         )
 
         # todo: add comment
-        for kin in ["mcp_pt", "mcp_eta", "mcp_phi"]:
+        for i_kin, kin in enumerate(["mcp_pt", "mcp_eta", "mcp_phi"]):
 
             for system in SYSTEMS:
 
                 for doublelayer in DOUBLELAYERS:
 
                     print(f"Plotting doublet quality efficiency vs {kin}, system {system}, doublelayer {doublelayer} ...")
+                    layers = [doublelayer * 2, doublelayer * 2 + 1]
 
                     geo_mask = (
                         (self.doublets["simhit_system"] == system) &
@@ -329,6 +330,9 @@ class Plotter:
                         req_text, req_mask = self.requirements(req)
                         denom = self.doublets[baseline & geo_mask]
                         numer = self.doublets[baseline & geo_mask & req_mask]
+                        if i_kin == 0:
+                            print(f"Denom for system {system} layers {layers} {req}: {len(denom)} doublets")
+                            print(f"Numer for system {system} layers {layers} {req}: {len(numer)} doublets")
 
                         n_denom, edges = np.histogram(denom[kin], bins=bins[kin])
                         n_numer, edges = np.histogram(numer[kin], bins=bins[kin])
@@ -346,8 +350,8 @@ class Plotter:
                         )
                         ax.set_xlabel(xlabel[kin])
                         ax.set_ylabel("Doublet finding efficiency")
-                        ax.set_title(f"System {system} Double Layer {doublelayer}: {req_text}")
-                        ax.set_ylim(0.98, 1.001)
+                        ax.set_title(f"{NICKNAMES[system]} layers {layers}: {req_text}")
+                        ax.set_ylim(0.965, 1.004)
                         pdf.savefig()
                         plt.close()
 
