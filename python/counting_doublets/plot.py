@@ -349,7 +349,7 @@ class Plotter:
                             color="dodgerblue",
                         )
                         ax.set_xlabel(xlabel[kin])
-                        ax.set_ylabel("Doublet finding efficiency")
+                        ax.set_ylabel("Doublet quality efficiency")
                         ax.set_title(f"{NICKNAMES[system]} layers {layers}: {req_text}")
                         ax.set_ylim(0.965, 1.004)
                         pdf.savefig()
