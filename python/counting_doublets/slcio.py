@@ -213,6 +213,7 @@ def convert_one_file(
 
 
 def postprocess_mcps(df: pd.DataFrame) -> pd.DataFrame:
+    df["mcp_p"] = np.sqrt(df["mcp_px"]**2 + df["mcp_py"]**2 + df["mcp_pz"]**2)
     df["mcp_pt"] = np.sqrt(df["mcp_px"]**2 + df["mcp_py"]**2)
     df["mcp_theta"] = np.arctan2(df["mcp_pt"], df["mcp_pz"])
     df["mcp_eta"] = -np.log(np.tan(df["mcp_theta"] / 2))
@@ -262,7 +263,7 @@ def postprocess_simhits(df: pd.DataFrame) -> pd.DataFrame:
         "simhit_px",
         "simhit_py",
         "simhit_pz",
-        "simhit_p",
+        # "simhit_p",
         "simhit_theta",
         "simhit_R",
         "simhit_theta",
