@@ -26,7 +26,6 @@ rcParams.update({
     "figure.subplot.right": 0.97,
     "figure.subplot.top": 0.95,
 })
-print(rcParams)
 
 from constants import MUON, ANTIMUON
 from constants import BARREL_TRACKER_MAX_ETA
@@ -35,6 +34,7 @@ from constants import ONE_POINT_FIVE_GEV, ONE_MM
 from constants import SYSTEMS, DOUBLELAYERS, LAYERS, NICKNAMES
 from constants import REQ_PASSTHROUGH, REQ_RZ, REQ_XY, REQ_RZ_XY
 from constants import DOUBLET_REQS
+from constants import MIN_COSTHETA, MIN_SIMHIT_PT_FRACTION, MAX_TIME
 
 
 class Plotter:
@@ -52,6 +52,7 @@ class Plotter:
         self.simhits = simhits
         self.doublets = doublets
         self.pdf = pdf
+        self.add_doublet_mcp_features()
 
 
     def plot(self):
@@ -62,6 +63,7 @@ class Plotter:
             if self.signal:
                 self.write_denominator_info(pdf)
                 self.plot_efficiency_vs_kinematics(pdf)
+                self.plot_doublet_quality_efficiency(pdf)
 
 
     def plot_layer_occupancy(self, pdf: PdfPages):
@@ -222,8 +224,8 @@ class Plotter:
                     merged = denom.merge(doublet_keys, on=["file", "i_event", "i_mcp"], how="inner")
 
                     n_denom, edges = np.histogram(denom[kin], bins=bins[kin])
-                    n_num, edges = np.histogram(merged[kin], bins=bins[kin])
-                    efficiency = np.divide(n_num, n_denom, out=np.zeros_like(n_num, dtype=float), where=n_denom!=0)
+                    n_numer, edges = np.histogram(merged[kin], bins=bins[kin])
+                    efficiency = np.divide(n_numer, n_denom, out=np.zeros_like(n_numer, dtype=float), where=n_denom!=0)
                     centers = 0.5 * (edges[1:] + edges[:-1])
                     fig, ax = plt.subplots()
                     ax.plot(
@@ -253,3 +255,111 @@ class Plotter:
             (np.abs(self.mcps["mcp_eta"]) < BARREL_TRACKER_MAX_ETA)
         )
         return mask
+
+
+    def add_doublet_mcp_features(self):
+        # add mcp features when the doublet i_mcp_lower and i_mcp_upper match
+        # otherwise, assign 0
+        mcp_cols = [
+            "mcp_p",
+            "mcp_pt",
+            "mcp_eta",
+            "mcp_phi",
+            "mcp_pdg",
+            "mcp_q",
+            "mcp_vertex_r",
+            "mcp_vertex_z",
+            "mcp_endpoint_r",
+        ]
+        if not self.signal:
+            self.doublets[mcp_cols] = 0
+            return
+        merged = self.doublets.merge(
+            self.mcps[["file", "i_event", "i_mcp", *mcp_cols]],
+            left_on=["file", "i_event", "i_mcp_lower"],
+            right_on=["file", "i_event", "i_mcp"],
+            how="left",
+            validate="many_to_one",
+        ).drop(columns=["i_mcp"])
+        mask = merged["i_mcp_lower"].eq(merged["i_mcp_upper"])
+        self.doublets[mcp_cols] = merged[mcp_cols].where(mask, 0).fillna(0)
+
+
+    def plot_doublet_quality_efficiency(self, pdf: PdfPages):
+
+        bins = {
+            "mcp_pt": np.linspace(0.0, 10.0, 201),
+            "mcp_eta": np.linspace(-0.7, 0.7, 281),
+            "mcp_phi": np.linspace(-3.2, 3.2, 321),
+        }
+        xlabel = {
+            "mcp_pt": r"Muon $p_T$ [GeV]",
+            "mcp_eta": r"Muon $\eta$",
+            "mcp_phi": r"Muon $\phi$ [rad]",
+        }
+
+        # only consider truth-match doublets
+        baseline = (
+            first_exit_mask(self.doublets) &
+            (self.doublets["i_mcp_lower"] == self.doublets["i_mcp_upper"]) &
+            (self.doublets["mcp_pdg"].isin([MUON, ANTIMUON])) &
+            (self.doublets["mcp_q"] != 0) &
+            (self.doublets["mcp_pt"] > ONE_POINT_FIVE_GEV) &
+            (np.abs(self.doublets["mcp_eta"]) < BARREL_TRACKER_MAX_ETA) &
+            (self.doublets["mcp_endpoint_r"] > BARREL_TRACKER_MAX_RADIUS) &
+            (self.doublets["mcp_vertex_r"] < ONE_MM) &
+            (np.abs(self.doublets["mcp_vertex_z"]) < ONE_MM)
+        )
+
+        # todo: add comment
+        for kin in ["mcp_pt", "mcp_eta", "mcp_phi"]:
+
+            for system in SYSTEMS:
+
+                for doublelayer in DOUBLELAYERS:
+
+                    print(f"Plotting doublet quality efficiency vs {kin}, system {system}, doublelayer {doublelayer} ...")
+
+                    geo_mask = (
+                        (self.doublets["simhit_system"] == system) &
+                        (self.doublets["simhit_layer_div_2"] == doublelayer)
+                    )
+
+                    for req in DOUBLET_REQS:
+                        req_text, req_mask = self.requirements(req)
+                        denom = self.doublets[baseline & geo_mask]
+                        numer = self.doublets[baseline & geo_mask & req_mask]
+
+                        n_denom, edges = np.histogram(denom[kin], bins=bins[kin])
+                        n_numer, edges = np.histogram(numer[kin], bins=bins[kin])
+                        efficiency = np.divide(n_numer, n_denom, out=np.zeros_like(n_numer, dtype=float), where=n_denom!=0)
+                        centers = 0.5 * (edges[1:] + edges[:-1])
+
+                        fig, ax = plt.subplots()
+                        ax.plot(
+                            centers,
+                            efficiency,
+                            marker="o",
+                            markersize=1,
+                            linestyle="-",
+                            color="dodgerblue",
+                        )
+                        ax.set_xlabel(xlabel[kin])
+                        ax.set_ylabel("Doublet finding efficiency")
+                        ax.set_title(f"System {system} Double Layer {doublelayer}: {req_text}")
+                        ax.set_ylim(0.98, 1.001)
+                        pdf.savefig()
+                        plt.close()
+
+
+
+def first_exit_mask(doublets: pd.DataFrame) -> pd.Series:
+    return (
+        (doublets["simhit_costheta_lower"] > MIN_COSTHETA) &
+        (doublets["simhit_costheta_upper"] > MIN_COSTHETA) &
+        (doublets["simhit_t_corrected_lower"] < MAX_TIME) &
+        (doublets["simhit_t_corrected_upper"] < MAX_TIME) &
+        (doublets["simhit_p_lower"] / doublets["mcp_p"] > MIN_SIMHIT_PT_FRACTION) &
+        (doublets["simhit_p_upper"] / doublets["mcp_p"] > MIN_SIMHIT_PT_FRACTION)
+    )
+
