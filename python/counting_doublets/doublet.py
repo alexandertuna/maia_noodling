@@ -42,14 +42,20 @@ class DoubletMaker:
                 "simhit_r_lower",
                 "simhit_z_lower",
                 "simhit_x_lower",
-                "simhit_y_lower"
+                "simhit_y_lower",
+                "simhit_p_lower",
+                "simhit_t_corrected_lower",
+                "simhit_costheta_lower",
                 ]
             upper_cols = doublet_cols + [
                 "i_mcp_upper",
                 "simhit_r_upper",
                 "simhit_z_upper",
                 "simhit_x_upper",
-                "simhit_y_upper"
+                "simhit_y_upper",
+                "simhit_p_upper",
+                "simhit_t_corrected_upper",
+                "simhit_costheta_upper",
                 ]
             lower_mask = group["simhit_layer_mod_2"] == 0
             upper_mask = group["simhit_layer_mod_2"] == 1
@@ -61,6 +67,9 @@ class DoubletMaker:
                 "simhit_z":"simhit_z_lower",
                 "simhit_x":"simhit_x_lower",
                 "simhit_y":"simhit_y_lower",
+                "simhit_p":"simhit_p_lower",
+                "simhit_t_corrected":"simhit_t_corrected_lower",
+                "simhit_costheta":"simhit_costheta_lower",
             })[lower_cols])
             upper = (group[upper_mask].rename(columns={
                 "i_mcp":"i_mcp_upper",
@@ -68,6 +77,9 @@ class DoubletMaker:
                 "simhit_z":"simhit_z_upper",
                 "simhit_x":"simhit_x_upper",
                 "simhit_y":"simhit_y_upper",
+                "simhit_p":"simhit_p_upper",
+                "simhit_t_corrected":"simhit_t_corrected_upper",
+                "simhit_costheta":"simhit_costheta_upper",
             })[upper_cols])
 
             # inner join to find doublets
