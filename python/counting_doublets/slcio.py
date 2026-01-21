@@ -178,6 +178,10 @@ def convert_one_file(
                     inside_bounds = UNDEFINED_BOUNDS
                     distance = -1
 
+                # ignore hits outside bounds
+                if inside_bounds == OUTSIDE_BOUNDS:
+                    continue
+
                 # record the hit info
                 simhits.append({
                     'file': os.path.basename(slcio_file_path),
