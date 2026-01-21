@@ -63,6 +63,7 @@ class Plotter:
             if self.signal:
                 self.write_denominator_info(pdf)
                 self.plot_efficiency_vs_kinematics(pdf)
+                self.write_doublet_denominator_info(pdf)
                 self.plot_doublet_quality_efficiency(pdf)
 
 
@@ -356,6 +357,21 @@ class Plotter:
                         plt.close()
 
 
+    def write_doublet_denominator_info(self, pdf: PdfPages):
+        text = f"Double quality efficiency denominator:"
+        function = inspect.getsource(first_exit_mask)
+        function = textwrap.dedent(function)
+        fig, ax = plt.subplots(figsize=(8, 8))
+        args = {"ha":"left", "va":"top", "fontfamily":"monospace"}
+        ax.text(-0.1, 0.9, text, **args, fontsize=16)
+        ax.text(-0.1, 0.8, function, **args, fontsize=10)
+        ax.text(-0.1, 0.4, f"MIN_COSTHETA = {MIN_COSTHETA}")
+        ax.text(-0.1, 0.3, f"MAX_TIME = {MAX_TIME} ns")
+        ax.text(-0.1, 0.2, f"MIN_SIMHIT_PT_FRACTION = {MIN_SIMHIT_PT_FRACTION}")
+        ax.axis("off")
+        pdf.savefig()
+        plt.close()
+
 
 def first_exit_mask(doublets: pd.DataFrame) -> pd.Series:
     return (
@@ -366,4 +382,5 @@ def first_exit_mask(doublets: pd.DataFrame) -> pd.Series:
         (doublets["simhit_p_lower"] / doublets["mcp_p"] > MIN_SIMHIT_PT_FRACTION) &
         (doublets["simhit_p_upper"] / doublets["mcp_p"] > MIN_SIMHIT_PT_FRACTION)
     )
+
 
