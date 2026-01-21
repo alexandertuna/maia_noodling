@@ -1,4 +1,6 @@
+import contextlib
 import os
+import sys
 import numpy as np
 import pandas as pd
 import multiprocessing as mp
@@ -51,8 +53,9 @@ class SlcioToHitsDataFrame:
 
     def convert_all_files(self) -> pd.DataFrame:
         print(f"Converting {len(self.slcio_file_paths)} slcio files to a DataFrame ...")
-        init_function = init_worker if self.load_geometry else init_dummy
-        with mp.Pool(initializer=init_function) as pool:
+        initializer = init_worker if self.load_geometry else init_dummy
+        processes = min(mp.cpu_count(), len(self.slcio_file_paths))
+        with mp.Pool(processes=processes, initializer=initializer) as pool:
             n_map = len(self.slcio_file_paths)
             load_geometry = [self.load_geometry]*n_map
             results = pool.starmap(
@@ -73,16 +76,20 @@ def init_dummy():
 
 
 def init_worker():
+    # Sorry for these global variables. They are needed for multiprocessing
     global _detector, _surfman, _maps
     import dd4hep, DDRec
-    _detector = dd4hep.Detector.getInstance()
-    _detector.fromCompact(XML)
-    _surfman = DDRec.SurfaceManager(_detector)
-    dets = {
-        "InnerTrackerBarrelCollection": _detector.detector("InnerTrackerBarrel"),
-        "OuterTrackerBarrelCollection": _detector.detector("OuterTrackerBarrel"),
-    }
-    _maps = {name: _surfman.map(det.name()) for name, det in dets.items()}
+    dd4hep.setPrintLevel(dd4hep.PrintLevel.WARNING)
+    with silence_c_stdout_stderr():
+        # Sorry for this context manager. dd4hep can be very noisy
+        _detector = dd4hep.Detector.getInstance()
+        _detector.fromCompact(XML)
+        _surfman = DDRec.SurfaceManager(_detector)
+        dets = {
+            "InnerTrackerBarrelCollection": _detector.detector("InnerTrackerBarrel"),
+            "OuterTrackerBarrelCollection": _detector.detector("OuterTrackerBarrel"),
+        }
+        _maps = {name: _surfman.map(det.name()) for name, det in dets.items()}
 
 
 def convert_one_file(
@@ -306,4 +313,28 @@ def announce_inside_bounds(df: pd.DataFrame):
     for bounds in [OUTSIDE_BOUNDS, INSIDE_BOUNDS, UNDEFINED_BOUNDS]:
         n_bounds = len(df[df["simhit_inside_bounds"] == bounds])
         print(f"N(simhits) with bounds == {BOUNDS[bounds]}: {n_bounds}")
+
+
+@contextlib.contextmanager
+def silence_c_stdout_stderr():
+    # Flush Python buffers
+    sys.stdout.flush()
+    sys.stderr.flush()
+
+    # Save original FDs
+    old_stdout_fd = os.dup(1)
+    old_stderr_fd = os.dup(2)
+
+    # Redirect to /dev/null
+    with open(os.devnull, "w") as devnull:
+        os.dup2(devnull.fileno(), 1)
+        os.dup2(devnull.fileno(), 2)
+        try:
+            yield
+        finally:
+            # Restore original FDs
+            os.dup2(old_stdout_fd, 1)
+            os.dup2(old_stderr_fd, 2)
+            os.close(old_stdout_fd)
+            os.close(old_stderr_fd)
 
