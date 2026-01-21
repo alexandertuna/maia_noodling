@@ -16,7 +16,7 @@ FNAMES = [
     # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_0.10/neutrinoGun_digi_1.slcio",
 
     # muonGun
-    "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_1*.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_100*.slcio",
 ]
 
 
@@ -27,14 +27,12 @@ def main():
     signal = any("muonGun" in os.path.basename(fname) for fname in fnames)
     print(f"Detected {'signal' if signal else 'background'} files")
 
+    # convert slcio to hits dataframe
     converter = SlcioToHitsDataFrame(slcio_file_paths=fnames,
                                      load_geometry=geometry)
     mcps, simhits = converter.convert()
-    print("MC Particles:")
-    print(mcps)
-    print("Sim hits:")
-    print(simhits)
 
+    # make doublets from hits
     doublets = DoubletMaker(simhits=simhits).df
     if not signal:
         # drop simhit_r_upper, ... for a speedup
@@ -49,9 +47,8 @@ def main():
             "simhit_z_upper",
             "simhit_z_lower",
         ])
-    print("Doublets:")
-    print(doublets)
 
+    # plot stuff
     plotter = Plotter(
         signal=signal,
         mcps=mcps,
@@ -60,8 +57,6 @@ def main():
         pdf="doublets.pdf",
     )
     plotter.plot()
-
-
 
     # print("Creating timelapse gif ...")
     # tl = Timelapse(df=df, event=0, gif="event.gif")
