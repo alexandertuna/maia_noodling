@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import multiprocessing as mp
 
-from constants import OUTSIDE_BOUNDS, INSIDE_BOUNDS, UNDEFINED_BOUNDS
+from constants import OUTSIDE_BOUNDS, INSIDE_BOUNDS, UNDEFINED_BOUNDS, BOUNDS
 
 _detector = None
 _surfman = None
@@ -45,6 +45,7 @@ class SlcioToHitsDataFrame:
         mcps, simhits = self.convert_all_files()
         mcps = sort_mcps(mcps)
         simhits = sort_simhits(simhits)
+        announce_inside_bounds(simhits)
         return mcps, simhits
 
 
@@ -296,4 +297,9 @@ def sort_simhits(df: pd.DataFrame) -> pd.DataFrame:
         "simhit_sensor",
     ]
     return df.sort_values(by=columns).reset_index(drop=True)
+
+def announce_inside_bounds(df: pd.DataFrame):
+    for bounds in [OUTSIDE_BOUNDS, INSIDE_BOUNDS, UNDEFINED_BOUNDS]:
+        n_bounds = len(df[df["simhit_inside_bounds"] == bounds])
+        print(f"N(simhits) with bounds == {BOUNDS[bounds]}: {n_bounds}")
 
