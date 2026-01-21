@@ -190,10 +190,10 @@ def convert_one_file(
                     'simhit_pz': hit.getMomentum()[2],
                     'simhit_cellid0': hit.getCellID0(),
                     'simhit_t': hit.getTime(),
-                    # 'simhit_e': hit.getEDep(),
+                    'simhit_inside_bounds': inside_bounds,
                     # 'simhit_pathlength': hit.getPathLength(),
-                    # 'simhit_inside_bounds': inside_bounds,
                     # 'simhit_distance': distance,
+                    # 'simhit_e': hit.getEDep(),
                 })
 
     # Close
