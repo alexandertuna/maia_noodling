@@ -45,6 +45,7 @@ def arguments():
     parser.add_argument("--events", type=int, default=1, help="Number of events")
     parser.add_argument("--typeevent", type=str, default="muonGun_pT_0_10", help="Type of event")
     parser.add_argument("--data", type=str, default="", help="Directory where data files are expected")
+    parser.add_argument("--uncompressed", action="store_true", help="Use uncompressed output files at digitization")
     return parser.parse_args()
 
 def main():
@@ -68,6 +69,7 @@ def main():
              data=args.data,
              bib=args.bib,
              ip=args.ip,
+             uncompressed=args.uncompressed,
              )
 
 
@@ -86,7 +88,7 @@ def sim(events: int, num: int, typeevent: str):
     run(cmd)
 
 
-def digi(events: int, num: int, typeevent: str, data: str, bib: bool, ip: bool):
+def digi(events: int, num: int, typeevent: str, data: str, bib: bool, ip: bool, uncompressed: bool):
     steer = f"{typeevent}_steer_digi_{num}.py"
     write_local_digi_steer(steer)
     cmd = digi_command(events=events,
@@ -96,6 +98,7 @@ def digi(events: int, num: int, typeevent: str, data: str, bib: bool, ip: bool):
                        data=data,
                        bib=bib,
                        ip=ip,
+                       uncompressed=uncompressed,
                        )
     run(cmd)
 
@@ -170,13 +173,15 @@ def sim_command(events: int, num: int, typeevent: str):
     return cmd
 
 
-def digi_command(events: int, num: int, typeevent: str, steer: str, data: str, bib: bool, ip: bool):
+def digi_command(events: int, num: int, typeevent: str, steer: str, data: str, bib: bool, ip: bool, uncompressed: bool):
     enable_bib = "--enableBIB" if bib else ""
     enable_ip = "--enableIP" if ip else ""
+    enable_uncompressed = "--compressionLevel 0" if uncompressed else ""
     cmd = f"time k4run \
         {steer} \
         {enable_bib} \
         {enable_ip} \
+        {enable_uncompressed} \
         -n {events} \
         --TypeEvent {typeevent} \
         --InFileName {num} \
