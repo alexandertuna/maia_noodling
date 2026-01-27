@@ -6,17 +6,20 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 plt.rcParams.update({"font.size": 16})
 
-COLL = "InnerTrackerBarrelCollection"
-FILE_0 = "/ceph/users/atuna/work/maia/maia_noodling/samples/v00/neutrinoGun/neutrinoGun_digi_100.slcio"
-FILE_1 = "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun/neutrinoGun_digi_100.slcio"
+COLL = "OuterTrackerBarrelCollection"
+FILE_0 = "/ceph/users/atuna/work/maia/maia_noodling/samples/v00/neutrinoGun/neutrinoGun_digi_3.slcio"
+FILE_1 = "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun/neutrinoGun_digi_3.slcio"
+LAYERS = list(range(8))
 
 
 def main():
     df_0 = get_dataframe(FILE_0, COLL)
     df_1 = get_dataframe(FILE_1, COLL)
     with PdfPages("z_plots.pdf") as pdf:
-        plot(df_0, f"Geometry v0, {COLL}", pdf)
-        plot(df_1, f"Geometry v1, {COLL}", pdf)
+        plot(df_0, f"Geo v0, {COLL}", LAYERS, pdf)
+        plot(df_1, f"Geo v1, {COLL}", LAYERS, pdf)
+        for layer in LAYERS:
+            plot(df_1, f"Geo v1, {COLL}, layer {layer}", [layer], pdf)
 
 
 def get_dataframe(fname: str, collection: str) -> pd.DataFrame:
@@ -33,18 +36,22 @@ def get_dataframe(fname: str, collection: str) -> pd.DataFrame:
                 "hit_x": hit.getPosition()[0],
                 "hit_y": hit.getPosition()[1],
                 "hit_z": hit.getPosition()[2],
+                "hit_layer": (hit.getCellID0() >> 7) & 0b11_1111,
             }
             rows.append(row)
     df = pd.DataFrame(rows)
     return df
 
 
-def plot(df: pd.DataFrame, label: str, pdf: PdfPages):
+def plot(df: pd.DataFrame, label: str, layers: list[int], pdf: PdfPages):
+    print(f"Plotting {label} for layers {layers} ...")
     color = "dodgerblue" if "v0" in label else "green"
-    bins = np.linspace(-700, 700, 351)
+    inner = COLL == "InnerTrackerBarrelCollection"
+    bins = np.linspace(-700, 700, 351) if inner else np.linspace(-1300, 1300, 261)
+    mask = np.isin(df["hit_layer"], layers)
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.hist(
-        df["hit_z"],
+        df["hit_z"][mask],
         bins=bins,
         histtype="stepfilled",
         edgecolor="black",
@@ -54,7 +61,7 @@ def plot(df: pd.DataFrame, label: str, pdf: PdfPages):
     )
     ax.set_xlabel("Hit z position (mm)")
     ax.set_ylabel("Counts")
-    ax.set_ylim(0, 81e3)
+    ax.set_ylim(0, 81e3 if inner else 36e3)
     ax.set_title(f"{label}, event 0")
     ax.minorticks_on()
     ax.grid(which="both")
