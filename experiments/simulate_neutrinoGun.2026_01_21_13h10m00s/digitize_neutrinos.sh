@@ -12,4 +12,4 @@ DATA=/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2026_01_
 # export MARLIN_DLL=$(readlink -e ${CODE}/MyBIBUtils/build/lib/libMyBIBUtils.so):${MARLIN_DLL}
 
 # run
-time python ${CODE}/maia_noodling/python/digitize_muons.py --gen --sim --digi --bib --num ${1} --data ${DATA} --typeevent neutrinoGun --uncompressed
+time python ${CODE}/maia_noodling/python/digitize_muons.py --gen --sim --digi --bib --num ${1} --data ${DATA} --typeevent neutrinoGun # --uncompressed
