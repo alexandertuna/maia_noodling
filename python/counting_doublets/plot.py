@@ -21,7 +21,7 @@ rcParams.update({
     "grid.linewidth": 0.5,
     "grid.alpha": 0.1,
     "grid.color": "gray",
-    "figure.subplot.left": 0.14,
+    "figure.subplot.left": 0.15,
     "figure.subplot.bottom": 0.09,
     "figure.subplot.right": 0.97,
     "figure.subplot.top": 0.95,
@@ -58,7 +58,9 @@ class Plotter:
     def plot(self):
         print(f"Writing plots to {self.pdf} ...")
         with PdfPages(self.pdf) as pdf:
-            self.plot_layer_occupancy(pdf)
+            self.plot_time(pdf)
+            self.plot_layer_occupancy_1d(pdf)
+            self.plot_layer_occupancy_2d(pdf)
             self.plot_doublet_occupancy(pdf)
             if self.signal:
                 self.write_denominator_info(pdf)
@@ -67,7 +69,56 @@ class Plotter:
                 self.plot_doublet_quality_efficiency(pdf)
 
 
-    def plot_layer_occupancy(self, pdf: PdfPages):
+    def plot_time(self, pdf: PdfPages):
+        xlabel = "Sim. hit time [ns]" + r" minus $R/c$"
+        for system in SYSTEMS:
+            mask = (self.simhits["simhit_system"] == system)
+            bins = np.linspace(-10, 20, 301)
+            fig, ax = plt.subplots()
+            ax.hist(
+                self.simhits[mask]["simhit_t_corrected"],
+                bins=bins,
+                histtype="stepfilled",
+                color="yellow",
+                edgecolor="black",
+                linewidth=1.0,
+                alpha=0.9,
+            )
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel("Sim. hits")
+            ax.set_title(f"{NICKNAMES[system]}")
+            ax.semilogy()
+            ax.set_ylim(0.8, None)
+            pdf.savefig()
+            plt.close()
+
+
+    def plot_layer_occupancy_1d(self, pdf: PdfPages):
+        for system in SYSTEMS:
+            mask = (self.simhits["simhit_system"] == system)
+            simhits = self.simhits[mask]
+            bins = np.arange(simhits["simhit_layer"].min()-0.5,
+                             simhits["simhit_layer"].max()+1.0,
+                             1)
+            fig, ax = plt.subplots()
+            ax.hist(
+                simhits["simhit_layer"],
+                bins=bins,
+                histtype="stepfilled",
+                color="yellow",
+                edgecolor="black",
+                linewidth=1.0,
+                alpha=0.9,
+            )
+            # ax.set_ylim(0, 280e3)
+            ax.set_xlabel("Layer")
+            ax.set_ylabel("Sim. hits")
+            ax.set_title(f"{NICKNAMES[system]}")
+            pdf.savefig()
+            plt.close()
+
+
+    def plot_layer_occupancy_2d(self, pdf: PdfPages):
         for system in SYSTEMS:
             for layer in LAYERS:
                 mask = (
@@ -88,21 +139,10 @@ class Plotter:
                     cmap="gist_rainbow",
                     norm=colors.LogNorm(vmin=0.9),
                 )
-
-                # Major ticks (decades)
-                # Minor ticks (2–9 per decade)
-
                 ax.set_xlabel("Phi module")
                 ax.set_ylabel("Z sensor")
                 ax.set_title(f"{NICKNAMES[system]}, layer {layer}")
-                cbar = fig.colorbar(im, ax=ax, pad=0.01, label="Number of sim. hits")
-                # cbar.ax.minorticks_on()
-                # cbar.ax.tick_params(which='minor', length=4, color='black')
-                # cbar.ax.yaxis.set_major_locator(LogLocator(base=10))
-                # cbar.ax.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
-                # cbar.ax.yaxis.set_minor_formatter(NullFormatter())
-                # cbar.ax.tick_params(which="minor", color="black")
-                # print(cbar.ax.yaxis.get_scale())
+                fig.colorbar(im, ax=ax, pad=0.01, label="Number of sim. hits")
                 pdf.savefig()
                 plt.close()
 
