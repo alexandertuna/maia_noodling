@@ -6,31 +6,15 @@ import pandas as pd
 import multiprocessing as mp
 
 from constants import OUTSIDE_BOUNDS, INSIDE_BOUNDS, UNDEFINED_BOUNDS, BOUNDS
+from constants import SIGNAL
+from constants import EPSILON, MCPARTICLE, PARTICLES_OF_INTEREST, SPEED_OF_LIGHT
+from constants import MM_TO_CM, CM_TO_MM
+from constants import XML
+from constants import COLLECTIONS
 
 _detector = None
 _surfman = None
 _maps = None
-
-EPSILON = 1e-6
-MCPARTICLE = "MCParticle"
-MUON = 13
-MUON_NEUTRINO = 14
-SPEED_OF_LIGHT = 299.792458  # mm/ns
-COLLECTIONS = [
-    # "InnerTrackerBarrelCollection",
-    "OuterTrackerBarrelCollection",
-]
-PARTICLES_OF_INTEREST = [
-    MUON,
-    MUON_NEUTRINO,
-]
-
-MM_TO_CM = 0.1
-CM_TO_MM = 10.0
-
-CODE = "/ceph/users/atuna/work/maia"
-XML = f"{CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
-
 
 class SlcioToHitsDataFrame:
 
@@ -104,6 +88,9 @@ def convert_one_file(
     if load_geometry:
         import dd4hep
         import DDRec
+
+    # check if signal
+    signal = SIGNAL in os.path.basename(slcio_file_path)
 
     # open the SLCIO file
     reader = pyLCIO.IOIMPL.LCFactory.getInstance().createLCReader()
@@ -194,6 +181,7 @@ def convert_one_file(
                     'file': os.path.basename(slcio_file_path),
                     'i_event': i_event,
                     'i_mcp': i_mcp,
+                    'simhit_signal': signal,
                     'simhit_x': hit.getPosition()[0],
                     'simhit_y': hit.getPosition()[1],
                     'simhit_z': hit.getPosition()[2],
@@ -203,10 +191,17 @@ def convert_one_file(
                     'simhit_cellid0': hit.getCellID0(),
                     'simhit_t': hit.getTime(),
                     'simhit_inside_bounds': inside_bounds,
+                })
+                if signal:
+                    simhits[-1].update({
+                        'simhit_pathlength': hit.getPathLength(),
+                        'simhit_distance': distance,
+                        'simhit_e': hit.getEDep(),
+                    })
                     # 'simhit_pathlength': hit.getPathLength(),
                     # 'simhit_distance': distance,
                     # 'simhit_e': hit.getEDep(),
-                })
+
 
     # Close
     reader.close()
@@ -250,7 +245,8 @@ def postprocess_mcps(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def postprocess_simhits(df: pd.DataFrame) -> pd.DataFrame:
-    print("Postprocessing DataFrame ...")
+    signal = df["simhit_signal"].iloc[0]
+    print(f"Postprocessing DataFrame, signal={signal} ...")
     df["simhit_r"] = np.sqrt(df["simhit_x"]**2 + df["simhit_y"]**2)
     df["simhit_R"] = np.sqrt(df["simhit_x"]**2 + df["simhit_y"]**2 + df["simhit_z"]**2)
     df["simhit_t_corrected"] = df["simhit_t"] - (df["simhit_R"] / SPEED_OF_LIGHT)
@@ -259,28 +255,24 @@ def postprocess_simhits(df: pd.DataFrame) -> pd.DataFrame:
     df["simhit_layer"] = np.right_shift(df["simhit_cellid0"], 7) & 0b11_1111
     df["simhit_module"] = np.right_shift(df["simhit_cellid0"], 13) & 0b111_1111_1111
     df["simhit_sensor"] = np.right_shift(df["simhit_cellid0"], 24) & 0b1111_1111
-    df["simhit_phi"] = np.arctan2(df["simhit_y"], df["simhit_x"])
-    df["simhit_theta"] = np.maximum(np.arctan2(df["simhit_r"], df["simhit_z"]), EPSILON)
-    df["simhit_eta"] = -np.log(np.tan(df["simhit_theta"] / 2))
-    df["simhit_pt"] = np.sqrt(df["simhit_px"]**2 + df["simhit_py"]**2)
-    df["simhit_p"] = np.sqrt(df["simhit_px"]**2 + df["simhit_py"]**2 + df["simhit_pz"]**2)
-    df["simhit_costheta"] = (df["simhit_x"] * df["simhit_px"] + df["simhit_y"] * df["simhit_py"] + df["simhit_z"] * df["simhit_pz"]) / (df["simhit_R"] * df["simhit_p"])
     df["simhit_layer_div_2"] = df["simhit_layer"] // 2
     df["simhit_layer_mod_2"] = df["simhit_layer"] % 2
+    df["simhit_theta"] = np.maximum(np.arctan2(df["simhit_r"], df["simhit_z"]), EPSILON)
+    # df["simhit_eta"] = -np.log(np.tan(df["simhit_theta"] / 2))
+    # df["simhit_phi"] = np.arctan2(df["simhit_y"], df["simhit_x"])
+    # df["simhit_pt"] = np.sqrt(df["simhit_px"]**2 + df["simhit_py"]**2)
+    if signal:
+        df["simhit_p"] = np.sqrt(df["simhit_px"]**2 + df["simhit_py"]**2 + df["simhit_pz"]**2)
+        df["simhit_costheta"] = (df["simhit_x"] * df["simhit_px"] + df["simhit_y"] * df["simhit_py"] + df["simhit_z"] * df["simhit_pz"]) / (df["simhit_R"] * df["simhit_p"])
 
-    # remove redundant columns
-    df.drop(columns=[
-        # "simhit_x",
-        # "simhit_y",
+    # remove unused columns
+    drop_cols = [
         "simhit_px",
         "simhit_py",
         "simhit_pz",
-        # "simhit_p",
-        "simhit_theta",
         "simhit_R",
-        "simhit_theta",
-        # "simhit_cellid0",
-    ], inplace=True)
+    ]
+    df.drop(columns=drop_cols, inplace=True)
 
     # sort columns alphabetically
     return df[sorted(df.columns)]
@@ -308,6 +300,7 @@ def sort_simhits(df: pd.DataFrame) -> pd.DataFrame:
         "simhit_sensor",
     ]
     return df.sort_values(by=columns).reset_index(drop=True)
+
 
 def announce_inside_bounds(df: pd.DataFrame):
     for bounds in [OUTSIDE_BOUNDS, INSIDE_BOUNDS, UNDEFINED_BOUNDS]:
