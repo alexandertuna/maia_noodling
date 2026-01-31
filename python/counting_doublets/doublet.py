@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import time
+import logging
+logger = logging.getLogger(__name__)
 
 class DoubletMaker:
 
@@ -11,7 +13,7 @@ class DoubletMaker:
 
 
     def make_doublets(self, df: pd.DataFrame) -> pd.DataFrame:
-        print("Making doublets ...")
+        logger.info("Making doublets ...")
         doublelayer_cols = [
             "file",
             "i_event", # the event
@@ -54,19 +56,19 @@ class DoubletMaker:
                 continue
             if self.signal:
                 if i_group % 1000 == 0:
-                    print(f"Processing group {i_group+1}/{len(groups)} at {time.strftime('%Y-%m-%d %H:%M:%S')}...")
+                    logger.info(f"Processing group {i_group+1}/{len(groups)} at {time.strftime('%Y-%m-%d %H:%M:%S')}...")
             else:
-                print(f"Processing group {i_group+1}/{len(groups)} at {time.strftime('%Y-%m-%d %H:%M:%S')}...")
+                logger.info(f"Processing group {i_group+1}/{len(groups)} at {time.strftime('%Y-%m-%d %H:%M:%S')}...")
 
             lower_mask = group["simhit_layer_mod_2"] == 0
             upper_mask = group["simhit_layer_mod_2"] == 1
 
-            # print("Getting lower and upper hits ...")
+            # logger.info("Getting lower and upper hits ...")
             lower = group[lower_mask].rename(columns=lower_cols_rename)[lower_cols]
             upper = group[upper_mask].rename(columns=upper_cols_rename)[upper_cols]
 
             # inner join to find doublets
-            # print("Joining ...")
+            # logger.info("Joining ...")
             doublets = lower.merge(upper, on=doublet_cols, how="inner")
 
             # rz

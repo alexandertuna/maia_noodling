@@ -2,6 +2,9 @@ import inspect
 import textwrap
 import numpy as np
 import pandas as pd
+import logging
+logger = logging.getLogger(__name__)
+
 import matplotlib.pyplot as plt
 from matplotlib import colors
 from matplotlib.backends.backend_pdf import PdfPages
@@ -56,7 +59,7 @@ class Plotter:
 
 
     def plot(self):
-        print(f"Writing plots to {self.pdf} ...")
+        logger.info(f"Writing plots to {self.pdf} ...")
         with PdfPages(self.pdf) as pdf:
             self.plot_time(pdf)
             self.plot_layer_occupancy_1d(pdf)
@@ -126,7 +129,7 @@ class Plotter:
                     (self.simhits["simhit_system"] == system) &
                     (self.simhits["simhit_layer"] == layer)
                 )
-                print(f"Occupancy of {NICKNAMES[system]} layer {layer}: {mask.sum()} sim hits")
+                logger.info(f"Occupancy of {NICKNAMES[system]} layer {layer}: {mask.sum()} sim hits")
                 simhits = self.simhits[mask]
                 bins = [
                     np.arange(-0.5, simhits["simhit_module"].max()+1.5, 1),
@@ -149,7 +152,7 @@ class Plotter:
 
 
     def plot_radius_vs_layer(self, pdf: PdfPages):
-        print(f"Plotting radius vs layer")
+        logger.info(f"Plotting radius vs layer")
         for system in SYSTEMS:
             mask = (self.simhits["simhit_system"] == system)
             simhits = self.simhits[mask]
@@ -205,7 +208,7 @@ class Plotter:
                 zmax = None
                 for req in DOUBLET_REQS:
                     req_text, req_mask = self.requirements(req)
-                    print(f"Occupancy of {NICKNAMES[system]} doublelayer {doublelayer}, {req}: {req_mask.sum()} doublets")
+                    logger.info(f"Occupancy of {NICKNAMES[system]} doublelayer {doublelayer}, {req}: {req_mask.sum()} doublets")
                     layers = [doublelayer * 2, doublelayer * 2 + 1]
                     mask = (
                         (self.doublets["simhit_system"] == system) &
@@ -237,6 +240,7 @@ class Plotter:
 
 
     def write_denominator_info(self, pdf: PdfPages):
+        logger.info(f"Writing efficiency denominator info")
         text = f"Efficiency denominator:"
         function = inspect.getsource(self.get_denominator_mask)
         function = textwrap.dedent(function)
@@ -329,7 +333,7 @@ class Plotter:
 
 
     def add_doublet_mcp_features(self):
-        print("Adding doublet mcp features ...")
+        logger.info("Adding doublet mcp features ...")
         # add mcp features when the doublet i_mcp_lower and i_mcp_upper match
         # otherwise, assign 0
         mcp_cols = [
@@ -390,7 +394,7 @@ class Plotter:
 
                 for doublelayer in DOUBLELAYERS:
 
-                    print(f"Plotting doublet quality efficiency vs {kin}, system {system}, doublelayer {doublelayer} ...")
+                    logger.info(f"Plotting doublet quality efficiency vs {kin}, system {system}, doublelayer {doublelayer} ...")
                     layers = [doublelayer * 2, doublelayer * 2 + 1]
 
                     geo_mask = (
@@ -403,8 +407,8 @@ class Plotter:
                         denom = self.doublets[baseline & geo_mask]
                         numer = self.doublets[baseline & geo_mask & req_mask]
                         if i_kin == 0:
-                            print(f"Denom for system {system} layers {layers} {req}: {len(denom)} doublets")
-                            print(f"Numer for system {system} layers {layers} {req}: {len(numer)} doublets")
+                            logger.info(f"Denom for system {system} layers {layers} {req}: {len(denom)} doublets")
+                            logger.info(f"Numer for system {system} layers {layers} {req}: {len(numer)} doublets")
 
                         n_denom, edges = np.histogram(denom[kin], bins=bins[kin])
                         n_numer, edges = np.histogram(numer[kin], bins=bins[kin])
