@@ -1,9 +1,29 @@
 MUON = 13
 ANTIMUON = -MUON
+MUON_NEUTRINO = 14
+MUON_ANTINEUTRINO = -MUON_NEUTRINO
+PARTICLES_OF_INTEREST = [
+    MUON,
+    MUON_NEUTRINO,
+]
+
+SPEED_OF_LIGHT = 299.792458  # mm/ns
+
+SIGNAL = "muonGun"
 
 ONE_MM = 1.0
 ONE_GEV = 1.0
 ONE_POINT_FIVE_GEV = 1.5
+
+MM_TO_CM = 0.1
+CM_TO_MM = 10.0
+
+CODE = "/ceph/users/atuna/work/maia"
+XML = f"{CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
+
+
+EPSILON = 1e-6
+MCPARTICLE = "MCParticle"
 
 BARREL_TRACKER_MAX_ETA = 0.65
 BARREL_TRACKER_MAX_RADIUS = 1446.0
@@ -22,6 +42,10 @@ MIN_COSTHETA = 0.0
 MIN_SIMHIT_PT_FRACTION = 0.7
 MAX_TIME = 3.0 # in ns
 
+COLLECTIONS = [
+    # "InnerTrackerBarrelCollection",
+    "OuterTrackerBarrelCollection",
+]
 INNER_TRACKER_BARREL = 3
 OUTER_TRACKER_BARREL = 5
 SYSTEMS = [
