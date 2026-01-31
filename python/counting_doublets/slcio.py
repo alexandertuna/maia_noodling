@@ -86,7 +86,8 @@ def convert_one_file(
     # import here to avoid:
     #  - unnecessary imports if not used
     #  - issues with multiprocessing
-    import pyLCIO
+    with silence_c_stdout_stderr():
+        import pyLCIO
     if load_geometry:
         import dd4hep
         import DDRec
