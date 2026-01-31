@@ -4,6 +4,8 @@ import sys
 import numpy as np
 import pandas as pd
 import multiprocessing as mp
+import logging
+logger = logging.getLogger(__name__)
 
 from constants import OUTSIDE_BOUNDS, INSIDE_BOUNDS, UNDEFINED_BOUNDS, BOUNDS
 from constants import SIGNAL
@@ -36,7 +38,7 @@ class SlcioToHitsDataFrame:
 
 
     def convert_all_files(self) -> pd.DataFrame:
-        print(f"Converting {len(self.slcio_file_paths)} slcio files to a DataFrame ...")
+        logger.info(f"Converting {len(self.slcio_file_paths)} slcio files to a DataFrame ...")
         initializer = init_worker if self.load_geometry else init_dummy
         processes = min(mp.cpu_count(), len(self.slcio_file_paths))
         with mp.Pool(processes=processes, initializer=initializer) as pool:
@@ -48,7 +50,7 @@ class SlcioToHitsDataFrame:
                     load_geometry,
                 )
             )
-        print("Merging DataFrames ...")
+        logger.info("Merging DataFrames ...")
         return [
             pd.concat([res[0] for res in results], ignore_index=True),
             pd.concat([res[1] for res in results], ignore_index=True),
@@ -147,9 +149,9 @@ def convert_one_file(
             for i_hit, hit in enumerate(col):
 
                 if i_hit > 0 and i_hit % 1000000 == 0:
-                    print(f"Processing file {os.path.basename(slcio_file_path)} "
-                          f"event {i_event} collection {collection} "
-                          f"hit {i_hit}/{n_hit} ...")
+                    logger.info(f"Processing file {os.path.basename(slcio_file_path)} "
+                                f"event {i_event} collection {collection} "
+                                f"hit {i_hit}/{n_hit} ...")
                 if not hit:
                     continue
                 # ONLY OT LAYERS 0 AND 1 FOR NOW
@@ -207,12 +209,12 @@ def convert_one_file(
     reader.close()
 
     # Convert the list of hits to a pandas DataFrame and postprocess
-    print("Creating DataFrames ...")
+    logger.info("Creating DataFrames ...")
     mcps = pd.DataFrame(mcps)
     simhits = pd.DataFrame(simhits)
 
     # And postprocess
-    print("Postprocessing DataFrames ...")
+    logger.info("Postprocessing DataFrames ...")
     mcps = postprocess_mcps(mcps)
     simhits = postprocess_simhits(simhits)
 
@@ -246,7 +248,7 @@ def postprocess_mcps(df: pd.DataFrame) -> pd.DataFrame:
 
 def postprocess_simhits(df: pd.DataFrame) -> pd.DataFrame:
     signal = df["simhit_signal"].iloc[0]
-    print(f"Postprocessing DataFrame, signal={signal} ...")
+    logger.info(f"Postprocessing DataFrame, signal={signal} ...")
     df["simhit_r"] = np.sqrt(df["simhit_x"]**2 + df["simhit_y"]**2)
     df["simhit_R"] = np.sqrt(df["simhit_x"]**2 + df["simhit_y"]**2 + df["simhit_z"]**2)
     df["simhit_t_corrected"] = df["simhit_t"] - (df["simhit_R"] / SPEED_OF_LIGHT)
@@ -279,7 +281,7 @@ def postprocess_simhits(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def sort_mcps(df: pd.DataFrame) -> pd.DataFrame:
-    print("Sorting DataFrame ...")
+    logger.info("Sorting DataFrame ...")
     columns = [
         "file",
         "i_event",
@@ -289,7 +291,7 @@ def sort_mcps(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def sort_simhits(df: pd.DataFrame) -> pd.DataFrame:
-    print("Sorting DataFrame ...")
+    logger.info("Sorting DataFrame ...")
     columns = [
         "file",
         "i_event",
@@ -305,7 +307,7 @@ def sort_simhits(df: pd.DataFrame) -> pd.DataFrame:
 def announce_inside_bounds(df: pd.DataFrame):
     for bounds in [OUTSIDE_BOUNDS, INSIDE_BOUNDS, UNDEFINED_BOUNDS]:
         n_bounds = len(df[df["simhit_inside_bounds"] == bounds])
-        print(f"N(simhits) with bounds == {BOUNDS[bounds]}: {n_bounds}")
+        logger.info(f"N(simhits) with bounds == {BOUNDS[bounds]}: {n_bounds}")
 
 
 @contextlib.contextmanager

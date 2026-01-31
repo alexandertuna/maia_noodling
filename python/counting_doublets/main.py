@@ -2,12 +2,15 @@ import argparse
 from glob import glob
 import os
 import pandas as pd
+import logging
+logger = logging.getLogger(__name__)
 
 from slcio import SlcioToHitsDataFrame
 from timelapse import Timelapse
 from doublet import DoubletMaker
 from plot import Plotter
 from constants import SIGNAL
+
 
 FNAMES = [
     # neutrinoGun 100%, (-5, 15)
@@ -28,11 +31,13 @@ FNAMES = [
 
 
 def main():
+    logging.basicConfig(level=logging.INFO,
+                        format="%(asctime)s [%(levelname)s] %(message)s")
     ops = options()
     fnames = get_filenames(ops.i)
     geometry = ops.geometry
     signal = any(SIGNAL in os.path.basename(fname) for fname in fnames)
-    print(f"Detected {'signal' if signal else 'background'} files")
+    logger.info(f"Detected {'signal' if signal else 'background'} files")
 
     # convert slcio to hits dataframe
     converter = SlcioToHitsDataFrame(slcio_file_paths=fnames,
@@ -43,7 +48,7 @@ def main():
     doublets = DoubletMaker(signal=signal, simhits=simhits).df
     if not signal:
         # drop simhit_r_upper, ... for a speedup
-        print("Dropping simhit_{x,y,z}_{upper,lower} columns from doublets ...")
+        logger.info("Dropping simhit_{x,y,z}_{upper,lower} columns from doublets ...")
         doublets = doublets.drop(columns=[
             "simhit_r_upper",
             "simhit_r_lower",
@@ -65,7 +70,7 @@ def main():
     )
     plotter.plot()
 
-    # print("Creating timelapse gif ...")
+    # logger.info("Creating timelapse gif ...")
     # tl = Timelapse(df=df, event=0, gif="event.gif")
 
 
