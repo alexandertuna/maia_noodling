@@ -5,7 +5,8 @@ import time
 class DoubletMaker:
 
 
-    def __init__(self, simhits: pd.DataFrame):
+    def __init__(self, signal: bool, simhits: pd.DataFrame):
+        self.signal = signal
         self.df = self.make_doublets(simhits)
 
 
@@ -25,6 +26,25 @@ class DoubletMaker:
             "simhit_module", # the phi-module
             "simhit_sensor", # the z-sensor
         ]
+
+        simhit_attrs_to_propagate = [
+            "i_mcp",
+            "simhit_r",
+            "simhit_z",
+            "simhit_x",
+            "simhit_y",
+        ]
+        if self.signal:
+            simhit_attrs_to_propagate += [
+                "simhit_t_corrected",
+                "simhit_p",
+                "simhit_costheta",
+            ]
+        lower_cols = doublet_cols + [ f"{attr}_lower" for attr in simhit_attrs_to_propagate ]
+        upper_cols = doublet_cols + [ f"{attr}_upper" for attr in simhit_attrs_to_propagate ]
+        lower_cols_rename = { attr: f"{attr}_lower" for attr in simhit_attrs_to_propagate }
+        upper_cols_rename = { attr: f"{attr}_upper" for attr in simhit_attrs_to_propagate }
+
         doublets_list = []
         # groups = df.groupby(doublet_cols)
         groups = df.groupby(doublelayer_cols)
@@ -32,55 +52,18 @@ class DoubletMaker:
 
             if len(group) < 3:
                 continue
-            # if i_group > 10:
-            #     break
-            if i_group % 1000 == 0:
+            if self.signal:
+                if i_group % 1000 == 0:
+                    print(f"Processing group {i_group+1}/{len(groups)} at {time.strftime('%Y-%m-%d %H:%M:%S')}...")
+            else:
                 print(f"Processing group {i_group+1}/{len(groups)} at {time.strftime('%Y-%m-%d %H:%M:%S')}...")
 
-            lower_cols = doublet_cols + [
-                "i_mcp_lower",
-                "simhit_r_lower",
-                "simhit_z_lower",
-                "simhit_x_lower",
-                "simhit_y_lower",
-                "simhit_p_lower",
-                "simhit_t_corrected_lower",
-                "simhit_costheta_lower",
-                ]
-            upper_cols = doublet_cols + [
-                "i_mcp_upper",
-                "simhit_r_upper",
-                "simhit_z_upper",
-                "simhit_x_upper",
-                "simhit_y_upper",
-                "simhit_p_upper",
-                "simhit_t_corrected_upper",
-                "simhit_costheta_upper",
-                ]
             lower_mask = group["simhit_layer_mod_2"] == 0
             upper_mask = group["simhit_layer_mod_2"] == 1
 
             # print("Getting lower and upper hits ...")
-            lower = (group[lower_mask].rename(columns={
-                "i_mcp":"i_mcp_lower",
-                "simhit_r":"simhit_r_lower",
-                "simhit_z":"simhit_z_lower",
-                "simhit_x":"simhit_x_lower",
-                "simhit_y":"simhit_y_lower",
-                "simhit_p":"simhit_p_lower",
-                "simhit_t_corrected":"simhit_t_corrected_lower",
-                "simhit_costheta":"simhit_costheta_lower",
-            })[lower_cols])
-            upper = (group[upper_mask].rename(columns={
-                "i_mcp":"i_mcp_upper",
-                "simhit_r":"simhit_r_upper",
-                "simhit_z":"simhit_z_upper",
-                "simhit_x":"simhit_x_upper",
-                "simhit_y":"simhit_y_upper",
-                "simhit_p":"simhit_p_upper",
-                "simhit_t_corrected":"simhit_t_corrected_upper",
-                "simhit_costheta":"simhit_costheta_upper",
-            })[upper_cols])
+            lower = group[lower_mask].rename(columns=lower_cols_rename)[lower_cols]
+            upper = group[upper_mask].rename(columns=upper_cols_rename)[upper_cols]
 
             # inner join to find doublets
             # print("Joining ...")
@@ -99,29 +82,6 @@ class DoubletMaker:
             doublets["dphi"] = phi_local - phi_global
             doublets["dphi"] = (doublets["dphi"] + np.pi) % (2 * np.pi) - np.pi
 
-            # apply cuts
-            condition_rz = np.abs(doublets["intercept_rz"]) < 50 # mm
-            condition_xy = np.abs(doublets["dphi"]) < 0.55 # rad
-            condition = condition_rz & condition_xy
-
-            # print
-            # print(f"Found {len(lower)} lower hits")
-            # print(f"Found {len(upper)} upper hits")
-            # print(f"Found {len(doublets)} doublets total in group {i_group+1}/{len(groups)}")
-            # print(f" rz cut: {np.sum(condition_rz)} aka {np.sum(condition_rz) / len(doublets)} efficiency")
-            # print(f" xy cut: {np.sum(condition_xy)} aka {np.sum(condition_xy) / len(doublets)} efficiency")
-            # print(f" rz & xy: {np.sum(condition)} aka {np.sum(condition) / len(doublets)} efficiency")
-            # doublets = doublets[condition]
-
-            # if len(doublets) > 0:
-            #     print(f"Doublets found in event {cols[1]}: system {cols[2]}, layer {cols[3]}, module {cols[4]}, sensor {cols[5]}")
-            #     print(group[doublet_cols + ["simhit_layer", "simhit_x", "simhit_y", "simhit_z"]])
-            #     print("Doublets:")
-            #     print(doublets)
-            #     print("->", len(doublets[np.abs(doublets["intercept_rz"]) < 50]))
-            #     print("*"*100)
-            # else:
-            #     print(f"No doublets found in event {cols[1]}: system {cols[2]}, layer {cols[3]}, module {cols[4]}, sensor {cols[5]}")
             doublets_list.append(doublets)
 
 

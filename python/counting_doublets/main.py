@@ -7,8 +7,15 @@ from slcio import SlcioToHitsDataFrame
 from timelapse import Timelapse
 from doublet import DoubletMaker
 from plot import Plotter
+from constants import SIGNAL
 
 FNAMES = [
+    # neutrinoGun 100%, (-5, 15)
+    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_n5_p15/neutrinoGun_digi_1.slcio",
+
+    # neutrinoGun 10% (-5, 15)
+    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_n5_p15_0.10/neutrinoGun_digi_1.slcio",
+
     # neutrinoGun 100%
     # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun/neutrinoGun_digi_1.slcio",
 
@@ -24,7 +31,7 @@ def main():
     ops = options()
     fnames = get_filenames(ops.i)
     geometry = ops.geometry
-    signal = any("muonGun" in os.path.basename(fname) for fname in fnames)
+    signal = any(SIGNAL in os.path.basename(fname) for fname in fnames)
     print(f"Detected {'signal' if signal else 'background'} files")
 
     # convert slcio to hits dataframe
@@ -33,7 +40,7 @@ def main():
     mcps, simhits = converter.convert()
 
     # make doublets from hits
-    doublets = DoubletMaker(simhits=simhits).df
+    doublets = DoubletMaker(signal=signal, simhits=simhits).df
     if not signal:
         # drop simhit_r_upper, ... for a speedup
         print("Dropping simhit_{x,y,z}_{upper,lower} columns from doublets ...")
