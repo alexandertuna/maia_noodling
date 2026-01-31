@@ -61,6 +61,7 @@ class Plotter:
             self.plot_time(pdf)
             self.plot_layer_occupancy_1d(pdf)
             self.plot_layer_occupancy_2d(pdf)
+            self.plot_radius_vs_layer(pdf)
             self.plot_doublet_occupancy(pdf)
             if self.signal:
                 self.write_denominator_info(pdf)
@@ -145,6 +146,35 @@ class Plotter:
                 fig.colorbar(im, ax=ax, pad=0.01, label="Number of sim. hits")
                 pdf.savefig()
                 plt.close()
+
+
+    def plot_radius_vs_layer(self, pdf: PdfPages):
+        print(f"Plotting radius vs layer")
+        for system in SYSTEMS:
+            mask = (self.simhits["simhit_system"] == system)
+            simhits = self.simhits[mask]
+            bins = [
+                np.arange(simhits["simhit_layer"].min() - 0.5,
+                          simhits["simhit_layer"].max() + 1.0, 1),
+                np.arange(simhits["simhit_r"].min() - 100,
+                          simhits["simhit_r"].max() + 100, 1),
+                # np.linspace(0, 1600, 1600),
+            ]
+            fig, ax = plt.subplots()
+            _, _, _, im = ax.hist2d(
+                simhits["simhit_layer"],
+                simhits["simhit_r"],
+                bins=bins,
+                cmap="gist_rainbow",
+                cmin=0.5,
+            )
+            fig.colorbar(im, ax=ax, label="Number of sim. hits", pad=0.01)
+            ax.set_xlabel("Layer")
+            ax.set_ylabel("Radius")
+            ax.set_title(f"{NICKNAMES[system]}")
+            fig.subplots_adjust(right=0.95)
+            pdf.savefig()
+            plt.close()
 
 
     def requirements(self, req: str) -> tuple[str, pd.DataFrame]:
@@ -299,6 +329,7 @@ class Plotter:
 
 
     def add_doublet_mcp_features(self):
+        print("Adding doublet mcp features ...")
         # add mcp features when the doublet i_mcp_lower and i_mcp_upper match
         # otherwise, assign 0
         mcp_cols = [
