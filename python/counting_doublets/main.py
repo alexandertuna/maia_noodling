@@ -14,7 +14,7 @@ from constants import SIGNAL
 
 FNAMES = [
     # neutrinoGun 100%, (-5, 15)
-    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_n5_p15/neutrinoGun_digi_1.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_n5_p15/neutrinoGun_digi_1.slcio",
 
     # neutrinoGun 10% (-5, 15)
     # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_n5_p15_0.10/neutrinoGun_digi_1.slcio",
@@ -26,7 +26,7 @@ FNAMES = [
     # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_0.10/neutrinoGun_digi_1.slcio",
 
     # muonGun
-    "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_100*.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_100*.slcio",
 ]
 
 
@@ -49,7 +49,7 @@ def main():
     if not signal:
         # drop simhit_r_upper, ... for a speedup
         logger.info("Dropping simhit_{x,y,z}_{upper,lower} columns from doublets ...")
-        doublets = doublets.drop(columns=[
+        doublets.drop(columns=[
             "simhit_r_upper",
             "simhit_r_lower",
             "simhit_x_upper",
@@ -58,7 +58,7 @@ def main():
             "simhit_y_lower",
             "simhit_z_upper",
             "simhit_z_lower",
-        ])
+        ], inplace=True)
 
     # plot stuff
     plotter = Plotter(
