@@ -188,15 +188,18 @@ def convert_one_file(
                     'simhit_x': hit.getPosition()[0],
                     'simhit_y': hit.getPosition()[1],
                     'simhit_z': hit.getPosition()[2],
-                    'simhit_px': hit.getMomentum()[0],
-                    'simhit_py': hit.getMomentum()[1],
-                    'simhit_pz': hit.getMomentum()[2],
                     'simhit_cellid0': hit.getCellID0(),
-                    'simhit_t': hit.getTime(),
                     'simhit_inside_bounds': inside_bounds,
+                    'simhit_t_corrected': hit.getTime() - (np.sqrt(hit.getPosition()[0]**2 + \
+                                                                   hit.getPosition()[1]**2 + \
+                                                                   hit.getPosition()[2]**2) / SPEED_OF_LIGHT),
+                    # 'simhit_t': hit.getTime(),
                 })
                 if signal:
                     simhits[-1].update({
+                        'simhit_px': hit.getMomentum()[0],
+                        'simhit_py': hit.getMomentum()[1],
+                        'simhit_pz': hit.getMomentum()[2],
                         'simhit_pathlength': hit.getPathLength(),
                         'simhit_distance': distance,
                         'simhit_e': hit.getEDep(),
@@ -251,8 +254,6 @@ def postprocess_simhits(df: pd.DataFrame) -> pd.DataFrame:
     signal = df["simhit_signal"].iloc[0]
     logger.info(f"Postprocessing DataFrame, signal={signal} ...")
     df["simhit_r"] = np.sqrt(df["simhit_x"]**2 + df["simhit_y"]**2)
-    df["simhit_R"] = np.sqrt(df["simhit_x"]**2 + df["simhit_y"]**2 + df["simhit_z"]**2)
-    df["simhit_t_corrected"] = df["simhit_t"] - (df["simhit_R"] / SPEED_OF_LIGHT)
     df["simhit_system"] = np.right_shift(df["simhit_cellid0"], 0) & 0b1_1111
     df["simhit_side"] = np.right_shift(df["simhit_cellid0"], 5) & 0b11
     df["simhit_layer"] = np.right_shift(df["simhit_cellid0"], 7) & 0b11_1111
@@ -264,18 +265,21 @@ def postprocess_simhits(df: pd.DataFrame) -> pd.DataFrame:
     # df["simhit_eta"] = -np.log(np.tan(df["simhit_theta"] / 2))
     # df["simhit_phi"] = np.arctan2(df["simhit_y"], df["simhit_x"])
     # df["simhit_pt"] = np.sqrt(df["simhit_px"]**2 + df["simhit_py"]**2)
+    # df["simhit_R"] = np.sqrt(df["simhit_x"]**2 + df["simhit_y"]**2 + df["simhit_z"]**2)
+    # df["simhit_t_corrected"] = df["simhit_t"] - (df["simhit_R"] / SPEED_OF_LIGHT)
     if signal:
         df["simhit_p"] = np.sqrt(df["simhit_px"]**2 + df["simhit_py"]**2 + df["simhit_pz"]**2)
         df["simhit_costheta"] = (df["simhit_x"] * df["simhit_px"] + df["simhit_y"] * df["simhit_py"] + df["simhit_z"] * df["simhit_pz"]) / (df["simhit_R"] * df["simhit_p"])
 
     # remove unused columns
-    drop_cols = [
-        "simhit_px",
-        "simhit_py",
-        "simhit_pz",
-        "simhit_R",
-    ]
-    df.drop(columns=drop_cols, inplace=True)
+    if signal:
+        drop_cols = [
+            "simhit_px",
+            "simhit_py",
+            "simhit_pz",
+            "simhit_R",
+        ]
+        df.drop(columns=drop_cols, inplace=True)
 
     # sort columns alphabetically
     return df[sorted(df.columns)]
