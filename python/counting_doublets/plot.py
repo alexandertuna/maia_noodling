@@ -74,6 +74,7 @@ class Plotter:
 
 
     def plot_time(self, pdf: PdfPages):
+        logger.info(f"Plotting time")
         xlabel = "Sim. hit time [ns]" + r" minus $R/c$"
         for system in SYSTEMS:
             mask = (self.simhits["simhit_system"] == system)
@@ -98,6 +99,7 @@ class Plotter:
 
 
     def plot_layer_occupancy_1d(self, pdf: PdfPages):
+        logger.info(f"Plotting layer occupancy (1d)")
         for system in SYSTEMS:
             mask = (self.simhits["simhit_system"] == system)
             simhits = self.simhits[mask]
@@ -123,6 +125,7 @@ class Plotter:
 
 
     def plot_layer_occupancy_2d(self, pdf: PdfPages):
+        logger.info(f"Plotting layer occupancy (2d)")
         for system in SYSTEMS:
             for layer in LAYERS:
                 mask = (
@@ -209,6 +212,11 @@ class Plotter:
                 for req in DOUBLET_REQS:
                     req_text, req_mask = self.requirements(req)
                     logger.info(f"Occupancy of {NICKNAMES[system]} doublelayer {doublelayer}, {req}: {req_mask.sum()} doublets")
+
+                    # skip these plots to save time
+                    if not self.signal:
+                        continue
+
                     layers = [doublelayer * 2, doublelayer * 2 + 1]
                     mask = (
                         (self.doublets["simhit_system"] == system) &
