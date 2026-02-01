@@ -68,10 +68,13 @@ class DoubletMaker:
             upper = group[upper_mask].rename(columns=upper_cols_rename)[upper_cols]
 
             # inner join to find doublets
-            # logger.info("Joining ...")
+            if not self.signal:
+                logger.info("Joining to make doublets ...")
             doublets = lower.merge(upper, on=doublet_cols, how="inner")
 
             # rz
+            if not self.signal:
+                logger.info("Adding derived doublet quantities ...")
             slope = np.divide(doublets["simhit_z_upper"] - doublets["simhit_z_lower"],
                               doublets["simhit_r_upper"] - doublets["simhit_r_lower"])
             doublets["intercept_rz"] = doublets["simhit_z_lower"] - doublets["simhit_r_lower"] * slope
