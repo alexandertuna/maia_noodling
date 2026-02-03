@@ -153,8 +153,7 @@ def convert_one_file(
                     logger.info(f"Processing file {os.path.basename(slcio_file_path)} "
                                 f"event {i_event} collection {collection} "
                                 f"hit {i_hit}/{n_hit} ...")
-                if not hit:
-                    continue
+
                 # ONLY OT LAYERS 0 AND 1 FOR NOW
                 if (np.right_shift(hit.getCellID0(), 7) & 0b11_1111) not in [0, 1]:
                     continue
@@ -268,6 +267,7 @@ def postprocess_simhits(df: pd.DataFrame) -> pd.DataFrame:
     # df["simhit_R"] = np.sqrt(df["simhit_x"]**2 + df["simhit_y"]**2 + df["simhit_z"]**2)
     # df["simhit_t_corrected"] = df["simhit_t"] - (df["simhit_R"] / SPEED_OF_LIGHT)
     if signal:
+        df["simhit_R"] = np.sqrt(df["simhit_x"]**2 + df["simhit_y"]**2 + df["simhit_z"]**2)
         df["simhit_p"] = np.sqrt(df["simhit_px"]**2 + df["simhit_py"]**2 + df["simhit_pz"]**2)
         df["simhit_costheta"] = (df["simhit_x"] * df["simhit_px"] + df["simhit_y"] * df["simhit_py"] + df["simhit_z"] * df["simhit_pz"]) / (df["simhit_R"] * df["simhit_p"])
 
