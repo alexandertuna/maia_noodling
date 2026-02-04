@@ -47,13 +47,13 @@ class DoubletMaker:
         lower_cols_rename = { attr: f"{attr}_lower" for attr in simhit_attrs_to_propagate }
         upper_cols_rename = { attr: f"{attr}_upper" for attr in simhit_attrs_to_propagate }
 
+        n_upper, n_lower = 0, 0
+
         doublets_list = []
         # groups = df.groupby(doublet_cols)
         groups = df.groupby(doublelayer_cols)
         for i_group, (cols, group) in enumerate(groups):
 
-            if len(group) < 3:
-                continue
             if self.signal:
                 if i_group % 1000 == 0:
                     logger.info(f"Processing group {i_group+1}/{len(groups)} at {time.strftime('%Y-%m-%d %H:%M:%S')}...")
@@ -66,6 +66,8 @@ class DoubletMaker:
             # logger.info("Getting lower and upper hits ...")
             lower = group[lower_mask].rename(columns=lower_cols_rename)[lower_cols]
             upper = group[upper_mask].rename(columns=upper_cols_rename)[upper_cols]
+            n_lower += len(lower)
+            n_upper += len(upper)
 
             # inner join to find doublets
             if not self.signal:
@@ -92,5 +94,8 @@ class DoubletMaker:
 
         if len(doublets_list) == 0:
             raise ValueError("No doublets found in the DataFrame")
+
+        logger.info(f"Total lower hits for doublets: {n_lower}")
+        logger.info(f"Total upper hits for doublets: {n_upper}")
 
         return pd.concat(doublets_list, ignore_index=True)
