@@ -33,7 +33,7 @@ rcParams.update({
 from constants import MUON, ANTIMUON
 from constants import BARREL_TRACKER_MAX_ETA
 from constants import BARREL_TRACKER_MAX_RADIUS
-from constants import ONE_POINT_FIVE_GEV, ONE_MM
+from constants import ONE_POINT_FIVE_GEV, ONE_MM, ZERO_POINT_ZERO_ONE_MM
 from constants import SYSTEMS, DOUBLELAYERS, LAYERS, NICKNAMES
 from constants import REQ_PASSTHROUGH, REQ_RZ, REQ_XY, REQ_RZ_XY
 from constants import DOUBLET_REQS
@@ -55,12 +55,15 @@ class Plotter:
         self.simhits = simhits
         self.doublets = doublets
         self.pdf = pdf
-        self.add_doublet_mcp_features()
+        if self.signal:
+            self.add_simhit_mcp_features()
+            self.add_doublet_mcp_features()
 
 
     def plot(self):
         logger.info(f"Writing plots to {self.pdf} ...")
         with PdfPages(self.pdf) as pdf:
+            self.plot_numbers_for_comparison(pdf)
             self.plot_time(pdf)
             self.plot_layer_occupancy_1d(pdf)
             self.plot_layer_occupancy_2d(pdf)
@@ -71,6 +74,65 @@ class Plotter:
                 self.plot_efficiency_vs_kinematics(pdf)
                 self.write_doublet_denominator_info(pdf)
                 self.plot_doublet_quality_efficiency(pdf)
+
+
+    def plot_numbers_for_comparison(self, pdf: PdfPages):
+        """
+        Cutflow comparison!
+        """
+        if self.signal:
+            self.plot_numbers_for_comparison_signal(pdf)
+        else:
+            self.plot_numbers_for_comparison_background(pdf)
+
+
+    def plot_numbers_for_comparison_signal(self, pdf: PdfPages):
+
+        # part 1: simhits
+        mask = np.ones(len(self.simhits), dtype=bool)
+        for [req, label] in [
+            [self.simhits["simhit_layer"].isin([0, 1]), "All simhits in layers 0 and 1"],
+            [np.abs(self.simhits["mcp_pdg"]) == MUON, "abs(pdg) == muon"],
+            [self.simhits["mcp_q"] != 0, "q is not 0"],
+            [self.simhits["mcp_pt"] > ONE_POINT_FIVE_GEV, "pT > 1.5 GeV"],
+            [np.abs(self.simhits["mcp_eta"]) < BARREL_TRACKER_MAX_ETA, f"abs(eta) < {BARREL_TRACKER_MAX_ETA}"],
+            [self.simhits["mcp_vertex_r"] < ZERO_POINT_ZERO_ONE_MM, "vertex r < 0.01 mm"],
+            [np.abs(self.simhits["mcp_vertex_z"]) < ZERO_POINT_ZERO_ONE_MM, "abs(vertex z) < 0.01 mm"],
+            [self.simhits["simhit_t_corrected"] < MAX_TIME, f"corrected t < {MAX_TIME} ns"],
+            [self.simhits["simhit_costheta"] > MIN_COSTHETA, f"costheta > {MIN_COSTHETA}"],
+            [self.simhits["simhit_p"] / self.simhits["mcp_p"] > MIN_SIMHIT_PT_FRACTION, f"simhit p / mcp p > {MIN_SIMHIT_PT_FRACTION}"],
+            [self.simhits["simhit_sensor"] == 20, "z-sensor 20"],
+            [self.simhits["simhit_module"] == 0, "phi-module 0"],
+        ]:
+            mask &= req
+            logger.info(f"* {label:<30} :: {mask.sum():>10}")
+
+        # part 2: doublets
+        doublet_cols = [
+            "file",
+            "i_event", # the event
+            "simhit_system", # the system (IT, OT)
+            "simhit_layer_div_2", # the double layer
+            "simhit_module", # the phi-module
+            "simhit_sensor", # the z-sensor
+        ]
+        lower_mask = mask & (self.simhits["simhit_layer_mod_2"] == 0)
+        upper_mask = mask & (self.simhits["simhit_layer_mod_2"] == 1)
+        logger.info(f"* {'Lower hit':<30} :: {lower_mask.sum():>10}")
+        logger.info(f"* {'Upper hit':<30} :: {upper_mask.sum():>10}")
+
+        # logger.info("Getting lower and upper hits ...")
+        lower = self.simhits[lower_mask].rename(columns={"i_mcp": "i_mcp_lower"})[doublet_cols + ["i_mcp_lower"]]
+        upper = self.simhits[upper_mask].rename(columns={"i_mcp": "i_mcp_upper"})[doublet_cols + ["i_mcp_upper"]]
+        doublets = lower.merge(upper, on=doublet_cols, how="inner")
+        logger.info(f"* {'Doublets':<30} :: {len(doublets):>10}")
+
+        same_mcp = doublets["i_mcp_lower"] == doublets["i_mcp_upper"]
+        logger.info(f"* {'Doublets from same MCP':<30} :: {same_mcp.sum():>10}")
+
+
+    def plot_numbers_for_comparison_background(self, pdf: PdfPages):
+        pass
 
 
     def plot_time(self, pdf: PdfPages):
@@ -332,12 +394,33 @@ class Plotter:
             (self.mcps["mcp_pdg"].isin([MUON, ANTIMUON])) &
             (self.mcps["mcp_q"] != 0) &
             (self.mcps["mcp_pt"] > ONE_POINT_FIVE_GEV) &
-            (self.mcps["mcp_vertex_r"] < ONE_MM) &
-            (np.abs(self.mcps["mcp_vertex_z"]) < ONE_MM) &
-            (self.mcps["mcp_endpoint_r"] > BARREL_TRACKER_MAX_RADIUS) &
+            (self.mcps["mcp_vertex_r"] < ZERO_POINT_ZERO_ONE_MM) &
+            (np.abs(self.mcps["mcp_vertex_z"]) < ZERO_POINT_ZERO_ONE_MM) &
             (np.abs(self.mcps["mcp_eta"]) < BARREL_TRACKER_MAX_ETA)
         )
         return mask
+
+
+    def add_simhit_mcp_features(self):
+        mcp_cols = [
+            "mcp_p",
+            "mcp_pt",
+            "mcp_eta",
+            "mcp_phi",
+            "mcp_pdg",
+            "mcp_q",
+            "mcp_vertex_r",
+            "mcp_vertex_z",
+        ]
+        if not self.signal:
+            raise ValueError("Should not be calling add_simhit_mcp_features for background")
+        self.simhits = self.simhits.merge(
+            self.mcps[["file", "i_event", "i_mcp", *mcp_cols]],
+            on=["file", "i_event", "i_mcp"],
+            how="left",
+            validate="many_to_one",
+        )
+        self.simhits[mcp_cols] = self.simhits[mcp_cols].fillna(0)
 
 
     def add_doublet_mcp_features(self):
@@ -353,11 +436,9 @@ class Plotter:
             "mcp_q",
             "mcp_vertex_r",
             "mcp_vertex_z",
-            "mcp_endpoint_r",
         ]
         if not self.signal:
-            self.doublets[mcp_cols] = 0
-            return
+            raise ValueError("Should not be calling add_doublet_mcp_features for background")
         merged = self.doublets.merge(
             self.mcps[["file", "i_event", "i_mcp", *mcp_cols]],
             left_on=["file", "i_event", "i_mcp_lower"],
@@ -390,13 +471,20 @@ class Plotter:
             (self.doublets["mcp_q"] != 0) &
             (self.doublets["mcp_pt"] > ONE_POINT_FIVE_GEV) &
             (np.abs(self.doublets["mcp_eta"]) < BARREL_TRACKER_MAX_ETA) &
-            (self.doublets["mcp_endpoint_r"] > BARREL_TRACKER_MAX_RADIUS) &
-            (self.doublets["mcp_vertex_r"] < ONE_MM) &
-            (np.abs(self.doublets["mcp_vertex_z"]) < ONE_MM)
+            (self.doublets["mcp_vertex_r"] < ZERO_POINT_ZERO_ONE_MM) &
+            (np.abs(self.doublets["mcp_vertex_z"]) < ZERO_POINT_ZERO_ONE_MM) &
+            np.ones(len(self.doublets), dtype=bool)
         )
 
+        logger.info(f"Doublet efficiency: total doublets: {len(self.doublets)}")
+        logger.info(f"Doublet efficiency: total doublets in baseline: {baseline.sum()}")
+
         # todo: add comment
-        for i_kin, kin in enumerate(["mcp_pt", "mcp_eta", "mcp_phi"]):
+        for i_kin, kin in enumerate([
+            "mcp_pt",
+            "mcp_eta",
+            "mcp_phi"
+        ]):
 
             for system in SYSTEMS:
 
@@ -458,10 +546,11 @@ class Plotter:
 
 def first_exit_mask(doublets: pd.DataFrame) -> pd.Series:
     return (
-        (doublets["simhit_costheta_lower"] > MIN_COSTHETA) &
-        (doublets["simhit_costheta_upper"] > MIN_COSTHETA) &
         (doublets["simhit_t_corrected_lower"] < MAX_TIME) &
         (doublets["simhit_t_corrected_upper"] < MAX_TIME) &
+
+        (doublets["simhit_costheta_lower"] > MIN_COSTHETA) &
+        (doublets["simhit_costheta_upper"] > MIN_COSTHETA) &
         (doublets["simhit_p_lower"] / doublets["mcp_p"] > MIN_SIMHIT_PT_FRACTION) &
         (doublets["simhit_p_upper"] / doublets["mcp_p"] > MIN_SIMHIT_PT_FRACTION)
     )
