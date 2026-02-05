@@ -71,6 +71,7 @@ class Plotter:
             self.plot_doublet_occupancy(pdf)
             if self.signal:
                 self.write_denominator_info(pdf)
+                self.plot_signal_doublet_features(pdf)
                 self.plot_efficiency_vs_kinematics(pdf)
                 self.write_doublet_denominator_info(pdf)
                 self.plot_doublet_quality_efficiency(pdf)
@@ -101,8 +102,8 @@ class Plotter:
             [self.simhits["simhit_t_corrected"] < MAX_TIME, f"corrected t < {MAX_TIME} ns"],
             [self.simhits["simhit_costheta"] > MIN_COSTHETA, f"costheta > {MIN_COSTHETA}"],
             [self.simhits["simhit_p"] / self.simhits["mcp_p"] > MIN_SIMHIT_PT_FRACTION, f"simhit p / mcp p > {MIN_SIMHIT_PT_FRACTION}"],
-            [self.simhits["simhit_sensor"] == 20, "z-sensor 20"],
-            [self.simhits["simhit_module"] == 0, "phi-module 0"],
+            # [self.simhits["simhit_sensor"] == 20, "z-sensor 20"],
+            # [self.simhits["simhit_module"] == 0, "phi-module 0"],
         ]:
             mask &= req
             logger.info(f"* {label:<30} :: {mask.sum():>10}")
@@ -450,6 +451,85 @@ class Plotter:
         self.doublets[mcp_cols] = merged[mcp_cols].where(mask, 0).fillna(0)
 
 
+    def plot_signal_doublet_features(self, pdf: PdfPages):
+        logger.info("Plotting signal doublet features ...")
+        baseline = self.baseline_doublet_mask()
+
+        bins = {
+            "intercept_rz": np.linspace(-50, 50, 101),
+            "dphi": np.linspace(-1.0, 1.0, 201),
+        }
+        xlabel = {
+            "intercept_rz": r"dz in rz-plane [mm]",
+            "dphi": r"dphi in xy-plane [rad]",
+        }
+        formatting = {
+            "intercept_rz": ".1f",
+            "dphi": ".3f",
+        }
+
+        for feature in [
+            "intercept_rz",
+            "dphi",
+        ]:
+
+            for semilogy in [
+                False,
+                True,
+            ]:
+
+                for system in SYSTEMS:
+
+                    for doublelayer in DOUBLELAYERS:
+
+                        logger.info(f"Plotting signal doublet features, system {system}, doublelayer {doublelayer} ...")
+                        layers = [doublelayer * 2, doublelayer * 2 + 1]
+
+                        geo_mask = (
+                            (self.doublets["simhit_system"] == system) &
+                            (self.doublets["simhit_layer_div_2"] == doublelayer)
+                        )
+                        mask = baseline & geo_mask
+
+                        fig, ax = plt.subplots()
+                        ax.hist(
+                            self.doublets[mask][feature],
+                            bins=bins[feature],
+                            histtype="stepfilled",
+                            color="crimson",
+                            edgecolor="black",
+                            linewidth=1.0,
+                            alpha=0.9,
+                        )
+                        if semilogy:
+                            ax.semilogy()
+                        num = mask.sum()
+                        mean = np.mean(self.doublets[mask][feature])
+                        rms = np.sqrt(np.mean((self.doublets[mask][feature] - mean) ** 2))
+                        fmt = formatting[feature]
+                        ax.set_ylim(0.8 if semilogy else 0, None)
+                        ax.set_xlabel(xlabel[feature])
+                        ax.set_ylabel("Doublets")
+                        ax.set_title(f"{NICKNAMES[system]} layers {layers}. N={num}, Mean={mean:{fmt}}, RMS={rms:{fmt}}")
+                        pdf.savefig()
+                        plt.close()
+
+
+
+    def baseline_doublet_mask(self) -> pd.Series:
+        return (
+            first_exit_mask(self.doublets) &
+            (self.doublets["i_mcp_lower"] == self.doublets["i_mcp_upper"]) &
+            (self.doublets["mcp_pdg"].isin([MUON, ANTIMUON])) &
+            (self.doublets["mcp_q"] != 0) &
+            (self.doublets["mcp_pt"] > ONE_POINT_FIVE_GEV) &
+            (np.abs(self.doublets["mcp_eta"]) < BARREL_TRACKER_MAX_ETA) &
+            (self.doublets["mcp_vertex_r"] < ZERO_POINT_ZERO_ONE_MM) &
+            (np.abs(self.doublets["mcp_vertex_z"]) < ZERO_POINT_ZERO_ONE_MM) &
+            np.ones(len(self.doublets), dtype=bool)
+        )
+
+
     def plot_doublet_quality_efficiency(self, pdf: PdfPages):
 
         bins = {
@@ -464,18 +544,7 @@ class Plotter:
         }
 
         # only consider truth-match doublets
-        baseline = (
-            first_exit_mask(self.doublets) &
-            (self.doublets["i_mcp_lower"] == self.doublets["i_mcp_upper"]) &
-            (self.doublets["mcp_pdg"].isin([MUON, ANTIMUON])) &
-            (self.doublets["mcp_q"] != 0) &
-            (self.doublets["mcp_pt"] > ONE_POINT_FIVE_GEV) &
-            (np.abs(self.doublets["mcp_eta"]) < BARREL_TRACKER_MAX_ETA) &
-            (self.doublets["mcp_vertex_r"] < ZERO_POINT_ZERO_ONE_MM) &
-            (np.abs(self.doublets["mcp_vertex_z"]) < ZERO_POINT_ZERO_ONE_MM) &
-            np.ones(len(self.doublets), dtype=bool)
-        )
-
+        baseline = self.baseline_doublet_mask()
         logger.info(f"Doublet efficiency: total doublets: {len(self.doublets)}")
         logger.info(f"Doublet efficiency: total doublets in baseline: {baseline.sum()}")
 
