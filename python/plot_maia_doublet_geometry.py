@@ -181,6 +181,10 @@ def plot_barrel_rz(df: pd.DataFrame, pdf: PdfPages) -> None:
     NSENSORS = get_n_sensors(df)
     print(f"NSENSORS: {NSENSORS}")
 
+    # ETAS_OF_INTEREST = [-0.80, -0.65, -0.35, 1e-9, 0.35, 0.65, 0.80]
+    # ETAS_OF_INTEREST = [1e-9, 0.25, 0.50, 0.75, 1.00]
+    ETAS_OF_INTEREST = [1e-9, 0.2, 0.4, 0.6, 0.8, 1.0]
+
     colors = {
         INNER_TRACKER_BARREL: [
             "green",
@@ -254,6 +258,16 @@ def plot_barrel_rz(df: pd.DataFrame, pdf: PdfPages) -> None:
                 dz, dr = 10, -7 if module_mod_2 == 0 else -2
                 ax.text(z_max + dz, r_avg + dr, f"Module % 2 = {module_mod_2}", ha=ha, va=va, fontsize=3)
 
+        # tan(theta) = r/z
+        for eta in ETAS_OF_INTEREST:
+            r_eta = 1125 # mm
+            r_theta = 1100 # mm
+            theta = 2 * np.arctan(np.exp(-eta))
+            ax.plot([0, rmax / np.tan(theta)], [0, rmax], c="black", alpha=0.2, lw=0.5, ls="-", zorder=0)
+            ax.text(r_theta / np.tan(theta), r_theta, r"$\theta$=" + f"{np.rad2deg(theta):.0f}", ha="right", fontsize=6)
+            ax.text(r_eta / np.tan(theta), r_eta, r"$\eta$=" + f"{eta:.1f}", ha="right", fontsize=6)
+
+        # beautify
         ax.text(0.02, 1.01, '"Sensor" (z-coordinate)', transform=ax.transAxes)
         ax.grid(which="both", linestyle="-", alpha=0.2, c="black", lw=0.5)
         ax.set_axisbelow(True)
