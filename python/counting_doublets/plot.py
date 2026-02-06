@@ -34,7 +34,7 @@ from constants import MUON, ANTIMUON
 from constants import BARREL_TRACKER_MAX_ETA
 from constants import BARREL_TRACKER_MAX_RADIUS
 from constants import ONE_POINT_FIVE_GEV, ONE_MM, ZERO_POINT_ZERO_ONE_MM
-from constants import SYSTEMS, DOUBLELAYERS, LAYERS, NICKNAMES
+from constants import SYSTEMS, DOUBLELAYERS, LAYERS, NICKNAMES, OUTER_TRACKER_BARREL
 from constants import REQ_PASSTHROUGH, REQ_RZ, REQ_XY, REQ_RZ_XY
 from constants import DOUBLET_REQS
 from constants import MIN_COSTHETA, MIN_SIMHIT_PT_FRACTION, MAX_TIME
@@ -69,9 +69,9 @@ class Plotter:
             self.plot_layer_occupancy_2d(pdf)
             self.plot_radius_vs_layer(pdf)
             self.plot_doublet_occupancy(pdf)
+            self.plot_doublet_features(pdf)
             if self.signal:
                 self.write_denominator_info(pdf)
-                self.plot_signal_doublet_features(pdf)
                 self.plot_efficiency_vs_kinematics(pdf)
                 self.write_doublet_denominator_info(pdf)
                 self.plot_doublet_quality_efficiency(pdf)
@@ -133,7 +133,53 @@ class Plotter:
 
 
     def plot_numbers_for_comparison_background(self, pdf: PdfPages):
-        pass
+        # part 1: simhits
+        mask = np.ones(len(self.simhits), dtype=bool)
+        for [req, label] in [
+            [self.simhits["simhit_layer"].isin([0, 1]), "All simhits in layers 0 and 1"],
+            [self.simhits["simhit_sensor"] == 20, "z-sensor 20"],
+            [self.simhits["simhit_module"] == 0, "phi-module 0"],
+        ]:
+            mask &= req
+            logger.info(f"* {label:<30} :: {mask.sum():>10}")
+
+        # part 2: doublets
+        doublet_cols = [
+            "file",
+            "i_event", # the event
+            "simhit_system", # the system (IT, OT)
+            "simhit_layer_div_2", # the double layer
+            "simhit_module", # the phi-module
+            "simhit_sensor", # the z-sensor
+        ]
+        lower_mask = mask & (self.simhits["simhit_layer_mod_2"] == 0)
+        upper_mask = mask & (self.simhits["simhit_layer_mod_2"] == 1)
+        logger.info(f"* {'Lower hit':<30} :: {lower_mask.sum():>10}")
+        logger.info(f"* {'Upper hit':<30} :: {upper_mask.sum():>10}")
+
+        # number of doublets by hand
+        lower = self.simhits[lower_mask][doublet_cols]
+        upper = self.simhits[upper_mask][doublet_cols]
+        doublets = lower.merge(upper, on=doublet_cols, how="inner")
+        logger.info(f"* {'Doublets (by hand)':<30} :: {len(doublets):>10}")
+
+        # number of doublets
+        mask = np.ones(len(self.doublets), dtype=bool)
+        for [req, label] in [
+            [self.doublets["simhit_system"] == OUTER_TRACKER_BARREL, "Doublets in OTB"],
+            [self.doublets["simhit_layer_div_2"] == 0, "Doublets in layers 0 and 1"],
+            [self.doublets["simhit_sensor"] == 20, "z-sensor 20"],
+            [self.doublets["simhit_module"] == 0, "phi-module 0"],
+            [np.abs(self.doublets["intercept_rz"]) < 30, "Doublets with |dz| < 30mm"],
+        ]:
+            mask &= req
+            logger.info(f"* {label:<30} :: {mask.sum():>10}")
+
+        # if mask.sum() < 50:
+        #     # for z in sorted(list(self.doublets[mask]["simhit_z_lower"]), reverse=True):
+        #     #     logger.info(f"lower z = {z}")
+        #     # for dz in sorted(list(np.abs(self.doublets[mask]["intercept_rz"])), reverse=True):
+        #     #     logger.info(f"dz = {dz}")
 
 
     def plot_time(self, pdf: PdfPages):
@@ -451,26 +497,31 @@ class Plotter:
         self.doublets[mcp_cols] = merged[mcp_cols].where(mask, 0).fillna(0)
 
 
-    def plot_signal_doublet_features(self, pdf: PdfPages):
+    def plot_doublet_features(self, pdf: PdfPages):
         logger.info("Plotting signal doublet features ...")
-        baseline = self.baseline_doublet_mask()
+        baseline = self.baseline_doublet_mask() if self.signal else np.ones(len(self.doublets), dtype=bool)
 
         bins = {
-            "intercept_rz": np.linspace(-50, 50, 101),
-            "dphi": np.linspace(-1.0, 1.0, 201),
+            "intercept_rz": np.linspace(-50, 50, 101) if self.signal else np.linspace(-49e3, 49e3, 101),
+            "dphi": np.linspace(-1.0, 1.0, 201) if self.signal else np.linspace(-3.2, 3.2, 201),
+            "dr": np.linspace(0, 400, 101) if self.signal else np.linspace(0, 1500, 101),
         }
         xlabel = {
             "intercept_rz": r"dz in rz-plane [mm]",
             "dphi": r"dphi in xy-plane [rad]",
+            "dr": r"dr in xy-plane [mm]",
         }
         formatting = {
             "intercept_rz": ".1f",
             "dphi": ".3f",
+            "dr": ".0f",
         }
 
+        # 1d histograms
         for feature in [
             "intercept_rz",
             "dphi",
+            "dr",
         ]:
 
             for semilogy in [
@@ -482,7 +533,7 @@ class Plotter:
 
                     for doublelayer in DOUBLELAYERS:
 
-                        logger.info(f"Plotting signal doublet features, system {system}, doublelayer {doublelayer} ...")
+                        logger.info(f"Plotting signal doublet feature {feature}, system {system}, doublelayer {doublelayer} ...")
                         layers = [doublelayer * 2, doublelayer * 2 + 1]
 
                         geo_mask = (
@@ -511,6 +562,47 @@ class Plotter:
                         ax.set_xlabel(xlabel[feature])
                         ax.set_ylabel("Doublets")
                         ax.set_title(f"{NICKNAMES[system]} layers {layers}. N={num}, Mean={mean:{fmt}}, RMS={rms:{fmt}}")
+                        pdf.savefig()
+                        plt.close()
+
+
+        # 2d histograms
+        for feature_x, feature_y in [
+            ("dphi", "dr"),
+        ]:
+
+            for lognorm in [
+                False,
+                True,
+            ]:
+
+                for system in SYSTEMS:
+
+                    for doublelayer in DOUBLELAYERS:
+
+                        logger.info(f"Plotting signal doublet features {feature_x} vs {feature_y}, system {system}, doublelayer {doublelayer} ...")
+                        layers = [doublelayer * 2, doublelayer * 2 + 1]
+
+                        geo_mask = (
+                            (self.doublets["simhit_system"] == system) &
+                            (self.doublets["simhit_layer_div_2"] == doublelayer)
+                        )
+                        mask = baseline & geo_mask
+
+                        fig, ax = plt.subplots()
+                        _, _, _, im = ax.hist2d(
+                            self.doublets[mask][feature_x],
+                            self.doublets[mask][feature_y],
+                            bins=[bins[feature_x], bins[feature_y]],
+                            cmap="gist_rainbow",
+                            cmin=0.5,
+                            norm=colors.LogNorm(vmin=0.9) if lognorm else None,
+                        )
+                        fig.colorbar(im, ax=ax, label="Doublets", pad=0.01)
+                        num = mask.sum()
+                        ax.set_xlabel(xlabel[feature_x])
+                        ax.set_ylabel(xlabel[feature_y])
+                        ax.set_title(f"{NICKNAMES[system]} layers {layers}. N={num}")
                         pdf.savefig()
                         plt.close()
 
