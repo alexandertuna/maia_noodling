@@ -81,13 +81,19 @@ class DoubletMaker:
                               doublets["simhit_r_upper"] - doublets["simhit_r_lower"])
             doublets["intercept_rz"] = doublets["simhit_z_lower"] - doublets["simhit_r_lower"] * slope
 
-            # xy
+            # xy: dphi
             phi_local = np.arctan2(doublets["simhit_y_upper"] - doublets["simhit_y_lower"],
                                    doublets["simhit_x_upper"] - doublets["simhit_x_lower"])
             phi_global = np.arctan2((doublets["simhit_y_lower"] + doublets["simhit_y_upper"]) / 2.0,
                                     (doublets["simhit_x_lower"] + doublets["simhit_x_upper"]) / 2.0)
             doublets["dphi"] = phi_local - phi_global
             doublets["dphi"] = (doublets["dphi"] + np.pi) % (2 * np.pi) - np.pi
+
+            # xy: dr at point of closest approach to origin
+            slope_xy = np.divide(doublets["simhit_y_upper"] - doublets["simhit_y_lower"],
+                                 doublets["simhit_x_upper"] - doublets["simhit_x_lower"])
+            intercept_xy = doublets["simhit_y_lower"] - slope_xy * doublets["simhit_x_lower"]
+            doublets["dr"] = np.abs(intercept_xy) / np.sqrt(1 + slope_xy**2)
 
             doublets_list.append(doublets)
 
