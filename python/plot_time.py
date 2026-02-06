@@ -7,8 +7,8 @@ from matplotlib.backends.backend_pdf import PdfPages
 plt.rcParams.update({"font.size": 16})
 
 # FILE_SIM = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2025_10_17_10h40m00s/BIB10TeV/sim_mm/BIB_sim_1.slcio"
-FILE_SIM = "/ceph/users/atuna/work/maia/maia_noodling/samples/v00/neutrinoGun/neutrinoGun_digi_0.slcio"
-FILE_DIGI = "/ceph/users/atuna/work/maia/maia_noodling/samples/v00/neutrinoGun/neutrinoGun_digi_0.slcio"
+FILE_SIM = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2026_01_21_13h10m00s/neutrinoGun_digi_0.slcio"
+FILE_DIGI = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2026_01_21_13h10m00s/neutrinoGun_digi_0.slcio"
 
 COLL_SIM = "InnerTrackerBarrelCollection"
 COLL_DIGI = "IBTrackerHits"
@@ -17,10 +17,10 @@ SPEED_OF_LIGHT = 299.792458  # mm/ns
 
 def main():
     df_sim = get_dataframe(FILE_SIM, COLL_SIM)
-    df_digi = get_dataframe(FILE_DIGI, COLL_DIGI)
+    # df_digi = get_dataframe(FILE_DIGI, COLL_DIGI)
     with PdfPages("time_plots.pdf") as pdf:
-        plot(df_sim, f"sim hits ({COLL_SIM})", pdf)
-        plot(df_digi, f"reco hits ({COLL_DIGI})", pdf)
+        plot(df_sim, f"sim hits, {COLL_SIM}", pdf)
+        # plot(df_digi, f"reco hits, {COLL_DIGI}", pdf)
 
 
 def get_dataframe(fname: str, collection: str) -> pd.DataFrame:
@@ -54,10 +54,17 @@ def plot(df: pd.DataFrame, label: str, pdf: PdfPages):
         alpha=0.9,
         color=color,
     )
+    for xline in [-0.36, 0.36]:
+        ax.axvline(
+            xline,
+            color="red",
+            linestyle="-",
+            linewidth=1.0,
+        )
     ax.set_xlabel("Hit time, corrected for propagation (ns)")
     ax.set_ylabel("Counts")
     ax.set_ylim(0.8, None)
-    ax.set_title(f"Hit time: {label}")
+    ax.set_title(f"Neutrino gun, {label}")
     ax.minorticks_on()
     ax.grid(which="both")
     ax.set_axisbelow(True)
