@@ -2,7 +2,6 @@ import pyLCIO
 import argparse
 import os
 import glob
-from tqdm import tqdm
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -34,11 +33,10 @@ def main():
     fnames = get_inputs(ops.i)
 
     hits = get_hits(fnames)
-    hits["r"] = np.sqrt(hits["x"]**2 + hits["y"]**2)
     with pd.option_context("display.min_rows", 100,
                            "display.max_rows", 100,
                            ):
-        print(hits)
+        print(hits[ (hits["r"] > 140) & (hits["r"] < 160) ])
 
     with PdfPages("output_sim.pdf") as pdf:
         make_plots(hits, pdf)
@@ -63,7 +61,6 @@ def get_hits(fnames: list[str]) -> pd.DataFrame:
         reader = pyLCIO.IOIMPL.LCFactory.getInstance().createLCReader()
         reader.open(fname)
     
-        # for i_event, event in enumerate(tqdm(reader)):
         for i_event, event in enumerate(reader):
 
             print(f"Processing event {i_event}")
@@ -78,11 +75,12 @@ def get_hits(fnames: list[str]) -> pd.DataFrame:
 
                 col = event.getCollection(colname)
 
-                for i_hit, hit in enumerate(tqdm(col)):
+                for i_hit, hit in enumerate(col):
                     # if i_hit > 1e6:
                     #     break
 
                     hits.append( [
+                        i_event,
                         hit.getPositionVec().X(),
                         hit.getPositionVec().Y(),
                         hit.getPositionVec().Z(),
@@ -91,11 +89,16 @@ def get_hits(fnames: list[str]) -> pd.DataFrame:
 
     if len(hits) == 0:
         raise Exception("No hits found!")
-    return pd.DataFrame(np.array(hits), columns=["x", "y", "z", "e"])
+
+    hits = pd.DataFrame(np.array(hits), columns=["event", "x", "y", "z", "e"])
+    hits["r"] = np.sqrt(hits["x"]**2 + hits["y"]**2)
+
+    return hits
 
 
 def make_plots(df: pd.DataFrame, pdf: PdfPages) -> None:
     rmax = df["r"].max() * 1.1
+    zmax = df["z"].max() * 1.1
 
     # xy plot
     hist = True
@@ -120,6 +123,34 @@ def make_plots(df: pd.DataFrame, pdf: PdfPages) -> None:
     fig.subplots_adjust(right=0.98, left=0.16, bottom=0.09, top=0.95)
     pdf.savefig()
     plt.close()
+
+    # rz plot
+    hist = True
+    fig, ax = plt.subplots(figsize=(8, 8))
+    if hist:
+        _, _, _, im = ax.hist2d(df["z"],
+                                df["r"],
+                                bins=[
+                                    np.linspace(-zmax, zmax, 501),
+                                    np.linspace(0, rmax, 501),
+                                ],
+                                cmin=0.5,
+        )
+        fig.colorbar(im, ax=ax, label="")
+    else:
+        ax.scatter(df["z"], df["r"], color=get_color(), s=1)
+    ax.tick_params(top=True, right=True, direction="in")
+    ax.set_xlabel("Sim. hit z [mm]")
+    ax.set_ylabel("Sim. hit r [mm]")
+    ax.set_xlim(-zmax, zmax)
+    ax.set_ylim(0, rmax)
+    if len(TRACKERS) == 1:
+        colname = TRACKERS[0]
+        ax.set_title(f"{colname} sim. hits")
+    fig.subplots_adjust(right=0.98, left=0.16, bottom=0.09, top=0.95)
+    pdf.savefig()
+    plt.close()
+
 
 def get_color() -> str:
     if len(TRACKERS) == 1:
