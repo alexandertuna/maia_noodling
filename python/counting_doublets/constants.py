@@ -69,6 +69,10 @@ DOUBLELAYERS = [
     # 2,
     # 3,
 ]
+
+DZ_CUT = 22 # mm
+DR_CUT = 260 # mm
+
 REQ_PASSTHROUGH = "no cuts"
 REQ_RZ = "rz req."
 REQ_XY = "xy req."

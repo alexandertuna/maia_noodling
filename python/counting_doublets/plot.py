@@ -35,6 +35,7 @@ from constants import BARREL_TRACKER_MAX_ETA
 from constants import BARREL_TRACKER_MAX_RADIUS
 from constants import ONE_POINT_FIVE_GEV, ONE_MM, ZERO_POINT_ZERO_ONE_MM
 from constants import SYSTEMS, DOUBLELAYERS, LAYERS, NICKNAMES, OUTER_TRACKER_BARREL
+from constants import DZ_CUT, DR_CUT
 from constants import REQ_PASSTHROUGH, REQ_RZ, REQ_XY, REQ_RZ_XY
 from constants import DOUBLET_REQS
 from constants import MIN_COSTHETA, MIN_SIMHIT_PT_FRACTION, MAX_TIME
@@ -137,8 +138,8 @@ class Plotter:
         mask = np.ones(len(self.simhits), dtype=bool)
         for [req, label] in [
             [self.simhits["simhit_layer"].isin([0, 1]), "All simhits in layers 0 and 1"],
-            [self.simhits["simhit_sensor"] == 20, "z-sensor 20"],
-            [self.simhits["simhit_module"] == 0, "phi-module 0"],
+            # [self.simhits["simhit_sensor"] == 20, "z-sensor 20"],
+            # [self.simhits["simhit_module"] == 0, "phi-module 0"],
         ]:
             mask &= req
             logger.info(f"* {label:<30} :: {mask.sum():>10}")
@@ -170,7 +171,8 @@ class Plotter:
             [self.doublets["simhit_layer_div_2"] == 0, "Doublets in layers 0 and 1"],
             [self.doublets["simhit_sensor"] == 20, "z-sensor 20"],
             [self.doublets["simhit_module"] == 0, "phi-module 0"],
-            [np.abs(self.doublets["intercept_rz"]) < 30, "Doublets with |dz| < 30mm"],
+            [np.abs(self.doublets["intercept_rz"]) < DZ_CUT, f"Doublets with |dz| < {DZ_CUT}mm"],
+            [np.abs(self.doublets["dr"]) < DR_CUT, f"Doublets with |dr| < {DR_CUT}mm"],
         ]:
             mask &= req
             logger.info(f"* {label:<30} :: {mask.sum():>10}")
@@ -298,16 +300,16 @@ class Plotter:
             text = "No requirement"
             mask = np.ones(len(self.doublets), dtype=bool)
         elif req == REQ_XY:
-            text = "|dphi| < 0.55rad"
-            mask = np.abs(self.doublets["dphi"]) < 0.55
+            text = f"|dr| < {DR_CUT}mm"
+            mask = np.abs(self.doublets["dr"]) < DR_CUT
         elif req == REQ_RZ:
-            text = "|dz| < 60mm"
-            mask = np.abs(self.doublets["intercept_rz"]) < 60
+            text = f"|dz| < {DZ_CUT}mm"
+            mask = np.abs(self.doublets["intercept_rz"]) < DZ_CUT
         elif req == REQ_RZ_XY:
-            text = "|dphi| < 0.55rad, |dz| < 60mm"
+            text = f"|dr| < {DR_CUT}mm, |dz| < {DZ_CUT}mm"
             mask = (
-                (np.abs(self.doublets["intercept_rz"]) < 60) &
-                (np.abs(self.doublets["dphi"]) < 0.55)
+                (np.abs(self.doublets["intercept_rz"]) < DZ_CUT) &
+                (np.abs(self.doublets["dr"]) < DR_CUT)
             )
         else:
             raise ValueError(f"Unknown requirement: {req}")
