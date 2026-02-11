@@ -8,7 +8,8 @@ from pathlib import Path
 
 CODE = "/ceph/users/atuna/work/maia"
 COMPACT = f"{CODE}/k4geoInsideBounds/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
-STEER_SIM = f"{CODE}/SteeringMacros/Sim/sim_steer_GEN_CONDOR.py"
+# STEER_SIM = f"{CODE}/SteeringMacros/Sim/sim_steer_GEN_CONDOR.py"
+STEER_SIM = f"sim_steer_GEN_CONDOR.py"
 STEER_RECO = f"{CODE}/SteeringMacros/k4Reco/steer_reco.py"
 STEER_WHIZARD_HBB = f"{CODE}/mucoll-benchmarks/generation/signal/whizard/mumu_H_bb_10TeV.sin"
 
