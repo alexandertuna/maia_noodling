@@ -157,6 +157,12 @@ def convert_one_file(
                 # ONLY OT LAYERS 0 AND 1 FOR NOW
                 if (np.right_shift(hit.getCellID0(), 7) & 0b11_1111) not in [0, 1]:
                     continue
+                # module 0 only, sensor 20 only?
+                # if (np.right_shift(hit.getCellID0(), 13) & 0b111_1111_1111) != 0:
+                #     continue
+                # if (np.right_shift(hit.getCellID0(), 24) & 0b1111_1111) != 20:
+                #     continue
+
 
                 # associated MCParticle
                 mcp = hit.getMCParticle()
