@@ -169,8 +169,8 @@ class Plotter:
         for [req, label] in [
             [self.doublets["simhit_system"] == OUTER_TRACKER_BARREL, "Doublets in OTB"],
             [self.doublets["simhit_layer_div_2"] == 0, "Doublets in layers 0 and 1"],
-            [self.doublets["simhit_sensor"] == 20, "z-sensor 20"],
-            [self.doublets["simhit_module"] == 0, "phi-module 0"],
+            # [self.doublets["simhit_sensor"] == 20, "z-sensor 20"],
+            # [self.doublets["simhit_module"] == 0, "phi-module 0"],
             [np.abs(self.doublets["intercept_rz"]) < DZ_CUT, f"Doublets with |dz| < {DZ_CUT}mm"],
             [np.abs(self.doublets["dr"]) < DR_CUT, f"Doublets with |dr| < {DR_CUT}mm"],
         ]:
