@@ -13,6 +13,7 @@ from constants import EPSILON, MCPARTICLE, PARTICLES_OF_INTEREST, SPEED_OF_LIGHT
 from constants import MM_TO_CM, CM_TO_MM
 from constants import XML
 from constants import COLLECTIONS
+from constants import BYTE_TO_MB
 
 _detector = None
 _surfman = None
@@ -24,9 +25,11 @@ class SlcioToHitsDataFrame:
             self,
             slcio_file_paths: list[str],
             load_geometry: bool,
+            signal: bool,
         ):
         self.slcio_file_paths = slcio_file_paths
         self.load_geometry = load_geometry
+        self.signal = signal
 
 
     def convert(self) -> pd.DataFrame:
@@ -34,6 +37,8 @@ class SlcioToHitsDataFrame:
         mcps = sort_mcps(mcps)
         simhits = sort_simhits(simhits)
         announce_inside_bounds(simhits)
+        memory_usage = simhits.memory_usage(deep=True).sum() * BYTE_TO_MB
+        logger.info(f"simhits.memory_usage: {memory_usage:.1f} MB")
         return mcps, simhits
 
 
@@ -43,11 +48,15 @@ class SlcioToHitsDataFrame:
         processes = min(mp.cpu_count(), len(self.slcio_file_paths))
         with mp.Pool(processes=processes, initializer=initializer) as pool:
             n_map = len(self.slcio_file_paths)
+            file_numbers = list(range(n_map))
             load_geometry = [self.load_geometry]*n_map
+            signal = [self.signal]*n_map
             results = pool.starmap(
                 convert_one_file,
                 zip(self.slcio_file_paths,
+                    file_numbers,
                     load_geometry,
+                    signal,
                 )
             )
         logger.info("Merging DataFrames ...")
@@ -80,7 +89,9 @@ def init_worker():
 
 def convert_one_file(
         slcio_file_path: str,
+        file_number: int,
         load_geometry: bool,
+        signal: bool,
     ) -> pd.DataFrame:
 
     # import here to avoid:
@@ -91,9 +102,6 @@ def convert_one_file(
     if load_geometry:
         import dd4hep
         import DDRec
-
-    # check if signal
-    signal = SIGNAL in os.path.basename(slcio_file_path)
 
     # open the SLCIO file
     reader = pyLCIO.IOIMPL.LCFactory.getInstance().createLCReader()
@@ -186,10 +194,9 @@ def convert_one_file(
 
                 # record the hit info
                 simhits.append({
-                    'file': os.path.basename(slcio_file_path),
+                    'file': file_number, # os.path.basename(slcio_file_path),
                     'i_event': i_event,
                     'i_mcp': i_mcp,
-                    'simhit_signal': signal,
                     'simhit_x': hit.getPosition()[0],
                     'simhit_y': hit.getPosition()[1],
                     'simhit_z': hit.getPosition()[2],
@@ -198,7 +205,7 @@ def convert_one_file(
                     'simhit_t_corrected': hit.getTime() - (np.sqrt(hit.getPosition()[0]**2 + \
                                                                    hit.getPosition()[1]**2 + \
                                                                    hit.getPosition()[2]**2) / SPEED_OF_LIGHT),
-                    # 'simhit_t': hit.getTime(),
+                    # 'simhit_pdg': hit.getMCParticle().getPDG(),
                 })
                 if signal:
                     simhits[-1].update({
@@ -207,6 +214,7 @@ def convert_one_file(
                         'simhit_pz': hit.getMomentum()[2],
                         'simhit_pathlength': hit.getPathLength(),
                         'simhit_distance': distance,
+                        'simhit_t': hit.getTime(),
                         'simhit_e': hit.getEDep(),
                     })
                     # 'simhit_pathlength': hit.getPathLength(),
@@ -225,7 +233,7 @@ def convert_one_file(
     # And postprocess
     logger.info("Postprocessing DataFrames ...")
     mcps = postprocess_mcps(mcps)
-    simhits = postprocess_simhits(simhits)
+    simhits = postprocess_simhits(simhits, signal)
 
     return mcps, simhits
 
@@ -255,8 +263,7 @@ def postprocess_mcps(df: pd.DataFrame) -> pd.DataFrame:
     return df[sorted(df.columns)]
 
 
-def postprocess_simhits(df: pd.DataFrame) -> pd.DataFrame:
-    signal = df["simhit_signal"].iloc[0]
+def postprocess_simhits(df: pd.DataFrame, signal: bool) -> pd.DataFrame:
     logger.info(f"Postprocessing DataFrame, signal={signal} ...")
     df["simhit_r"] = np.sqrt(df["simhit_x"]**2 + df["simhit_y"]**2)
     df["simhit_system"] = np.right_shift(df["simhit_cellid0"], 0) & 0b1_1111
@@ -266,7 +273,7 @@ def postprocess_simhits(df: pd.DataFrame) -> pd.DataFrame:
     df["simhit_sensor"] = np.right_shift(df["simhit_cellid0"], 24) & 0b1111_1111
     df["simhit_layer_div_2"] = df["simhit_layer"] // 2
     df["simhit_layer_mod_2"] = df["simhit_layer"] % 2
-    df["simhit_theta"] = np.maximum(np.arctan2(df["simhit_r"], df["simhit_z"]), EPSILON)
+    # df["simhit_theta"] = np.maximum(np.arctan2(df["simhit_r"], df["simhit_z"]), EPSILON)
     # df["simhit_eta"] = -np.log(np.tan(df["simhit_theta"] / 2))
     # df["simhit_phi"] = np.arctan2(df["simhit_y"], df["simhit_x"])
     # df["simhit_pt"] = np.sqrt(df["simhit_px"]**2 + df["simhit_py"]**2)
@@ -286,6 +293,20 @@ def postprocess_simhits(df: pd.DataFrame) -> pd.DataFrame:
             "simhit_R",
         ]
         df.drop(columns=drop_cols, inplace=True)
+
+    # downcast to save memory
+    df["file"] = df["file"].astype(np.uint32)
+    df["i_event"] = df["i_event"].astype(np.uint32)
+    df["i_mcp"] = df["i_mcp"].astype(np.uint32)
+    df["simhit_cellid0"] = df["simhit_cellid0"].astype(np.uint32)
+    df["simhit_inside_bounds"] = df["simhit_inside_bounds"].astype(np.uint8)
+    df["simhit_side"] = df["simhit_side"].astype(np.uint8)
+    df["simhit_system"] = df["simhit_system"].astype(np.uint8)
+    df["simhit_layer"] = df["simhit_layer"].astype(np.uint8)
+    df["simhit_layer_div_2"] = df["simhit_layer_div_2"].astype(np.uint8)
+    df["simhit_layer_mod_2"] = df["simhit_layer_mod_2"].astype(np.uint8)
+    df["simhit_module"] = df["simhit_module"].astype(np.uint16)
+    df["simhit_sensor"] = df["simhit_sensor"].astype(np.uint16)
 
     # sort columns alphabetically
     return df[sorted(df.columns)]
