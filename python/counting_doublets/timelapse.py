@@ -5,6 +5,8 @@ from matplotlib.colors import Normalize
 from matplotlib.animation import FuncAnimation, PillowWriter
 from matplotlib import rcParams
 
+MUON = 13
+
 class Timelapse:
 
     def __init__(self, df: pd.DataFrame, event: int, gif: str):
@@ -43,23 +45,31 @@ class Timelapse:
         start_t = -5
         delta_t = 1 # ns
         fig, ax = plt.subplots(figsize=(8,8))
-        ax.set_xlabel("Sim. hit z (mm)")
-        ax.set_ylabel("Sim. hit r (mm)")
+        # ax.set_xlabel("Sim. hit z (mm)")
+        # ax.set_ylabel("Sim. hit r (mm)")
+        ax.set_xlabel("Sim. hit x (mm)")
+        ax.set_ylabel("Sim. hit y (mm)")
         ax.grid()
         hist2d = True
 
         if hist2d:
             bins = [
-                np.linspace(-1600, 1600, 320),
-                np.linspace(0, 1600, 320)
+                # np.linspace(-1600, 1600, 320),
+                # np.linspace(0, 1600, 320)
+                # np.linspace(-1600, 1600, 320),
+                # np.linspace(-1600, 1600, 320),
+                np.linspace(810, 830, 320),
+                np.linspace(-40, 40, 320),
             ]
-            cmin, vmax = 0.5, 50
+            cmin, vmax = 0.5, 10
             norm = Normalize(vmin=cmin, vmax=vmax)
             _, xedges, yedges, quad = ax.hist2d([], [], bins=bins, cmap="gist_rainbow", norm=norm)
             fig.colorbar(quad, ax=ax, pad=0.01, label="Sim. hits")
         else:
+            # ax.set_xlim([-1600, 1600])
+            # ax.set_ylim([0, 1600])
             ax.set_xlim([-1600, 1600])
-            ax.set_ylim([0, 1600])
+            ax.set_ylim([-1600, 1600])
             scat = ax.scatter([], [])
 
         def update(frame):
@@ -67,10 +77,14 @@ class Timelapse:
             tmax = tmin + delta_t
             ax.set_title(f"Hits with time in [{tmin}, {tmax}] ns")
             ax.set_axisbelow(True)
-            subset = self.df[(self.df["simhit_t"] >= tmin) & (self.df["simhit_t"] < tmax)]
+            mask = (self.df["simhit_t"] >= tmin) & (self.df["simhit_t"] < tmax)
+            mask &= (np.abs(self.df["simhit_pdg"]) != MUON)
+            subset = self.df[mask]
             if hist2d:
-                x = subset["simhit_z"].to_numpy()
-                y = subset["simhit_r"].to_numpy()
+                # x = subset["simhit_z"].to_numpy()
+                # y = subset["simhit_r"].to_numpy()
+                x = subset["simhit_x"].to_numpy()
+                y = subset["simhit_y"].to_numpy()
                 H, _, _ = np.histogram2d(x, y, bins=[xedges, yedges])
                 H_masked = np.ma.masked_less(H, cmin)
                 if frame == 10:
@@ -83,7 +97,8 @@ class Timelapse:
                 # quad.set_clim(vmin=0, vmax=max(1, H.max()))
                 return (quad,)
             else:
-                scat.set_offsets(subset[["simhit_z", "simhit_r"]].values)
+                # scat.set_offsets(subset[["simhit_z", "simhit_r"]].values)
+                scat.set_offsets(subset[["simhit_x", "simhit_y"]].values)
                 return (scat, )
 
         ani = FuncAnimation(fig, update, frames=26, blit=True)
