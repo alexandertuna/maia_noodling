@@ -72,19 +72,6 @@ def main():
         cut_doublets=ops.cut_doublets,
         simhits=simhits,
     ).df
-    # if not signal:
-    #     # drop simhit_r_upper, ... for a speedup
-    #     logger.info("Dropping simhit_{x,y,z}_{upper,lower} columns from doublets ...")
-    #     doublets.drop(columns=[
-    #         "simhit_r_upper",
-    #         "simhit_r_lower",
-    #         "simhit_x_upper",
-    #         "simhit_x_lower",
-    #         "simhit_y_upper",
-    #         "simhit_y_lower",
-    #         "simhit_z_upper",
-    #         "simhit_z_lower",
-    #     ], inplace=True)
 
     # plot stuff
     logger.info("Creating plots ...")
