@@ -159,10 +159,10 @@ class Plotter:
         logger.info(f"* {'Upper hit':<30} :: {upper_mask.sum():>10}")
 
         # number of doublets by hand
-        lower = self.simhits[lower_mask][doublet_cols]
-        upper = self.simhits[upper_mask][doublet_cols]
-        doublets = lower.merge(upper, on=doublet_cols, how="inner")
-        logger.info(f"* {'Doublets (by hand)':<30} :: {len(doublets):>10}")
+        # lower = self.simhits[lower_mask][doublet_cols]
+        # upper = self.simhits[upper_mask][doublet_cols]
+        # doublets = lower.merge(upper, on=doublet_cols, how="inner")
+        # logger.info(f"* {'Doublets (by hand)':<30} :: {len(doublets):>10}")
 
         # number of doublets
         mask = np.ones(len(self.doublets), dtype=bool)
