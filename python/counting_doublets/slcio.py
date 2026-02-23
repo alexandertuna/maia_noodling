@@ -28,12 +28,14 @@ class SlcioToHitsDataFrame:
             signal: bool,
             inner: bool,
             outer: bool,
+            layers: list[int],
         ):
         self.slcio_file_paths = slcio_file_paths
         self.load_geometry = load_geometry
         self.signal = signal
         self.inner = inner
         self.outer = outer
+        self.layers = layers
 
 
     def convert(self) -> pd.DataFrame:
@@ -57,6 +59,7 @@ class SlcioToHitsDataFrame:
             signal = [self.signal]*n_map
             inner = [self.inner]*n_map
             outer = [self.outer]*n_map
+            layers = [self.layers]*n_map
             results = pool.starmap(
                 convert_one_file,
                 zip(self.slcio_file_paths,
@@ -65,12 +68,13 @@ class SlcioToHitsDataFrame:
                     signal,
                     inner,
                     outer,
+                    layers,
                 )
             )
         logger.info("Merging DataFrames ...")
         return [
-            pd.concat([res[0] for res in results], ignore_index=True),
-            pd.concat([res[1] for res in results], ignore_index=True),
+            pd.concat([mcps for (mcps, simhits) in results], ignore_index=True),
+            pd.concat([simhits for (mcps, simhits) in results], ignore_index=True),
         ]
 
 
@@ -102,6 +106,7 @@ def convert_one_file(
         signal: bool,
         inner: bool,
         outer: bool,
+        layers: list[int],
     ) -> tuple[pd.DataFrame, pd.DataFrame]:
 
     # import here to avoid:
@@ -180,8 +185,9 @@ def convert_one_file(
                                 f"event {i_event} collection {collection} "
                                 f"hit {i_hit}/{n_hit} ...")
 
-                # ONLY OT LAYERS 0 AND 1 FOR NOW
-                if (np.right_shift(hit.getCellID0(), 7) & 0b11_1111) not in [0, 1]:
+                # consider a particular set of layers
+                layer = np.right_shift(hit.getCellID0(), 7) & 0b11_1111
+                if layer not in layers:
                     continue
                 # module 0 only, sensor 20 only?
                 # if (np.right_shift(hit.getCellID0(), 13) & 0b111_1111_1111) != 0:
