@@ -244,6 +244,9 @@ class Plotter:
                     (self.simhits["simhit_layer"] == layer)
                 )
                 logger.info(f"Occupancy of {NICKNAMES[system]} layer {layer}: {mask.sum()} sim hits")
+                if mask.sum() == 0:
+                    logger.info(f"No sim hits in {NICKNAMES[system]} layer {layer}, skipping 2d occupancy plot")
+                    continue
                 simhits = self.simhits[mask]
                 bins = [
                     np.arange(-0.5, simhits["simhit_module"].max()+1.5, 1),
@@ -334,6 +337,10 @@ class Plotter:
                         (self.doublets["simhit_layer_div_2"] == doublelayer) &
                         req_mask
                     )
+                    if mask.sum() == 0:
+                        logger.info(f"No doublets in {NICKNAMES[system]} double layer {doublelayer} passing {req}, skipping occupancy plot")
+                        continue
+
                     doublets = self.doublets[mask]
                     bins = [
                         np.arange(-0.5, doublets["simhit_module"].max()+1.5, 1),
@@ -543,6 +550,9 @@ class Plotter:
                             (self.doublets["simhit_layer_div_2"] == doublelayer)
                         )
                         mask = baseline & geo_mask
+                        if mask.sum() == 0:
+                            logger.info(f"No doublets in {NICKNAMES[system]} double layer {doublelayer} passing baseline, skipping feature plot")
+                            continue
 
                         fig, ax = plt.subplots()
                         ax.hist(
@@ -590,7 +600,9 @@ class Plotter:
                             (self.doublets["simhit_layer_div_2"] == doublelayer)
                         )
                         mask = baseline & geo_mask
-
+                        if mask.sum() == 0:
+                            logger.info(f"No doublets in {NICKNAMES[system]} double layer {doublelayer} passing baseline, skipping feature plot")
+                            continue
                         fig, ax = plt.subplots()
                         _, _, _, im = ax.hist2d(
                             self.doublets[mask][feature_x],
