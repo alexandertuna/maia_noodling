@@ -59,6 +59,11 @@ def main():
     geometry = ops.geometry
     signal = any(SIGNAL in os.path.basename(fname) for fname in fnames)
     logger.info(f"Detected {'signal' if signal else 'background'} files")
+    logger.info(f"Found {len(fnames)} files")
+    logger.info(f"Inner tracker: {ops.inner}")
+    logger.info(f"Outer tracker: {ops.outer}")
+    logger.info(f"Layers to consider: {ops.layers}")
+    logger.info(f"Cut doublets: {ops.cut_doublets}")
 
     # convert slcio to hits dataframe
     converter = SlcioToHitsDataFrame(slcio_file_paths=fnames,
