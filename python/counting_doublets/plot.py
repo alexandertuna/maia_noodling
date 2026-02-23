@@ -166,13 +166,14 @@ class Plotter:
 
         # number of doublets
         mask = np.ones(len(self.doublets), dtype=bool)
+        the_doublelayer = 0
         for [req, label] in [
             [self.doublets["simhit_system"] == OUTER_TRACKER_BARREL, "Doublets in OTB"],
-            [self.doublets["simhit_layer_div_2"] == 0, "Doublets in layers 0 and 1"],
+            [self.doublets["simhit_layer_div_2"] == the_doublelayer, "Doublets in layers 0 and 1"],
             # [self.doublets["simhit_sensor"] == 20, "z-sensor 20"],
             # [self.doublets["simhit_module"] == 0, "phi-module 0"],
-            [np.abs(self.doublets["intercept_rz"]) < DZ_CUT, f"Doublets with |dz| < {DZ_CUT}mm"],
-            [np.abs(self.doublets["dr"]) < DR_CUT, f"Doublets with |dr| < {DR_CUT}mm"],
+            [np.abs(self.doublets["intercept_rz"]) < DZ_CUT[the_doublelayer], f"Doublets with |dz| < {DZ_CUT[the_doublelayer]}mm"],
+            [np.abs(self.doublets["dr"]) < DR_CUT[the_doublelayer], f"Doublets with |dr| < {DR_CUT[the_doublelayer]}mm"],
         ]:
             mask &= req
             logger.info(f"* {label:<30} :: {mask.sum():>10}")
@@ -297,22 +298,22 @@ class Plotter:
             plt.close()
 
 
-    def requirements(self, req: str) -> tuple[str, pd.DataFrame]:
+    def requirements(self, req: str, doublelayer: int) -> tuple[str, pd.DataFrame]:
         # return description and mask
         if req == REQ_PASSTHROUGH:
             text = "No requirement"
             mask = np.ones(len(self.doublets), dtype=bool)
         elif req == REQ_XY:
-            text = f"|dr| < {DR_CUT}mm"
-            mask = np.abs(self.doublets["dr"]) < DR_CUT
+            text = f"|dr| < {DR_CUT[doublelayer]}mm"
+            mask = np.abs(self.doublets["dr"]) < DR_CUT[doublelayer]
         elif req == REQ_RZ:
-            text = f"|dz| < {DZ_CUT}mm"
-            mask = np.abs(self.doublets["intercept_rz"]) < DZ_CUT
+            text = f"|dz| < {DZ_CUT[doublelayer]}mm"
+            mask = np.abs(self.doublets["intercept_rz"]) < DZ_CUT[doublelayer]
         elif req == REQ_RZ_XY:
-            text = f"|dr| < {DR_CUT}mm, |dz| < {DZ_CUT}mm"
+            text = f"|dr| < {DR_CUT[doublelayer]}mm, |dz| < {DZ_CUT[doublelayer]}mm"
             mask = (
-                (np.abs(self.doublets["intercept_rz"]) < DZ_CUT) &
-                (np.abs(self.doublets["dr"]) < DR_CUT)
+                (np.abs(self.doublets["intercept_rz"]) < DZ_CUT[doublelayer]) &
+                (np.abs(self.doublets["dr"]) < DR_CUT[doublelayer])
             )
         else:
             raise ValueError(f"Unknown requirement: {req}")
@@ -324,7 +325,7 @@ class Plotter:
             for doublelayer in DOUBLELAYERS:
                 zmax = None
                 for req in DOUBLET_REQS:
-                    req_text, req_mask = self.requirements(req)
+                    req_text, req_mask = self.requirements(req, doublelayer)
                     logger.info(f"Occupancy of {NICKNAMES[system]} doublelayer {doublelayer}, {req}: {req_mask.sum()} doublets")
 
                     # skip these plots to save time
@@ -512,8 +513,8 @@ class Plotter:
 
         bins = {
             "intercept_rz": np.linspace(-50, 50, 101) if self.signal else np.linspace(-49e3, 49e3, 101),
-            "dphi": np.linspace(-1.0, 1.0, 201) if self.signal else np.linspace(-3.2, 3.2, 201),
-            "dr": np.linspace(0, 400, 101) if self.signal else np.linspace(0, 1500, 101),
+            "dphi": np.linspace(-1.5, 1.5, 301) if self.signal else np.linspace(-3.2, 3.2, 201),
+            "dr": np.linspace(0, 600, 151) if self.signal else np.linspace(0, 1500, 101),
         }
         xlabel = {
             "intercept_rz": r"dz in rz-plane [mm]",
@@ -569,11 +570,13 @@ class Plotter:
                         num = mask.sum()
                         mean = np.mean(self.doublets[mask][feature])
                         rms = np.sqrt(np.mean((self.doublets[mask][feature] - mean) ** 2))
+                        p997 = np.percentile(np.abs(self.doublets[mask][feature]), 99.7)
                         fmt = formatting[feature]
                         ax.set_ylim(0.8 if semilogy else 0, None)
                         ax.set_xlabel(xlabel[feature])
                         ax.set_ylabel("Doublets")
                         ax.set_title(f"{NICKNAMES[system]} layers {layers}. N={num}, Mean={mean:{fmt}}, RMS={rms:{fmt}}")
+                        ax.text(0.05, 0.95, f"99.7% in {p997:{fmt}}", transform=ax.transAxes)
                         pdf.savefig()
                         plt.close()
 
@@ -674,7 +677,7 @@ class Plotter:
                     )
 
                     for req in DOUBLET_REQS:
-                        req_text, req_mask = self.requirements(req)
+                        req_text, req_mask = self.requirements(req, doublelayer)
                         denom = self.doublets[baseline & geo_mask]
                         numer = self.doublets[baseline & geo_mask & req_mask]
                         if i_kin == 0:

@@ -1,3 +1,5 @@
+import numpy as np
+
 MUON = 13
 ANTIMUON = -MUON
 MUON_NEUTRINO = 14
@@ -73,8 +75,14 @@ DOUBLELAYERS = [
     # 3,
 ]
 
-DZ_CUT = 22 # mm
-DR_CUT = 260 # mm
+DZ_CUT = np.array([
+    22, # mm # doublelayer 0
+    30, # mm # doublelayer 1
+])
+DR_CUT = np.array([
+    260, # mm # doublelayer 0
+    313, # mm # doublelayer 1
+])
 
 REQ_PASSTHROUGH = "no cuts"
 REQ_RZ = "rz req."

@@ -117,8 +117,8 @@ class DoubletMaker:
 
             # cut some doublets?
             if self.cut_doublets:
-                mask_dr = np.abs(doublets["dr"]) < DR_CUT
-                mask_dz = np.abs(doublets["intercept_rz"]) < DZ_CUT
+                mask_dr = np.abs(doublets["dr"]) < DR_CUT[doublets["simhit_layer_div_2"]]
+                mask_dz = np.abs(doublets["intercept_rz"]) < DZ_CUT[doublets["simhit_layer_div_2"]]
                 cutflow["dr"] = mask_dr.sum()
                 cutflow["dz"] = mask_dz.sum()
                 cutflow["drdz"] = (mask_dr & mask_dz).sum()
