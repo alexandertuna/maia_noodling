@@ -58,6 +58,8 @@ def main():
     fnames = get_filenames(ops.i)
     geometry = ops.geometry
     signal = any(SIGNAL in os.path.basename(fname) for fname in fnames)
+    if not ops.inner and not ops.outer:
+        raise ValueError("At least one of --inner or --outer must be specified")
     logger.info(f"Detected {'signal' if signal else 'background'} files")
     logger.info(f"Found {len(fnames)} files")
     logger.info(f"Inner tracker: {ops.inner}")
