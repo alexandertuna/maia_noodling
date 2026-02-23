@@ -12,7 +12,7 @@ from constants import SIGNAL
 from constants import EPSILON, MCPARTICLE, PARTICLES_OF_INTEREST, SPEED_OF_LIGHT
 from constants import MM_TO_CM, CM_TO_MM
 from constants import XML
-from constants import COLLECTIONS
+from constants import INNER_TRACKER_BARREL_COLLECTION, OUTER_TRACKER_BARREL_COLLECTION, COLLECTIONS
 from constants import BYTE_TO_MB
 
 _detector = None
@@ -26,10 +26,14 @@ class SlcioToHitsDataFrame:
             slcio_file_paths: list[str],
             load_geometry: bool,
             signal: bool,
+            inner: bool,
+            outer: bool,
         ):
         self.slcio_file_paths = slcio_file_paths
         self.load_geometry = load_geometry
         self.signal = signal
+        self.inner = inner
+        self.outer = outer
 
 
     def convert(self) -> pd.DataFrame:
@@ -51,12 +55,16 @@ class SlcioToHitsDataFrame:
             file_numbers = list(range(n_map))
             load_geometry = [self.load_geometry]*n_map
             signal = [self.signal]*n_map
+            inner = [self.inner]*n_map
+            outer = [self.outer]*n_map
             results = pool.starmap(
                 convert_one_file,
                 zip(self.slcio_file_paths,
                     file_numbers,
                     load_geometry,
                     signal,
+                    inner,
+                    outer,
                 )
             )
         logger.info("Merging DataFrames ...")
@@ -81,8 +89,8 @@ def init_worker():
         _detector.fromCompact(XML)
         _surfman = DDRec.SurfaceManager(_detector)
         dets = {
-            "InnerTrackerBarrelCollection": _detector.detector("InnerTrackerBarrel"),
-            "OuterTrackerBarrelCollection": _detector.detector("OuterTrackerBarrel"),
+            INNER_TRACKER_BARREL_COLLECTION: _detector.detector("InnerTrackerBarrel"),
+            OUTER_TRACKER_BARREL_COLLECTION: _detector.detector("OuterTrackerBarrel"),
         }
         _maps = {name: _surfman.map(det.name()) for name, det in dets.items()}
 
@@ -92,7 +100,9 @@ def convert_one_file(
         file_number: int,
         load_geometry: bool,
         signal: bool,
-    ) -> pd.DataFrame:
+        inner: bool,
+        outer: bool,
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
 
     # import here to avoid:
     #  - unnecessary imports if not used
@@ -132,7 +142,7 @@ def convert_one_file(
             if abs(mcp_pdg[i_mcp]) not in PARTICLES_OF_INTEREST:
                 continue
             mcps.append({
-                'file': os.path.basename(slcio_file_path),
+                'file': file_number,
                 'i_event': i_event,
                 'i_mcp': i_mcp,
                 'mcp_px': mcp_px[i_mcp],
@@ -149,8 +159,16 @@ def convert_one_file(
                 'mcp_endpoint_z': mcp_endpoint_z[i_mcp],
             })
 
+        # choose trackers
+        collections = []
+        if inner:
+            collections.append(INNER_TRACKER_BARREL_COLLECTION)
+        if outer:
+            collections.append(OUTER_TRACKER_BARREL_COLLECTION)
+
+
         # inspect tracking detectors
-        for collection in COLLECTIONS:
+        for collection in collections:
 
             col = event.getCollection(collection)
             n_hit = len(col)
@@ -194,7 +212,7 @@ def convert_one_file(
 
                 # record the hit info
                 simhits.append({
-                    'file': file_number, # os.path.basename(slcio_file_path),
+                    'file': file_number,
                     'i_event': i_event,
                     'i_mcp': i_mcp,
                     'simhit_x': hit.getPosition()[0],
@@ -230,6 +248,16 @@ def convert_one_file(
     mcps = pd.DataFrame(mcps)
     simhits = pd.DataFrame(simhits)
 
+    # sanity check
+    if len(mcps) == 0:
+        msg = f"No MCParticles found in file {os.path.basename(slcio_file_path)}"
+        logger.error(msg)
+        raise RuntimeError(msg)
+    if len(simhits) == 0:
+        msg = f"No simhits found in file {os.path.basename(slcio_file_path)}"
+        logger.error(msg)
+        raise RuntimeError(msg)
+
     # And postprocess
     logger.info("Postprocessing DataFrames ...")
     mcps = postprocess_mcps(mcps)
@@ -258,6 +286,11 @@ def postprocess_mcps(df: pd.DataFrame) -> pd.DataFrame:
         "mcp_endpoint_x",
         "mcp_endpoint_y",
     ], inplace=True)
+
+    # downcast to save memory
+    df["file"] = df["file"].astype(np.uint32)
+    df["i_event"] = df["i_event"].astype(np.uint32)
+    df["i_mcp"] = df["i_mcp"].astype(np.uint32)
 
     # sort columns alphabetically
     return df[sorted(df.columns)]
