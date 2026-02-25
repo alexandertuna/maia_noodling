@@ -9,6 +9,7 @@ from slcio import SlcioToHitsDataFrame
 from timelapse import Timelapse
 from doublet import DoubletMaker
 from plot import Plotter
+from modulemap import ModuleMap
 from constants import SIGNAL
 
 
@@ -84,16 +85,23 @@ def main():
         simhits=simhits,
     ).df
 
+    # make module map
+    if ops.modulemap:
+        if not signal:
+            raise ValueError("Module map can only be made for signal files")
+        modulemap = ModuleMap(doublets=doublets)
+
     # plot stuff
-    logger.info("Creating plots ...")
-    plotter = Plotter(
-        signal=signal,
-        mcps=mcps,
-        simhits=simhits,
-        doublets=doublets,
-        pdf="doublets.pdf",
-    )
-    plotter.plot()
+    if ops.plot:
+        logger.info("Creating plots ...")
+        plotter = Plotter(
+            signal=signal,
+            mcps=mcps,
+            simhits=simhits,
+            doublets=doublets,
+            pdf="doublets.pdf",
+        )
+        plotter.plot()
 
     if ops.timelapse:
         logger.info("Creating timelapse gif ...")
@@ -108,6 +116,8 @@ def options():
     parser.add_argument("--timelapse", action="store_true", help="Create timelapse gif")
     parser.add_argument("--inner", action="store_true", help="Include inner tracker hits in the analysis")
     parser.add_argument("--outer", action="store_true", help="Include outer tracker hits in the analysis")
+    parser.add_argument("--plot", action="store_true", help="Include plots in the analysis")
+    parser.add_argument("--modulemap", action="store_true", help="Make module map in the analysis")
     parser.add_argument("--cut-doublets", action="store_true", help="Cut doublets based on DZ_CUT and DR_CUT")
     return parser.parse_args()
 
