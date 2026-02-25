@@ -329,8 +329,8 @@ class Plotter:
                     logger.info(f"Occupancy of {NICKNAMES[system]} doublelayer {doublelayer}, {req}: {req_mask.sum()} doublets")
 
                     # skip these plots to save time
-                    if not self.signal:
-                        continue
+                    # if not self.signal:
+                    #     continue
 
                     layers = [doublelayer * 2, doublelayer * 2 + 1]
                     mask = (
