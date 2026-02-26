@@ -14,29 +14,11 @@ class ModuleMap:
         self.remove_columns_from_doublets()
         self.filter_doublets()
         self.sort_doublets()
-        with pd.option_context("display.min_rows", 50,
-                               "display.max_rows", 50,
-                               ):
-            cols = [
-                "file",
-                "i_event",
-                "i_mcp",
-                "simhit_system",
-                "simhit_layer_div_2",
-                "simhit_module",
-                # "simhit_sensor",
-                # "simhit_r_lower",
-                # "intercept_rz",
-                # "dr",
-            ]
-            print(self.doublets[cols])
-        # self.doublets["simhit_layer_div_4"] = self.doublets["simhit_layer_div_2"] // 2
-        # make copy of doublets with only good doublets and next_doublet columns
         self.make_quadruplets()
         self.check_quadruplets()
         self.simplify_quadruplet_columns()
         self.make_modulemap()
-        # modulemap = self.make_modulemap()
+        self.print_modulemap_test(sensor=20, module=0)
 
 
     def remove_columns_from_doublets(self):
@@ -117,32 +99,15 @@ class ModuleMap:
                     mask_lower = mask_system & (df["simhit_layer_div_2"] == doublelayer)
                     mask_upper = mask_system & (df["simhit_layer_div_2"] == doublelayer + 1)
 
-                    lower = df[mask_lower].add_suffix("_lower")
-                    upper = df[mask_upper].add_suffix("_upper")
-
+                    lower = df[mask_lower]
+                    upper = df[mask_upper]
                     quads = lower.merge(
                         upper,
-                        left_on=[f"{k}_lower" for k in keys],
-                        right_on=[f"{k}_upper" for k in keys],
+                        on=keys,
                         how="inner",
                         validate="many_to_many",
+                        suffixes=("_lower", "_upper"),
                     )
-                    subcols = [
-                        "file_lower",
-                        "file_upper",
-                        "i_event_lower",
-                        "i_event_upper",
-                        "i_mcp_lower",
-                        "i_mcp_upper",
-                        "simhit_system_lower",
-                        "simhit_system_upper",
-                        "simhit_layer_div_2_lower",
-                        "simhit_layer_div_2_upper",
-                        "simhit_module_lower",
-                        "simhit_module_upper",
-                    ]
-                    # print(quads[subcols])
-                    # print(quads)
                     quadruplets.append(quads)
 
         self.quadruplets = pd.concat(quadruplets, ignore_index=True)
@@ -153,9 +118,6 @@ class ModuleMap:
 
         # checks
         for i_check, check in enumerate([
-            self.quadruplets["file_lower"] == self.quadruplets["file_upper"],
-            self.quadruplets["i_event_lower"] == self.quadruplets["i_event_upper"],
-            self.quadruplets["i_mcp_lower"] == self.quadruplets["i_mcp_upper"],
             self.quadruplets["simhit_system_lower"] == self.quadruplets["simhit_system_upper"],
             self.quadruplets["simhit_layer_div_2_lower"] == self.quadruplets["simhit_layer_div_2_upper"] - 1,
         ]):
@@ -166,21 +128,14 @@ class ModuleMap:
     def simplify_quadruplet_columns(self):
         logger.info("Simplifying quadruplet columns for modulemap ...")
         rename = {
-            "file_lower": "file",
-            "i_event_lower": "i_event",
-            "i_mcp_lower": "i_mcp",
             "simhit_system_lower": "simhit_system",
         }
         drop = [
-            "file_upper",
-            "i_event_upper",
-            "i_mcp_upper",
             "simhit_system_upper",
         ]
         self.quadruplets = self.quadruplets.rename(columns=rename).drop(columns=drop)
         memory = self.quadruplets.memory_usage(deep=True).sum() * BYTE_TO_MB
         logger.info(f"Memory usage after simplifying quadruplet columns: {memory:.1f} MB")
-        print(self.quadruplets)
 
 
     def make_modulemap(self):
@@ -195,6 +150,17 @@ class ModuleMap:
             "simhit_sensor_upper"
         ]
         self.modulemap = self.quadruplets.groupby(mapcols).size().reset_index(name="number")
-        print(self.modulemap)
 
+
+    def print_modulemap_test(self, sensor: int, module: int):
+        logger.info(f"Testing modulemap for sensor {sensor} and module {module} ...")
+        test = self.modulemap[
+            (self.modulemap["simhit_sensor_lower"] == sensor) &
+            (self.modulemap["simhit_module_lower"] == module)
+        ]
+        with pd.option_context("display.min_rows", 50,
+                               "display.max_rows", 50,
+                               ):
+            logger.info(f"Modulemap test for sensor {sensor} and module {module}:")
+            logger.info(f"\n{test.to_string(index=False)}")
 
