@@ -77,7 +77,7 @@ DOUBLELAYERS = [
 
 DZ_CUT = np.array([
     22, # mm # doublelayer 0
-    30, # mm # doublelayer 1
+    29, # mm # doublelayer 1
 ])
 DR_CUT = np.array([
     260, # mm # doublelayer 0
