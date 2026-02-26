@@ -134,10 +134,13 @@ class Plotter:
 
 
     def plot_numbers_for_comparison_background(self, pdf: PdfPages):
+        layers = [2, 3]
+        the_doublelayer = layers[0] // 2
+
         # part 1: simhits
         mask = np.ones(len(self.simhits), dtype=bool)
         for [req, label] in [
-            [self.simhits["simhit_layer"].isin([0, 1]), "All simhits in layers 0 and 1"],
+            [self.simhits["simhit_layer"].isin(layers), f"All simhits in layers {layers}"],
             # [self.simhits["simhit_sensor"] == 20, "z-sensor 20"],
             # [self.simhits["simhit_module"] == 0, "phi-module 0"],
         ]:
@@ -166,10 +169,9 @@ class Plotter:
 
         # number of doublets
         mask = np.ones(len(self.doublets), dtype=bool)
-        the_doublelayer = 0
         for [req, label] in [
             [self.doublets["simhit_system"] == OUTER_TRACKER_BARREL, "Doublets in OTB"],
-            [self.doublets["simhit_layer_div_2"] == the_doublelayer, "Doublets in layers 0 and 1"],
+            [self.doublets["simhit_layer_div_2"] == the_doublelayer, f"Doublets in layers {layers}"],
             # [self.doublets["simhit_sensor"] == 20, "z-sensor 20"],
             # [self.doublets["simhit_module"] == 0, "phi-module 0"],
             [np.abs(self.doublets["intercept_rz"]) < DZ_CUT[the_doublelayer], f"Doublets with |dz| < {DZ_CUT[the_doublelayer]}mm"],
@@ -325,14 +327,8 @@ class Plotter:
             for doublelayer in DOUBLELAYERS:
                 zmax = None
                 for req in DOUBLET_REQS:
+
                     req_text, req_mask = self.requirements(req, doublelayer)
-                    logger.info(f"Occupancy of {NICKNAMES[system]} doublelayer {doublelayer}, {req}: {req_mask.sum()} doublets")
-
-                    # skip these plots to save time
-                    # if not self.signal:
-                    #     continue
-
-                    layers = [doublelayer * 2, doublelayer * 2 + 1]
                     mask = (
                         (self.doublets["simhit_system"] == system) &
                         (self.doublets["simhit_layer_div_2"] == doublelayer) &
@@ -341,6 +337,13 @@ class Plotter:
                     if mask.sum() == 0:
                         logger.info(f"No doublets in {NICKNAMES[system]} double layer {doublelayer} passing {req}, skipping occupancy plot")
                         continue
+
+                    logger.info(f"Occupancy of {NICKNAMES[system]} doublelayer {doublelayer}, {req}: {mask.sum()} doublets")
+                    layers = [doublelayer * 2, doublelayer * 2 + 1]
+
+                    # skip these plots to save time
+                    # if not self.signal:
+                    #     continue
 
                     doublets = self.doublets[mask]
                     bins = [
