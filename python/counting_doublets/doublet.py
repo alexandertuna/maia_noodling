@@ -21,12 +21,12 @@ class DoubletMaker:
         logger.info("Making doublets ...")
         groupby_cols = [
             "file",
-            "i_event", # the event
-            "simhit_system", # the system (IT, OT)
-            "simhit_layer_div_2", # the double layer
         ]
         if not self.signal:
             groupby_cols += [
+                "i_event", # the event
+                "simhit_system", # the system (IT, OT)
+                "simhit_layer_div_2", # the double layer
                 "simhit_module", # the phi-module
                 "simhit_sensor", # the z-sensor
             ]
@@ -141,7 +141,7 @@ class DoubletMaker:
             all_doublets.append(doublets)
             all_cutflows.append(cutflow)
 
-            if (self.signal and i_group % 1000 == 0) or not self.signal:
+            if (self.signal and i_group % 100 == 0) or (not self.signal and i_group % 10 == 0):
                 logger.info(f"Processed group {i_group}/{len(groups)}, doublet size = {size:.1f} MB, n(doublets) = {length} ...")
 
         doublets = pd.concat(all_doublets, ignore_index=True)
