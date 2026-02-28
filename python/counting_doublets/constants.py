@@ -74,6 +74,9 @@ DOUBLELAYERS = [
     # 2,
     # 3,
 ]
+QUADLAYERS = [
+    0,
+]
 
 DZ_CUT = np.array([
     22, # mm # doublelayer 0
