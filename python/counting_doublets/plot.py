@@ -34,7 +34,7 @@ from constants import MUON, ANTIMUON
 from constants import BARREL_TRACKER_MAX_ETA
 from constants import BARREL_TRACKER_MAX_RADIUS
 from constants import ONE_POINT_FIVE_GEV, ONE_MM, ZERO_POINT_ZERO_ONE_MM
-from constants import SYSTEMS, DOUBLELAYERS, LAYERS, NICKNAMES, OUTER_TRACKER_BARREL
+from constants import SYSTEMS, DOUBLELAYERS, QUADLAYERS, LAYERS, NICKNAMES, OUTER_TRACKER_BARREL
 from constants import DZ_CUT, DR_CUT
 from constants import REQ_PASSTHROUGH, REQ_RZ, REQ_XY, REQ_RZ_XY
 from constants import DOUBLET_REQS
@@ -49,12 +49,14 @@ class Plotter:
         mcps: pd.DataFrame,
         simhits: pd.DataFrame,
         doublets: pd.DataFrame,
+        linesegments: pd.DataFrame,
         pdf: str,
     ):
         self.signal = signal
         self.mcps = mcps
         self.simhits = simhits
         self.doublets = doublets
+        self.linesegments = linesegments
         self.pdf = pdf
         if self.signal:
             self.add_simhit_mcp_features()
@@ -66,16 +68,18 @@ class Plotter:
         with PdfPages(self.pdf) as pdf:
             self.plot_numbers_for_comparison(pdf)
             self.plot_time(pdf)
-            self.plot_layer_occupancy_1d(pdf)
-            self.plot_layer_occupancy_2d(pdf)
-            self.plot_radius_vs_layer(pdf)
-            self.plot_doublet_occupancy(pdf)
-            self.plot_doublet_features(pdf)
+            # self.plot_layer_occupancy_1d(pdf)
+            # self.plot_layer_occupancy_2d(pdf)
+            # self.plot_radius_vs_layer(pdf)
+            # self.plot_doublet_occupancy(pdf)
+            # self.plot_doublet_features(pdf)
+            self.plot_linesegment_features(pdf)
             if self.signal:
-                self.write_denominator_info(pdf)
-                self.plot_efficiency_vs_kinematics(pdf)
-                self.write_doublet_denominator_info(pdf)
-                self.plot_doublet_quality_efficiency(pdf)
+                # self.write_denominator_info(pdf)
+                # self.plot_efficiency_vs_kinematics(pdf)
+                # self.write_doublet_denominator_info(pdf)
+                # self.plot_doublet_quality_efficiency(pdf)
+                pass
 
 
     def plot_numbers_for_comparison(self, pdf: PdfPages):
@@ -134,7 +138,7 @@ class Plotter:
 
 
     def plot_numbers_for_comparison_background(self, pdf: PdfPages):
-        layers = [2, 3]
+        layers = [0, 1]
         the_doublelayer = layers[0] // 2
 
         # part 1: simhits
@@ -501,12 +505,12 @@ class Plotter:
             raise ValueError("Should not be calling add_doublet_mcp_features for background")
         merged = self.doublets.merge(
             self.mcps[["file", "i_event", "i_mcp", *mcp_cols]],
-            left_on=["file", "i_event", "i_mcp_lower"],
+            left_on=["file", "i_event", "i_mcp"],
             right_on=["file", "i_event", "i_mcp"],
             how="left",
             validate="many_to_one",
-        ).drop(columns=["i_mcp"])
-        mask = merged["i_mcp_lower"].eq(merged["i_mcp_upper"])
+        ) # .drop(columns=["i_mcp"])
+        mask = merged["i_mcp"] >= 0 # merged["i_mcp_lower"].eq(merged["i_mcp_upper"])
         self.doublets[mcp_cols] = merged[mcp_cols].where(mask, 0).fillna(0)
 
 
@@ -723,6 +727,77 @@ class Plotter:
         ax.axis("off")
         pdf.savefig()
         plt.close()
+
+
+    def plot_linesegment_features(self, pdf: PdfPages):
+        logger.info("Plotting signal linesegment features ...")
+        baseline = self.baseline_doublet_mask() if self.signal else np.ones(len(self.doublets), dtype=bool)
+
+        bins = {
+            "linesegment_deta": np.linspace(-3.2, 3.2, 641) if not self.signal else np.linspace(-0.4, 0.4, 201),
+            "linesegment_dphi": np.linspace(-3.2, 3.2, 641) if not self.signal else np.linspace(-0.4, 0.4, 201),
+        }
+        xlabel = {
+            "linesegment_deta": r"deta",
+            "linesegment_dphi": r"dphi [rad]",
+        }
+        formatting = {
+            "linesegment_deta": ".3f",
+            "linesegment_dphi": ".3f",
+        }
+
+        baseline = (self.linesegments["i_mcp"] >= 0) if self.signal else np.ones(len(self.linesegments), dtype=bool)
+
+        # 1d histograms
+        for feature in [
+            "linesegment_deta",
+            "linesegment_dphi",
+        ]:
+
+            for semilogy in [
+                False,
+                True,
+            ]:
+
+                for system in SYSTEMS:
+
+                    for quadlayer in QUADLAYERS:
+
+                        logger.info(f"Plotting signal linesegment feature {feature}, system {system}, quadlayer {quadlayer} ...")
+
+                        geo_mask = (
+                            (self.linesegments["doublet_system"] == system) &
+                            (self.linesegments["linesegment_layer_div_4"] == quadlayer)
+                        )
+                        mask = baseline & geo_mask
+                        if mask.sum() == 0:
+                            logger.info(f"No linesegments in {NICKNAMES[system]} quadlayer {quadlayer} passing baseline, skipping feature plot")
+                            continue
+
+                        fig, ax = plt.subplots()
+                        ax.hist(
+                            self.linesegments[mask][feature],
+                            bins=bins[feature],
+                            histtype="stepfilled",
+                            color="crimson",
+                            edgecolor="black",
+                            linewidth=1.0,
+                            alpha=0.9,
+                        )
+                        if semilogy:
+                            ax.semilogy()
+                        num = mask.sum()
+                        mean = np.mean(self.linesegments[mask][feature])
+                        rms = np.sqrt(np.mean((self.linesegments[mask][feature] - mean) ** 2))
+                        p997 = np.percentile(np.abs(self.linesegments[mask][feature]), 99.7)
+                        fmt = formatting[feature]
+                        ax.set_ylim(0.8 if semilogy else 0, None)
+                        ax.set_xlabel(xlabel[feature])
+                        ax.set_ylabel("Line Segments")
+                        ax.set_title(f"{NICKNAMES[system]}. N={num}, Mean={mean:{fmt}}, RMS={rms:{fmt}}")
+                        ax.text(0.05, 0.95, f"99.7% in {p997:{fmt}}", transform=ax.transAxes)
+                        pdf.savefig()
+                        plt.close()
 
 
 def first_exit_mask(doublets: pd.DataFrame) -> pd.Series:
