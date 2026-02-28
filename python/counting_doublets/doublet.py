@@ -28,7 +28,7 @@ class DoubletMaker:
                 "simhit_system", # the system (IT, OT)
                 "simhit_layer_div_2", # the double layer
                 "simhit_module", # the phi-module
-                "simhit_sensor", # the z-sensor
+                # "simhit_sensor", # the z-sensor
             ]
         doublet_cols = [
             "file",
@@ -64,6 +64,11 @@ class DoubletMaker:
             "simhit_y_lower",
             "i_mcp_upper",
             "i_mcp_lower",
+            "doublet_r",
+            "doublet_z",
+            "doublet_x",
+            "doublet_y",
+            "doublet_theta",
         ]
 
         lower_cols = doublet_cols + [ f"{attr}_lower" for attr in simhit_attrs_to_propagate ]
@@ -88,12 +93,12 @@ class DoubletMaker:
             doublets = lower.merge(upper, on=doublet_cols, how="inner")
             # sizes[0] = int(doublets.memory_usage(deep=True).sum() * BYTE_TO_MB)
 
-            # rz
+            # doublet feature: rz
             slope = np.divide(doublets["simhit_z_upper"] - doublets["simhit_z_lower"],
                               doublets["simhit_r_upper"] - doublets["simhit_r_lower"])
             doublets["intercept_rz"] = doublets["simhit_z_lower"] - doublets["simhit_r_lower"] * slope
 
-            # xy: dphi
+            # doublet feature, xy dphi
             phi_local = np.arctan2(doublets["simhit_y_upper"] - doublets["simhit_y_lower"],
                                    doublets["simhit_x_upper"] - doublets["simhit_x_lower"])
             phi_global = np.arctan2((doublets["simhit_y_lower"] + doublets["simhit_y_upper"]) / 2.0,
@@ -101,11 +106,23 @@ class DoubletMaker:
             doublets["dphi"] = phi_local - phi_global
             doublets["dphi"] = (doublets["dphi"] + np.pi) % (2 * np.pi) - np.pi
 
-            # xy: dr at point of closest approach to origin
+            # doublet feature: xy, dr at point of closest approach to origin
             slope_xy = np.divide(doublets["simhit_y_upper"] - doublets["simhit_y_lower"],
                                  doublets["simhit_x_upper"] - doublets["simhit_x_lower"])
             intercept_xy = doublets["simhit_y_lower"] - slope_xy * doublets["simhit_x_lower"]
             doublets["dr"] = np.abs(intercept_xy) / np.sqrt(1 + slope_xy**2)
+
+            # doublet features: position
+            doublets["doublet_r"] = (doublets["simhit_r_lower"] + doublets["simhit_r_upper"]) / 2
+            doublets["doublet_z"] = (doublets["simhit_z_lower"] + doublets["simhit_z_upper"]) / 2
+            doublets["doublet_x"] = (doublets["simhit_x_lower"] + doublets["simhit_x_upper"]) / 2
+            doublets["doublet_y"] = (doublets["simhit_y_lower"] + doublets["simhit_y_upper"]) / 2
+            doublets["doublet_phi"] = np.arctan2(doublets["doublet_y"], doublets["doublet_x"])
+            doublets["doublet_theta"] = np.arctan2(doublets["doublet_r"], doublets["doublet_z"])
+            doublets["doublet_eta"] = -np.log(np.tan(doublets["doublet_theta"] / 2))
+
+            # doublet feature: mcp matching
+            doublets["i_mcp"] = doublets["i_mcp_lower"].where(doublets["i_mcp_lower"] == doublets["i_mcp_upper"], -1)
 
             # drop columns which arent used downstream
             if not self.signal:
