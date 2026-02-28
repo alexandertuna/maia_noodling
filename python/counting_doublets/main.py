@@ -10,6 +10,7 @@ from timelapse import Timelapse
 from doublet import DoubletMaker
 from plot import Plotter
 from modulemap import ModuleMap
+from linesegment import LineSegment
 from constants import SIGNAL
 
 
@@ -91,6 +92,9 @@ def main():
             raise ValueError("Module map can only be made for signal files")
         modulemap = ModuleMap(doublets=doublets)
 
+    # make line segments
+    linesegments = LineSegment(doublets=doublets, signal=signal).df
+
     # plot stuff
     if ops.plot:
         logger.info("Creating plots ...")
@@ -99,6 +103,7 @@ def main():
             mcps=mcps,
             simhits=simhits,
             doublets=doublets,
+            linesegments=linesegments,
             pdf="doublets.pdf",
         )
         plotter.plot()
