@@ -55,7 +55,6 @@ class ModuleMap:
         logger.info(f"Memory usage after filtering doublets: {memory:.1f} MB")
 
 
-
     def sort_doublets(self):
         # sort doublets by file, event, mcp, system, doublelayer, and r for better intuition
         logger.info("Sorting doublets for modulemap ...")
