@@ -47,7 +47,7 @@ class ModuleMap:
         doublelayer = self.doublets["simhit_layer_div_2"]
         self.doublets = self.doublets[
             (self.doublets["i_mcp_lower"] == self.doublets["i_mcp_upper"]) &
-            (self.doublets["intercept_rz"] < DZ_CUT[doublelayer]) &
+            (self.doublets["doublet_dz"] < DZ_CUT[doublelayer]) &
             (self.doublets["dr"] < DR_CUT[doublelayer])
         ]
         self.doublets = self.doublets.rename(columns={"i_mcp_lower": "i_mcp"}).drop(columns=["i_mcp_upper"])

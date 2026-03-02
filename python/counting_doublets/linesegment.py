@@ -70,7 +70,7 @@ class LineSegment:
         logger.info("Filtering doublets for line segments ...")
         doublelayer = self.doublets["doublet_layer_div_2"]
         self.doublets = self.doublets[
-            (self.doublets["intercept_rz"] < DZ_CUT[doublelayer]) &
+            (self.doublets["doublet_dz"] < DZ_CUT[doublelayer]) &
             (self.doublets["dr"] < DR_CUT[doublelayer])
         ]
         memory = self.doublets.memory_usage(deep=True).sum() * BYTE_TO_MB

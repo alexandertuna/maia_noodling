@@ -96,7 +96,7 @@ class DoubletMaker:
             # doublet feature: rz
             slope = np.divide(doublets["simhit_z_upper"] - doublets["simhit_z_lower"],
                               doublets["simhit_r_upper"] - doublets["simhit_r_lower"])
-            doublets["intercept_rz"] = doublets["simhit_z_lower"] - doublets["simhit_r_lower"] * slope
+            doublets["doublet_dz"] = doublets["simhit_z_lower"] - doublets["simhit_r_lower"] * slope
 
             # doublet feature, xy dphi
             phi_local = np.arctan2(doublets["simhit_y_upper"] - doublets["simhit_y_lower"],
@@ -136,7 +136,7 @@ class DoubletMaker:
             if self.cut_doublets:
                 doublelayer = doublets["simhit_layer_div_2"]
                 mask_dr = np.abs(doublets["dr"]) < DR_CUT[doublelayer]
-                mask_dz = np.abs(doublets["intercept_rz"]) < DZ_CUT[doublelayer]
+                mask_dz = np.abs(doublets["doublet_dz"]) < DZ_CUT[doublelayer]
                 cutflow["dr"] = mask_dr.sum()
                 cutflow["dz"] = mask_dz.sum()
                 cutflow["drdz"] = (mask_dr & mask_dz).sum()

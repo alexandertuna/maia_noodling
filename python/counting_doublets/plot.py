@@ -178,7 +178,7 @@ class Plotter:
             [self.doublets["simhit_layer_div_2"] == the_doublelayer, f"Doublets in layers {layers}"],
             # [self.doublets["simhit_sensor"] == 20, "z-sensor 20"],
             # [self.doublets["simhit_module"] == 0, "phi-module 0"],
-            [np.abs(self.doublets["intercept_rz"]) < DZ_CUT[the_doublelayer], f"Doublets with |dz| < {DZ_CUT[the_doublelayer]}mm"],
+            [np.abs(self.doublets["doublet_dz"]) < DZ_CUT[the_doublelayer], f"Doublets with |dz| < {DZ_CUT[the_doublelayer]}mm"],
             [np.abs(self.doublets["dr"]) < DR_CUT[the_doublelayer], f"Doublets with |dr| < {DR_CUT[the_doublelayer]}mm"],
         ]:
             mask &= req
@@ -187,7 +187,7 @@ class Plotter:
         # if mask.sum() < 50:
         #     # for z in sorted(list(self.doublets[mask]["simhit_z_lower"]), reverse=True):
         #     #     logger.info(f"lower z = {z}")
-        #     # for dz in sorted(list(np.abs(self.doublets[mask]["intercept_rz"])), reverse=True):
+        #     # for dz in sorted(list(np.abs(self.doublets[mask]["doublet_dz"])), reverse=True):
         #     #     logger.info(f"dz = {dz}")
 
 
@@ -314,11 +314,11 @@ class Plotter:
             mask = np.abs(self.doublets["dr"]) < DR_CUT[doublelayer]
         elif req == REQ_RZ:
             text = f"|dz| < {DZ_CUT[doublelayer]}mm"
-            mask = np.abs(self.doublets["intercept_rz"]) < DZ_CUT[doublelayer]
+            mask = np.abs(self.doublets["doublet_dz"]) < DZ_CUT[doublelayer]
         elif req == REQ_RZ_XY:
             text = f"|dr| < {DR_CUT[doublelayer]}mm, |dz| < {DZ_CUT[doublelayer]}mm"
             mask = (
-                (np.abs(self.doublets["intercept_rz"]) < DZ_CUT[doublelayer]) &
+                (np.abs(self.doublets["doublet_dz"]) < DZ_CUT[doublelayer]) &
                 (np.abs(self.doublets["dr"]) < DR_CUT[doublelayer])
             )
         else:
@@ -519,24 +519,24 @@ class Plotter:
         baseline = self.baseline_doublet_mask() if self.signal else np.ones(len(self.doublets), dtype=bool)
 
         bins = {
-            "intercept_rz": np.linspace(-50, 50, 101) if self.signal else np.linspace(-49e3, 49e3, 101),
+            "doublet_dz": np.linspace(-50, 50, 101) if self.signal else np.linspace(-49e3, 49e3, 101),
             "dphi": np.linspace(-1.5, 1.5, 301) if self.signal else np.linspace(-3.2, 3.2, 201),
             "dr": np.linspace(0, 600, 151) if self.signal else np.linspace(0, 1500, 101),
         }
         xlabel = {
-            "intercept_rz": r"dz in rz-plane [mm]",
+            "doublet_dz": r"dz in rz-plane [mm]",
             "dphi": r"dphi in xy-plane [rad]",
             "dr": r"dr in xy-plane [mm]",
         }
         formatting = {
-            "intercept_rz": ".1f",
+            "doublet_dz": ".1f",
             "dphi": ".3f",
             "dr": ".0f",
         }
 
         # 1d histograms
         for feature in [
-            "intercept_rz",
+            "doublet_dz",
             "dphi",
             "dr",
         ]:
