@@ -520,25 +520,25 @@ class Plotter:
 
         bins = {
             "doublet_dz": np.linspace(-50, 50, 101) if self.signal else np.linspace(-49e3, 49e3, 101),
-            "dphi": np.linspace(-1.5, 1.5, 301) if self.signal else np.linspace(-3.2, 3.2, 201),
             "doublet_dr": np.linspace(0, 600, 151) if self.signal else np.linspace(0, 1500, 101),
+            "doublet_dphi": np.linspace(-1.5, 1.5, 301) if self.signal else np.linspace(-3.2, 3.2, 201),
         }
         xlabel = {
             "doublet_dz": r"dz in rz-plane [mm]",
-            "dphi": r"dphi in xy-plane [rad]",
             "doublet_dr": r"dr in xy-plane [mm]",
+            "doublet_dphi": r"dphi in xy-plane [rad]",
         }
         formatting = {
             "doublet_dz": ".1f",
-            "dphi": ".3f",
             "doublet_dr": ".0f",
+            "doublet_dphi": ".3f",
         }
 
         # 1d histograms
         for feature in [
             "doublet_dz",
-            "dphi",
             "doublet_dr",
+            "doublet_dphi",
         ]:
 
             for semilogy in [
@@ -590,7 +590,7 @@ class Plotter:
 
         # 2d histograms
         for feature_x, feature_y in [
-            ("dphi", "doublet_dr"),
+            ("doublet_dphi", "doublet_dr"),
         ]:
 
             for lognorm in [
