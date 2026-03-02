@@ -179,7 +179,7 @@ class Plotter:
             # [self.doublets["simhit_sensor"] == 20, "z-sensor 20"],
             # [self.doublets["simhit_module"] == 0, "phi-module 0"],
             [np.abs(self.doublets["doublet_dz"]) < DZ_CUT[the_doublelayer], f"Doublets with |dz| < {DZ_CUT[the_doublelayer]}mm"],
-            [np.abs(self.doublets["dr"]) < DR_CUT[the_doublelayer], f"Doublets with |dr| < {DR_CUT[the_doublelayer]}mm"],
+            [np.abs(self.doublets["doublet_dr"]) < DR_CUT[the_doublelayer], f"Doublets with |dr| < {DR_CUT[the_doublelayer]}mm"],
         ]:
             mask &= req
             logger.info(f"* {label:<30} :: {mask.sum():>10}")
@@ -311,7 +311,7 @@ class Plotter:
             mask = np.ones(len(self.doublets), dtype=bool)
         elif req == REQ_XY:
             text = f"|dr| < {DR_CUT[doublelayer]}mm"
-            mask = np.abs(self.doublets["dr"]) < DR_CUT[doublelayer]
+            mask = np.abs(self.doublets["doublet_dr"]) < DR_CUT[doublelayer]
         elif req == REQ_RZ:
             text = f"|dz| < {DZ_CUT[doublelayer]}mm"
             mask = np.abs(self.doublets["doublet_dz"]) < DZ_CUT[doublelayer]
@@ -319,7 +319,7 @@ class Plotter:
             text = f"|dr| < {DR_CUT[doublelayer]}mm, |dz| < {DZ_CUT[doublelayer]}mm"
             mask = (
                 (np.abs(self.doublets["doublet_dz"]) < DZ_CUT[doublelayer]) &
-                (np.abs(self.doublets["dr"]) < DR_CUT[doublelayer])
+                (np.abs(self.doublets["doublet_dr"]) < DR_CUT[doublelayer])
             )
         else:
             raise ValueError(f"Unknown requirement: {req}")
@@ -521,24 +521,24 @@ class Plotter:
         bins = {
             "doublet_dz": np.linspace(-50, 50, 101) if self.signal else np.linspace(-49e3, 49e3, 101),
             "dphi": np.linspace(-1.5, 1.5, 301) if self.signal else np.linspace(-3.2, 3.2, 201),
-            "dr": np.linspace(0, 600, 151) if self.signal else np.linspace(0, 1500, 101),
+            "doublet_dr": np.linspace(0, 600, 151) if self.signal else np.linspace(0, 1500, 101),
         }
         xlabel = {
             "doublet_dz": r"dz in rz-plane [mm]",
             "dphi": r"dphi in xy-plane [rad]",
-            "dr": r"dr in xy-plane [mm]",
+            "doublet_dr": r"dr in xy-plane [mm]",
         }
         formatting = {
             "doublet_dz": ".1f",
             "dphi": ".3f",
-            "dr": ".0f",
+            "doublet_dr": ".0f",
         }
 
         # 1d histograms
         for feature in [
             "doublet_dz",
             "dphi",
-            "dr",
+            "doublet_dr",
         ]:
 
             for semilogy in [
@@ -590,7 +590,7 @@ class Plotter:
 
         # 2d histograms
         for feature_x, feature_y in [
-            ("dphi", "dr"),
+            ("dphi", "doublet_dr"),
         ]:
 
             for lognorm in [

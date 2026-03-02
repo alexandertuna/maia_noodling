@@ -110,7 +110,7 @@ class DoubletMaker:
             slope_xy = np.divide(doublets["simhit_y_upper"] - doublets["simhit_y_lower"],
                                  doublets["simhit_x_upper"] - doublets["simhit_x_lower"])
             intercept_xy = doublets["simhit_y_lower"] - slope_xy * doublets["simhit_x_lower"]
-            doublets["dr"] = np.abs(intercept_xy) / np.sqrt(1 + slope_xy**2)
+            doublets["doublet_dr"] = np.abs(intercept_xy) / np.sqrt(1 + slope_xy**2)
 
             # doublet features: position
             doublets["doublet_r"] = (doublets["simhit_r_lower"] + doublets["simhit_r_upper"]) / 2
@@ -135,7 +135,7 @@ class DoubletMaker:
             # cut some doublets?
             if self.cut_doublets:
                 doublelayer = doublets["simhit_layer_div_2"]
-                mask_dr = np.abs(doublets["dr"]) < DR_CUT[doublelayer]
+                mask_dr = np.abs(doublets["doublet_dr"]) < DR_CUT[doublelayer]
                 mask_dz = np.abs(doublets["doublet_dz"]) < DZ_CUT[doublelayer]
                 cutflow["dr"] = mask_dr.sum()
                 cutflow["dz"] = mask_dz.sum()

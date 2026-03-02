@@ -71,7 +71,7 @@ class LineSegment:
         doublelayer = self.doublets["doublet_layer_div_2"]
         self.doublets = self.doublets[
             (self.doublets["doublet_dz"] < DZ_CUT[doublelayer]) &
-            (self.doublets["dr"] < DR_CUT[doublelayer])
+            (self.doublets["doublet_dr"] < DR_CUT[doublelayer])
         ]
         memory = self.doublets.memory_usage(deep=True).sum() * BYTE_TO_MB
         logger.info(f"Memory usage after filtering doublets: {memory:.1f} MB")
