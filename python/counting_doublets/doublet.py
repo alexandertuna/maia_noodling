@@ -19,6 +19,7 @@ class DoubletMaker:
 
     def make_doublets(self, df: pd.DataFrame) -> pd.DataFrame:
         logger.info("Making doublets ...")
+
         groupby_cols = [
             "file",
         ]
@@ -30,6 +31,7 @@ class DoubletMaker:
                 "simhit_module", # the phi-module
                 # "simhit_sensor", # the z-sensor
             ]
+
         doublet_cols = [
             "file",
             "i_event", # the event
@@ -120,6 +122,16 @@ class DoubletMaker:
             doublets["doublet_phi"] = np.arctan2(doublets["doublet_y"], doublets["doublet_x"])
             doublets["doublet_theta"] = np.arctan2(doublets["doublet_r"], doublets["doublet_z"])
             doublets["doublet_eta"] = -np.log(np.tan(doublets["doublet_theta"] / 2))
+
+            # doublet feature: radius of circle composed of the two hits and the origin
+            # R = abc/4K
+            circle_a = doublets["simhit_r_lower"]
+            circle_b = doublets["simhit_r_upper"]
+            circle_c = np.sqrt((doublets["simhit_x_upper"] - doublets["simhit_x_lower"])**2 +
+                               (doublets["simhit_y_upper"] - doublets["simhit_y_lower"])**2)
+            circle_K = 0.5 * np.abs(doublets["simhit_x_lower"] * doublets["simhit_y_upper"] -
+                                    doublets["simhit_x_upper"] * doublets["simhit_y_lower"])
+            doublets["doublet_circle_radius"] = np.divide(circle_a * circle_b * circle_c, 4.0 * circle_K)
 
             # doublet feature: mcp matching
             doublets["i_mcp"] = doublets["i_mcp_lower"].where(doublets["i_mcp_lower"] == doublets["i_mcp_upper"], -1)
