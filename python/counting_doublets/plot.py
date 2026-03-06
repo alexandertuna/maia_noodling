@@ -72,7 +72,7 @@ class Plotter:
             # self.plot_layer_occupancy_2d(pdf)
             # self.plot_radius_vs_layer(pdf)
             # self.plot_doublet_occupancy(pdf)
-            # self.plot_doublet_features(pdf)
+            self.plot_doublet_features(pdf)
             self.plot_linesegment_features(pdf)
             if self.signal:
                 # self.write_denominator_info(pdf)
@@ -500,6 +500,7 @@ class Plotter:
             "mcp_q",
             "mcp_vertex_r",
             "mcp_vertex_z",
+            "mcp_q_over_pt",
         ]
         if not self.signal:
             raise ValueError("Should not be calling add_doublet_mcp_features for background")
@@ -521,17 +522,29 @@ class Plotter:
         bins = {
             "doublet_dz": np.linspace(-50, 50, 101) if self.signal else np.linspace(-49e3, 49e3, 101),
             "doublet_dr": np.linspace(0, 600, 151) if self.signal else np.linspace(0, 1500, 101),
-            "doublet_dphi": np.linspace(-1.5, 1.5, 301) if self.signal else np.linspace(-3.2, 3.2, 201),
+            "doublet_dphi": np.linspace(-0.8, 0.8, 321) if self.signal else np.linspace(-3.2, 3.2, 201),
+            "doublet_pt": np.linspace(0, 10, 101),
+            "doublet_q_over_pt": np.linspace(-0.8, 0.8, 161),
+            "mcp_q_over_pt": np.linspace(-0.8, 0.8, 161),
+            "mc_pt": np.linspace(0, 10, 101),
         }
         xlabel = {
             "doublet_dz": r"dz in rz-plane [mm]",
             "doublet_dr": r"dr in xy-plane [mm]",
             "doublet_dphi": r"dphi in xy-plane [rad]",
+            "doublet_pt": r"pT [GeV]",
+            "doublet_q_over_pt": r"Doublet q/pT [1/GeV]",
+            "mcp_q_over_pt": r"MC q/pT [1/GeV]",
+            "mc_pt": r"MC pT [GeV]",
+
         }
         formatting = {
             "doublet_dz": ".1f",
             "doublet_dr": ".0f",
             "doublet_dphi": ".3f",
+            "doublet_pt": ".1f",
+            "doublet_q_over_pt": ".3f",
+            "mcp_q_over_pt": ".3f",
         }
 
         # 1d histograms
@@ -539,6 +552,7 @@ class Plotter:
             "doublet_dz",
             "doublet_dr",
             "doublet_dphi",
+            "doublet_pt",
         ]:
 
             for semilogy in [
@@ -591,6 +605,8 @@ class Plotter:
         # 2d histograms
         for feature_x, feature_y in [
             ("doublet_dphi", "doublet_dr"),
+            ("doublet_dphi", "mcp_q_over_pt"),
+            ("doublet_q_over_pt", "mcp_q_over_pt"),
         ]:
 
             for lognorm in [
