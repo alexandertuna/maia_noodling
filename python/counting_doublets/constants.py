@@ -21,6 +21,7 @@ ONE_POINT_FIVE_GEV = 1.5
 MM_TO_CM = 0.1
 CM_TO_MM = 10.0
 BYTE_TO_MB = 1e-6
+MEV_TO_GEV = 1e-3
 
 CODE = "/ceph/users/atuna/work/maia"
 XML = f"{CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
@@ -28,6 +29,7 @@ XML = f"{CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
 
 EPSILON = 1e-6
 MCPARTICLE = "MCParticle"
+MAGNETIC_FIELD = 5.0 # Tesla
 
 BARREL_TRACKER_MAX_ETA = 0.65
 BARREL_TRACKER_MAX_RADIUS = 1446.0
