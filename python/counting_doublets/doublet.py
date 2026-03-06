@@ -5,8 +5,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 from constants import DZ_CUT, DR_CUT
-
-BYTE_TO_MB = 1e-6
+from constants import MAGNETIC_FIELD, SPEED_OF_LIGHT
+from constants import BYTE_TO_MB, MEV_TO_GEV
 
 class DoubletMaker:
 
@@ -123,8 +123,12 @@ class DoubletMaker:
             doublets["doublet_theta"] = np.arctan2(doublets["doublet_r"], doublets["doublet_z"])
             doublets["doublet_eta"] = -np.log(np.tan(doublets["doublet_theta"] / 2))
 
-            # doublet feature: radius of circle composed of the two hits and the origin
-            # R = abc/4K
+            # guess charge from dphi:
+            # positively charged particles have negative dphi, and vice versa
+            doublets["doublet_q"] = (-1*np.sign(doublets["doublet_dphi"])).astype(np.int8)
+
+            # doublet feature: radius of circle composed of the two hits and the origin. R = abc/4K
+            # then get pt from R
             circle_a = doublets["simhit_r_lower"]
             circle_b = doublets["simhit_r_upper"]
             circle_c = np.sqrt((doublets["simhit_x_upper"] - doublets["simhit_x_lower"])**2 +
@@ -132,6 +136,8 @@ class DoubletMaker:
             circle_K = 0.5 * np.abs(doublets["simhit_x_lower"] * doublets["simhit_y_upper"] -
                                     doublets["simhit_x_upper"] * doublets["simhit_y_lower"])
             doublets["doublet_circle_radius"] = np.divide(circle_a * circle_b * circle_c, 4.0 * circle_K)
+            doublets["doublet_pt"] = SPEED_OF_LIGHT * MAGNETIC_FIELD * doublets["doublet_circle_radius"] * 1e-6
+            doublets["doublet_q_over_pt"] = doublets["doublet_q"] / doublets["doublet_pt"]
 
             # doublet feature: mcp matching
             doublets["i_mcp"] = doublets["i_mcp_lower"].where(doublets["i_mcp_lower"] == doublets["i_mcp_upper"], -1)
