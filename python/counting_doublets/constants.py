@@ -100,6 +100,9 @@ DDR_CUT = np.array([
 DDZ_CUT = np.array([
     20.0, # quadlayer 0
 ])
+DQOVERPT_CUT = np.array([
+    0.100, # quadlayer 0
+])
 
 REQ_PASSTHROUGH = "no cuts"
 REQ_RZ = "rz req."
