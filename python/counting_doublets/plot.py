@@ -734,17 +734,24 @@ class Plotter:
         baseline = self.baseline_doublet_mask() if self.signal else np.ones(len(self.doublets), dtype=bool)
 
         bins = {
-            "linesegment_deta": np.linspace(-3.2, 3.2, 641) if not self.signal else np.linspace(-0.4, 0.4, 201),
-            "linesegment_dphi": np.linspace(-3.2, 3.2, 641) if not self.signal else np.linspace(-0.4, 0.4, 201),
+            "linesegment_deta": np.linspace(-3.2, 3.2, 641) if not self.signal else np.linspace(-0.011, 0.011, 221),
+            "linesegment_dphi": np.linspace(-3.2, 3.2, 641) if not self.signal else np.linspace(-0.08, 0.08, 201),
+            "linesegment_ddr": np.linspace(-300, 300, 601),
+            "linesegment_ddz": np.linspace(-60, 60, 601),
         }
         xlabel = {
-            "linesegment_deta": r"deta",
-            "linesegment_dphi": r"dphi [rad]",
+            "linesegment_deta": r"upper doublet eta - lower doublet eta",
+            "linesegment_dphi": r"upper doublet phi - lower doublet phi [rad]",
+            "linesegment_ddr": "upper doublet dr - lower doublet dr",
+            "linesegment_ddz": "upper doublet dz - lower doublet dz",
         }
         formatting = {
-            "linesegment_deta": ".3f",
-            "linesegment_dphi": ".3f",
+            "linesegment_deta": ".5f",
+            "linesegment_dphi": ".5f",
+            "linesegment_ddr": ".3f",
+            "linesegment_ddz": ".3f",
         }
+        color = "cornflowerblue" if self.signal else "crimson"
 
         baseline = (self.linesegments["i_mcp"] >= 0) if self.signal else np.ones(len(self.linesegments), dtype=bool)
 
@@ -752,6 +759,8 @@ class Plotter:
         for feature in [
             "linesegment_deta",
             "linesegment_dphi",
+            "linesegment_ddr",
+            "linesegment_ddz",
         ]:
 
             for semilogy in [
@@ -779,7 +788,7 @@ class Plotter:
                             self.linesegments[mask][feature],
                             bins=bins[feature],
                             histtype="stepfilled",
-                            color="crimson",
+                            color=color,
                             edgecolor="black",
                             linewidth=1.0,
                             alpha=0.9,
