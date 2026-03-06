@@ -86,6 +86,18 @@ DR_CUT = np.array([
     260, # mm # doublelayer 0
     313, # mm # doublelayer 1
 ])
+DETA_CUT = np.array([
+    0.0023, # quadlayer 0
+])
+DPHI_CUT = np.array([
+    0.034, # quadlayer 0
+])
+DDR_CUT = np.array([
+    69.0, # quadlayer 0
+])
+DDZ_CUT = np.array([
+    20.0, # quadlayer 0
+])
 
 REQ_PASSTHROUGH = "no cuts"
 REQ_RZ = "rz req."
