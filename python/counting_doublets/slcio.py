@@ -278,7 +278,7 @@ def postprocess_mcps(df: pd.DataFrame) -> pd.DataFrame:
     df["mcp_theta"] = np.arctan2(df["mcp_pt"], df["mcp_pz"])
     df["mcp_eta"] = -np.log(np.tan(df["mcp_theta"] / 2))
     df["mcp_phi"] = np.arctan2(df["mcp_py"], df["mcp_px"])
-    df["mcp_q_over_pt"] = df["mcp_q"] / df["mcp_pt"]
+    df["mcp_qoverpt"] = df["mcp_q"] / df["mcp_pt"]
     df["mcp_vertex_r"] = np.sqrt(df["mcp_vertex_x"]**2 + df["mcp_vertex_y"]**2)
     df["mcp_endpoint_r"] = np.sqrt(df["mcp_endpoint_x"]**2 + df["mcp_endpoint_y"]**2)
 

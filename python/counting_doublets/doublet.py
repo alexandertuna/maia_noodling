@@ -66,10 +66,10 @@ class DoubletMaker:
             "simhit_y_lower",
             "i_mcp_upper",
             "i_mcp_lower",
-            "doublet_r",
-            "doublet_z",
-            "doublet_x",
-            "doublet_y",
+            # "doublet_r",
+            # "doublet_z",
+            # "doublet_x",
+            # "doublet_y",
             "doublet_theta",
         ]
 
@@ -137,7 +137,7 @@ class DoubletMaker:
                                     doublets["simhit_x_upper"] * doublets["simhit_y_lower"])
             doublets["doublet_circle_radius"] = np.divide(circle_a * circle_b * circle_c, 4.0 * circle_K)
             doublets["doublet_pt"] = SPEED_OF_LIGHT * MAGNETIC_FIELD * doublets["doublet_circle_radius"] * 1e-6
-            doublets["doublet_q_over_pt"] = doublets["doublet_q"] / doublets["doublet_pt"]
+            doublets["doublet_qoverpt"] = doublets["doublet_q"] / doublets["doublet_pt"]
 
             # doublet feature: mcp matching
             doublets["i_mcp"] = doublets["i_mcp_lower"].where(doublets["i_mcp_lower"] == doublets["i_mcp_upper"], -1)

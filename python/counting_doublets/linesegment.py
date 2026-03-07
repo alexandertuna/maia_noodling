@@ -4,7 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from constants import DZ_CUT, DR_CUT
-from constants import DETA_CUT, DPHI_CUT, DDR_CUT, DDZ_CUT
+from constants import DETA_CUT, DPHI_CUT, DDR_CUT, DDZ_CUT, DQOVERPT_CUT
 from constants import SYSTEMS, DOUBLELAYERS
 from constants import BYTE_TO_MB
 
@@ -154,8 +154,10 @@ class LineSegment:
                     suffixes=("_lower", "_upper"),
                 )
 
-                # assign i_mcp and other features
+                # assign i_mcp
                 segments["i_mcp"] = segments["i_mcp_lower"].where(segments["i_mcp_lower"] == segments["i_mcp_upper"], -1)
+
+                # assign more features
                 segments["linesegment_ddr"] = segments["doublet_dr_upper"] - segments["doublet_dr_lower"]
                 segments["linesegment_ddz"] = segments["doublet_dz_upper"] - segments["doublet_dz_lower"]
                 segments["linesegment_deta"] = segments["doublet_eta_upper"] - segments["doublet_eta_lower"]
@@ -163,6 +165,18 @@ class LineSegment:
                 segments["linesegment_dphi"] = (segments["linesegment_dphi"] + np.pi) % (2 * np.pi) - np.pi
                 segments["linesegment_layer_div_4"] = segments["doublet_layer_div_2_lower"] // 2
                 segments["linesegment_quadlayer"] = segments["doublet_doublelayer_div_2"]
+                segments["linesegment_dqoverpt"] = segments["doublet_qoverpt_upper"] - segments["doublet_qoverpt_lower"]
+
+                # rz projection
+                slope_rz = np.divide(segments["doublet_z_upper"] - segments["doublet_z_lower"],
+                                     segments["doublet_r_upper"] - segments["doublet_r_lower"])
+                segments["linesegment_dz"] = segments["doublet_z_lower"] - segments["doublet_r_lower"] * slope_rz
+
+                # xy projection
+                slope_xy = np.divide(segments["doublet_y_upper"] - segments["doublet_y_lower"],
+                                     segments["doublet_x_upper"] - segments["doublet_x_lower"])
+                intercept_xy = segments["doublet_y_lower"] -  segments["doublet_x_lower"] * slope_xy
+                segments["linesegment_dr"] = np.abs(intercept_xy) / np.sqrt(1 + slope_xy**2)
 
                 # record some numbers
                 cutflow = {"all": len(segments)}
@@ -183,9 +197,9 @@ class LineSegment:
                     mask = {}
                     mask["deta"] = np.abs(segments["linesegment_deta"]) < DETA_CUT[ql]
                     mask["dphi"] = np.abs(segments["linesegment_dphi"]) < DPHI_CUT[ql]
-                    mask["ddr"] = (segments["linesegment_ddr"] > 0) & (segments["linesegment_ddr"] < DDR_CUT[ql])
                     mask["ddz"] = np.abs(segments["linesegment_ddz"]) < DDZ_CUT[ql]
-                    mask["and"] = mask["deta"] & mask["dphi"] & mask["ddr"] & mask["ddz"]
+                    mask["dqoverpt"] = np.abs(segments["linesegment_dqoverpt"]) < DQOVERPT_CUT[ql]
+                    mask["and"] = mask["deta"] & mask["dphi"] & mask["dqoverpt"] & mask["ddz"]
 
                     # mask = (np.abs(segments["linesegment_deta"]) < DETA_CUT[ql]) & (np.abs(segments["linesegment_dphi"]) < DPHI_CUT[ql])
                     for cut in mask.keys():

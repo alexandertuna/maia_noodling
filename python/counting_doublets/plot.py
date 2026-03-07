@@ -72,7 +72,7 @@ class Plotter:
             # self.plot_layer_occupancy_2d(pdf)
             # self.plot_radius_vs_layer(pdf)
             # self.plot_doublet_occupancy(pdf)
-            self.plot_doublet_features(pdf)
+            # self.plot_doublet_features(pdf)
             self.plot_linesegment_features(pdf)
             if self.signal:
                 # self.write_denominator_info(pdf)
@@ -500,7 +500,7 @@ class Plotter:
             "mcp_q",
             "mcp_vertex_r",
             "mcp_vertex_z",
-            "mcp_q_over_pt",
+            "mcp_qoverpt",
         ]
         if not self.signal:
             raise ValueError("Should not be calling add_doublet_mcp_features for background")
@@ -524,8 +524,8 @@ class Plotter:
             "doublet_dr": np.linspace(0, 600, 151) if self.signal else np.linspace(0, 1500, 101),
             "doublet_dphi": np.linspace(-0.8, 0.8, 321) if self.signal else np.linspace(-3.2, 3.2, 201),
             "doublet_pt": np.linspace(0, 10, 101),
-            "doublet_q_over_pt": np.linspace(-0.8, 0.8, 161),
-            "mcp_q_over_pt": np.linspace(-0.8, 0.8, 161),
+            "doublet_qoverpt": np.linspace(-0.8, 0.8, 161),
+            "mcp_qoverpt": np.linspace(-0.8, 0.8, 161),
             "mc_pt": np.linspace(0, 10, 101),
         }
         xlabel = {
@@ -533,8 +533,8 @@ class Plotter:
             "doublet_dr": r"dr in xy-plane [mm]",
             "doublet_dphi": r"dphi in xy-plane [rad]",
             "doublet_pt": r"pT [GeV]",
-            "doublet_q_over_pt": r"Doublet q/pT [1/GeV]",
-            "mcp_q_over_pt": r"MC q/pT [1/GeV]",
+            "doublet_qoverpt": r"Doublet q/pT [1/GeV]",
+            "mcp_qoverpt": r"MC q/pT [1/GeV]",
             "mc_pt": r"MC pT [GeV]",
 
         }
@@ -543,8 +543,8 @@ class Plotter:
             "doublet_dr": ".0f",
             "doublet_dphi": ".3f",
             "doublet_pt": ".1f",
-            "doublet_q_over_pt": ".3f",
-            "mcp_q_over_pt": ".3f",
+            "doublet_qoverpt": ".3f",
+            "mcp_qoverpt": ".3f",
         }
 
         # 1d histograms
@@ -605,8 +605,8 @@ class Plotter:
         # 2d histograms
         for feature_x, feature_y in [
             ("doublet_dphi", "doublet_dr"),
-            ("doublet_dphi", "mcp_q_over_pt"),
-            ("doublet_q_over_pt", "mcp_q_over_pt"),
+            ("doublet_dphi", "mcp_qoverpt"),
+            ("doublet_qoverpt", "mcp_qoverpt"),
         ]:
 
             for lognorm in [
@@ -752,20 +752,29 @@ class Plotter:
         bins = {
             "linesegment_deta": np.linspace(-3.2, 3.2, 641) if not self.signal else np.linspace(-0.011, 0.011, 221),
             "linesegment_dphi": np.linspace(-3.2, 3.2, 641) if not self.signal else np.linspace(-0.08, 0.08, 201),
+            "linesegment_dr": np.linspace(0, 1500, 751) if not self.signal else np.linspace(0, 400, 801),
+            "linesegment_dz": np.linspace(-30000, 30000, 201) if not self.signal else np.linspace(-100, 100, 201),
             "linesegment_ddr": np.linspace(-300, 300, 601),
             "linesegment_ddz": np.linspace(-60, 60, 601),
+            "linesegment_dqoverpt": np.linspace(-0.2, 0.2, 201),
         }
         xlabel = {
             "linesegment_deta": r"upper doublet eta - lower doublet eta",
             "linesegment_dphi": r"upper doublet phi - lower doublet phi [rad]",
+            "linesegment_dr": "line segment dr [mm]",
+            "linesegment_dz": "line segment dz [mm]",
             "linesegment_ddr": "upper doublet dr - lower doublet dr",
             "linesegment_ddz": "upper doublet dz - lower doublet dz",
+            "linesegment_dqoverpt": "upper doublet q/pt - lower doublet q/pt",
         }
         formatting = {
             "linesegment_deta": ".5f",
             "linesegment_dphi": ".5f",
+            "linesegment_dr": ".1f",
+            "linesegment_dz": ".1f",
             "linesegment_ddr": ".3f",
             "linesegment_ddz": ".3f",
+            "linesegment_dqoverpt": ".3f",
         }
         color = "cornflowerblue" if self.signal else "crimson"
 
@@ -775,8 +784,11 @@ class Plotter:
         for feature in [
             "linesegment_deta",
             "linesegment_dphi",
+            "linesegment_dr",
+            "linesegment_dz",
             "linesegment_ddr",
             "linesegment_ddz",
+            "linesegment_dqoverpt",
         ]:
 
             for semilogy in [
