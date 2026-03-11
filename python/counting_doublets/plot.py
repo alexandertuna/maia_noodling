@@ -751,8 +751,8 @@ class Plotter:
 
         bins = {
             "linesegment_deta": np.linspace(-3.2, 3.2, 641) if not self.signal else np.linspace(-0.011, 0.011, 221),
-            "linesegment_dphi": np.linspace(-3.2, 3.2, 641) if not self.signal else np.linspace(-0.08, 0.08, 201),
-            "linesegment_dr": np.linspace(0, 1500, 751) if not self.signal else np.linspace(0, 400, 801),
+            "linesegment_dphi": np.linspace(-3.2, 3.2, 321) if not self.signal else np.linspace(-0.08, 0.08, 201),
+            "linesegment_dr": np.linspace(0, 1500, 501) if not self.signal else np.linspace(0, 400, 201),
             "linesegment_dz": np.linspace(-30000, 30000, 201) if not self.signal else np.linspace(-100, 100, 201),
             "linesegment_ddr": np.linspace(-300, 300, 601),
             "linesegment_ddz": np.linspace(-60, 60, 601),
@@ -835,6 +835,41 @@ class Plotter:
                         ax.text(0.05, 0.95, f"99.7% in {p997:{fmt}}", transform=ax.transAxes)
                         pdf.savefig()
                         plt.close()
+
+        # 2d histograms
+        for feature_x, feature_y in [
+            ("linesegment_dphi", "linesegment_dr"),
+        ]:
+
+            for system in SYSTEMS:
+
+                for quadlayer in QUADLAYERS:
+
+                    logger.info(f"Plotting signal linesegment features {feature_x} vs {feature_y}, system {system}, quadlayer {quadlayer} ...")
+
+                    geo_mask = (
+                        (self.linesegments["doublet_system"] == system) &
+                        (self.linesegments["linesegment_layer_div_4"] == quadlayer)
+                    )
+                    mask = baseline & geo_mask
+                    if mask.sum() == 0:
+                        logger.info(f"No linesegments in {NICKNAMES[system]} quadlayer {quadlayer} passing baseline, skipping feature plot")
+                        continue
+                    fig, ax = plt.subplots()
+                    _, _, _, im = ax.hist2d(
+                        self.linesegments[mask][feature_x],
+                        self.linesegments[mask][feature_y],
+                        bins=[bins[feature_x], bins[feature_y]],
+                        cmap="gist_rainbow",
+                        cmin=0.5,
+                    )
+                    fig.colorbar(im, ax=ax, label="Line Segments", pad=0.01)
+                    num = mask.sum()
+                    ax.set_xlabel(xlabel[feature_x])
+                    ax.set_ylabel(xlabel[feature_y])
+                    ax.set_title(f"{NICKNAMES[system]} layers {quadlayer}. N={num}")
+                    pdf.savefig()
+                    plt.close()
 
 
 def first_exit_mask(doublets: pd.DataFrame) -> pd.Series:
