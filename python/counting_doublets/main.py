@@ -5,7 +5,7 @@ import pandas as pd
 import logging
 logger = logging.getLogger(__name__)
 
-from slcio import SlcioToHitsDataFrame
+from slcio import HitMaker
 from timelapse import Timelapse
 from doublet import DoubletMaker
 from plot import Plotter
@@ -70,13 +70,13 @@ def main():
     logger.info(f"Cut doublets: {ops.cut_doublets}")
 
     # convert slcio to hits dataframe
-    converter = SlcioToHitsDataFrame(slcio_file_paths=fnames,
-                                     load_geometry=geometry,
-                                     signal=signal,
-                                     inner=ops.inner,
-                                     outer=ops.outer,
-                                     layers=ops.layers,
-                                     )
+    converter = HitMaker(slcio_file_paths=fnames,
+                         load_geometry=geometry,
+                         signal=signal,
+                         inner=ops.inner,
+                         outer=ops.outer,
+                         layers=ops.layers,
+                         )
     mcps, simhits = converter.convert()
 
     # make doublets from hits

@@ -19,7 +19,7 @@ _detector = None
 _surfman = None
 _maps = None
 
-class SlcioToHitsDataFrame:
+class HitMaker:
 
     def __init__(
             self,
