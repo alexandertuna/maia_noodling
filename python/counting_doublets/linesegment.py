@@ -4,7 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from constants import DZ_CUT, DR_CUT
-from constants import DETA_CUT, DPHI_CUT, DDR_CUT, DDZ_CUT, DQOVERPT_CUT
+from constants import DETA_CUT, DPHI_CUT, DDR_CUT, DDZ_CUT, DQOVERPT_CUT, LS_DZ_CUT, LS_DR_CUT
 from constants import SYSTEMS, DOUBLELAYERS
 from constants import BYTE_TO_MB
 
@@ -195,11 +195,12 @@ class LineSegment:
                     ql = segments["linesegment_quadlayer"]
 
                     mask = {}
-                    mask["deta"] = np.abs(segments["linesegment_deta"]) < DETA_CUT[ql]
-                    mask["dphi"] = np.abs(segments["linesegment_dphi"]) < DPHI_CUT[ql]
                     mask["ddz"] = np.abs(segments["linesegment_ddz"]) < DDZ_CUT[ql]
                     mask["dqoverpt"] = np.abs(segments["linesegment_dqoverpt"]) < DQOVERPT_CUT[ql]
-                    mask["and"] = mask["deta"] & mask["dphi"] & mask["dqoverpt"] & mask["ddz"]
+                    mask["dz"] = np.abs(segments["linesegment_dz"]) < LS_DZ_CUT[ql]
+                    mask["dr"] = np.abs(segments["linesegment_dr"]) < LS_DR_CUT[ql]
+                    mask["dphi"] = np.abs(segments["linesegment_dphi"]) < np.pi / 2.0
+                    mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dqoverpt"] & mask["ddz"]
 
                     # mask = (np.abs(segments["linesegment_deta"]) < DETA_CUT[ql]) & (np.abs(segments["linesegment_dphi"]) < DPHI_CUT[ql])
                     for cut in mask.keys():
