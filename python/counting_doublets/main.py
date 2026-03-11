@@ -93,7 +93,11 @@ def main():
         modulemap = ModuleMap(doublets=doublets)
 
     # make line segments
-    linesegments = LineSegment(doublets=doublets, signal=signal).df
+    linesegments = LineSegment(
+        doublets=doublets,
+        signal=signal,
+        cut_line_segments=ops.cut_line_segments,
+    ).df
 
     # plot stuff
     if ops.plot:
@@ -124,6 +128,7 @@ def options():
     parser.add_argument("--plot", action="store_true", help="Include plots in the analysis")
     parser.add_argument("--modulemap", action="store_true", help="Make module map in the analysis")
     parser.add_argument("--cut-doublets", action="store_true", help="Cut doublets based on DZ_CUT and DR_CUT")
+    parser.add_argument("--cut-line-segments", action="store_true", help="Cut line segments based on [[ something ]]")
     return parser.parse_args()
 
 
