@@ -8,7 +8,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 from constants import OUTSIDE_BOUNDS, INSIDE_BOUNDS, UNDEFINED_BOUNDS, BOUNDS
-from constants import SIGNAL
 from constants import EPSILON, MCPARTICLE, PARTICLES_OF_INTEREST, SPEED_OF_LIGHT
 from constants import MM_TO_CM, CM_TO_MM
 from constants import XML
