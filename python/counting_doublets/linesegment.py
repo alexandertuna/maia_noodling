@@ -4,8 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from constants import DZ_CUT, DR_CUT
-from constants import DETA_CUT, DPHI_CUT, DDR_CUT, DDZ_CUT, DQOVERPT_CUT, LS_DZ_CUT, LS_DR_CUT
-from constants import SYSTEMS, DOUBLELAYERS
+from constants import DDZ_CUT, DQOVERPT_CUT, LS_DZ_CUT, LS_DR_CUT
 from constants import BYTE_TO_MB
 
 class LineSegment:
