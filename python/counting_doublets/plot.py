@@ -77,8 +77,8 @@ class Plotter:
             if self.signal:
                 self.write_denominator_info(pdf)
                 self.plot_doublet_efficiency_vs_kinematics(pdf)
-                # self.write_doublet_denominator_info(pdf)
-                # self.plot_doublet_quality_efficiency(pdf)
+                self.write_doublet_denominator_info(pdf)
+                self.plot_doublet_quality_efficiency(pdf)
 
 
     def plot_numbers_for_comparison(self, pdf: PdfPages):
@@ -683,46 +683,41 @@ class Plotter:
             "mcp_phi"
         ]):
 
-            for system in SYSTEMS:
+            for ((system, doublelayer), group) in self.doublets[baseline].groupby(["simhit_system",
+                                                                                   "simhit_layer_div_2",
+                                                                                   ]):
 
-                for doublelayer in DOUBLELAYERS:
+                logger.info(f"Plotting doublet quality efficiency vs {kin}, system {system}, doublelayer {doublelayer} ...")
+                layers = [doublelayer * 2, doublelayer * 2 + 1]
 
-                    logger.info(f"Plotting doublet quality efficiency vs {kin}, system {system}, doublelayer {doublelayer} ...")
-                    layers = [doublelayer * 2, doublelayer * 2 + 1]
+                for req in DOUBLET_REQS:
+                    req_text, req_mask = self.doublet_requirements(group, req)
+                    denom = group
+                    numer = group[req_mask]
+                    if i_kin == 0:
+                        logger.info(f"Denom for system {system} layers {layers} {req}: {len(denom)} doublets")
+                        logger.info(f"Numer for system {system} layers {layers} {req}: {len(numer)} doublets")
 
-                    geo_mask = (
-                        (self.doublets["simhit_system"] == system) &
-                        (self.doublets["simhit_layer_div_2"] == doublelayer)
+                    n_denom, edges = np.histogram(denom[kin], bins=bins[kin])
+                    n_numer, edges = np.histogram(numer[kin], bins=bins[kin])
+                    efficiency = np.divide(n_numer, n_denom, out=np.zeros_like(n_numer, dtype=float), where=n_denom!=0)
+                    centers = 0.5 * (edges[1:] + edges[:-1])
+
+                    fig, ax = plt.subplots()
+                    ax.plot(
+                        centers,
+                        efficiency,
+                        marker="o",
+                        markersize=1,
+                        linestyle="-",
+                        color="dodgerblue",
                     )
-
-                    for req in DOUBLET_REQS:
-                        req_text, req_mask = self.requirements(req, doublelayer)
-                        denom = self.doublets[baseline & geo_mask]
-                        numer = self.doublets[baseline & geo_mask & req_mask]
-                        if i_kin == 0:
-                            logger.info(f"Denom for system {system} layers {layers} {req}: {len(denom)} doublets")
-                            logger.info(f"Numer for system {system} layers {layers} {req}: {len(numer)} doublets")
-
-                        n_denom, edges = np.histogram(denom[kin], bins=bins[kin])
-                        n_numer, edges = np.histogram(numer[kin], bins=bins[kin])
-                        efficiency = np.divide(n_numer, n_denom, out=np.zeros_like(n_numer, dtype=float), where=n_denom!=0)
-                        centers = 0.5 * (edges[1:] + edges[:-1])
-
-                        fig, ax = plt.subplots()
-                        ax.plot(
-                            centers,
-                            efficiency,
-                            marker="o",
-                            markersize=1,
-                            linestyle="-",
-                            color="dodgerblue",
-                        )
-                        ax.set_xlabel(xlabel[kin])
-                        ax.set_ylabel("Doublet quality efficiency")
-                        ax.set_title(f"{NICKNAMES[system]} layers {layers}: {req_text}")
-                        ax.set_ylim(0.965, 1.004)
-                        pdf.savefig()
-                        plt.close()
+                    ax.set_xlabel(xlabel[kin])
+                    ax.set_ylabel("Doublet quality efficiency")
+                    ax.set_title(f"{NICKNAMES[system]} layers {layers}: {req_text}")
+                    ax.set_ylim(0.965, 1.004)
+                    pdf.savefig()
+                    plt.close()
 
 
     def write_doublet_denominator_info(self, pdf: PdfPages):
