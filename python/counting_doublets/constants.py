@@ -65,28 +65,33 @@ LAYERS = [
     1,
     2,
     3,
-    # 4,
-    # 5,
-    # 6,
-    # 7,
+    4,
+    5,
+    6,
+    7,
 ]
 DOUBLELAYERS = [
     0,
     1,
-    # 2,
-    # 3,
+    2,
+    3,
 ]
 QUADLAYERS = [
     0,
+    1,
 ]
 
 DZ_CUT = np.array([
     22, # mm # doublelayer 0
     29, # mm # doublelayer 1
+    112, # mm # doublelayer 2
+    137, # mm # doublelayer 3
 ])
 DR_CUT = np.array([
     260, # mm # doublelayer 0
     313, # mm # doublelayer 1
+    720, # mm # doublelayer 2
+    807, # mm # doublelayer 3
 ])
 DETA_CUT = np.array([
     0.0023, # quadlayer 0
@@ -104,10 +109,10 @@ DQOVERPT_CUT = np.array([
     0.100, # quadlayer 0
 ])
 LS_DZ_CUT = np.array([
-    25, # mm # doublelayer 0
+    25, # mm # quadlayer 0
 ])
 LS_DR_CUT = np.array([
-    282, # mm # doublelayer 0
+    282, # mm # quadlayer 0
 ])
 
 REQ_PASSTHROUGH = "no cuts"
