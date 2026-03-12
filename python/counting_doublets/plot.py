@@ -68,15 +68,15 @@ class Plotter:
         with PdfPages(self.pdf) as pdf:
             self.plot_numbers_for_comparison(pdf)
             self.plot_time(pdf)
-            self.plot_layer_occupancy_1d(pdf)
-            self.plot_layer_occupancy_2d(pdf)
-            self.plot_radius_vs_layer(pdf)
-            self.plot_doublet_occupancy(pdf)
-            self.plot_doublet_features(pdf)
+            # self.plot_layer_occupancy_1d(pdf)
+            # self.plot_layer_occupancy_2d(pdf)
+            # self.plot_radius_vs_layer(pdf)
+            # self.plot_doublet_occupancy(pdf)
+            # self.plot_doublet_features(pdf)
             # self.plot_linesegment_features(pdf)
             if self.signal:
                 self.write_denominator_info(pdf)
-                # self.plot_efficiency_vs_kinematics(pdf)
+                self.plot_doublet_efficiency_vs_kinematics(pdf)
                 # self.write_doublet_denominator_info(pdf)
                 # self.plot_doublet_quality_efficiency(pdf)
 
@@ -399,7 +399,7 @@ class Plotter:
         plt.close()
 
 
-    def plot_efficiency_vs_kinematics(self, pdf: PdfPages):
+    def plot_doublet_efficiency_vs_kinematics(self, pdf: PdfPages):
 
         bins = {
             "mcp_pt": np.linspace(0.0, 10.0, 201),
@@ -429,40 +429,38 @@ class Plotter:
         ]
 
         # filter doublets to only those with same parent mcp
-        self.doublets["i_mcp"] = self.doublets["i_mcp_lower"]
-        same_parent = self.doublets["i_mcp_lower"] == self.doublets["i_mcp_upper"]
+        same_parent = self.doublets["i_mcp"] >= 0
         doublets = self.doublets[same_parent][ doublet_cols + ["i_mcp"] ].drop_duplicates()
 
         # check if doublets's [file, i_event, i_mcp] is in denominator
         for kin in ["mcp_pt", "mcp_eta", "mcp_phi"]:
-            for system in [5]:
-                for doublelayer in [0]:
-                    mask = (
-                        (doublets["simhit_system"] == system) &
-                        (doublets["simhit_layer_div_2"] == doublelayer)
-                    )
-                    doublet_keys = doublets[mask][["file", "i_event", "i_mcp"]].drop_duplicates()
-                    merged = denom.merge(doublet_keys, on=["file", "i_event", "i_mcp"], how="inner")
+            for ((system, doublelayer), group) in doublets.groupby(["simhit_system",
+                                                                    "simhit_layer_div_2",
+                                                                    ]):
+                layers = [doublelayer * 2, doublelayer * 2 + 1]
 
-                    n_denom, edges = np.histogram(denom[kin], bins=bins[kin])
-                    n_numer, edges = np.histogram(merged[kin], bins=bins[kin])
-                    efficiency = np.divide(n_numer, n_denom, out=np.zeros_like(n_numer, dtype=float), where=n_denom!=0)
-                    centers = 0.5 * (edges[1:] + edges[:-1])
-                    fig, ax = plt.subplots()
-                    ax.plot(
-                        centers,
-                        efficiency,
-                        marker="o",
-                        markersize=1,
-                        linestyle="-",
-                        color="dodgerblue",
-                    )
-                    ax.set_xlabel(xlabel[kin])
-                    ax.set_ylabel("Doublet finding efficiency")
-                    ax.set_title(f"System {system} Double Layer {doublelayer}")
-                    ax.set_ylim(0.7, 1.03)
-                    pdf.savefig()
-                    plt.close()
+                doublet_keys = group[["file", "i_event", "i_mcp"]].drop_duplicates()
+                merged = denom.merge(doublet_keys, on=["file", "i_event", "i_mcp"], how="inner")
+
+                n_denom, edges = np.histogram(denom[kin], bins=bins[kin])
+                n_numer, edges = np.histogram(merged[kin], bins=bins[kin])
+                efficiency = np.divide(n_numer, n_denom, out=np.zeros_like(n_numer, dtype=float), where=n_denom!=0)
+                centers = 0.5 * (edges[1:] + edges[:-1])
+                fig, ax = plt.subplots()
+                ax.plot(
+                    centers,
+                    efficiency,
+                    marker="o",
+                    markersize=1,
+                    linestyle="-",
+                    color="dodgerblue",
+                )
+                ax.set_xlabel(xlabel[kin])
+                ax.set_ylabel("Doublet finding efficiency")
+                ax.set_title(f"{NICKNAMES[system]}, layers {layers}")
+                ax.set_ylim(0.7, 1.03)
+                pdf.savefig()
+                plt.close()
 
 
     def get_denominator_mask(self):
@@ -617,41 +615,32 @@ class Plotter:
             if not self.signal and any(["mcp" in feat for feat in [feature_x, feature_y]]):
                 continue
 
-            for lognorm in [
-                False,
-                # True,
-            ]:
+            for ((system, doublelayer), group) in self.doublets[baseline].groupby(["simhit_system",
+                                                                                    "simhit_layer_div_2",
+                                                                                    ]):
 
-                for ((system, doublelayer), group) in self.doublets[baseline].groupby(["simhit_system",
-                                                                                       "simhit_layer_div_2",
-                                                                                       ]):
+                logger.info(f"Plotting signal doublet features {feature_x} vs {feature_y}, system {system}, doublelayer {doublelayer} ...")
+                layers = [doublelayer * 2, doublelayer * 2 + 1]
+                if len(group) == 0:
+                    continue
 
-                # for system in SYSTEMS:
-                #     for doublelayer in DOUBLELAYERS:
-
-                        logger.info(f"Plotting signal doublet features {feature_x} vs {feature_y}, system {system}, doublelayer {doublelayer} ...")
-                        layers = [doublelayer * 2, doublelayer * 2 + 1]
-                        if len(group) == 0:
-                            continue
-
-                        fig, ax = plt.subplots()
-                        h2d, _, _, im = ax.hist2d(
-                            group[feature_x],
-                            group[feature_y],
-                            bins=[bins[feature_x], bins[feature_y]],
-                            cmap="gist_rainbow",
-                            cmin=0.5,
-                            norm=colors.LogNorm(vmin=0.9) if lognorm else None,
-                        )
-                        if np.nansum(h2d) == 0:
-                            raise ValueError(f"No entries in 2d histogram. Fix the binning!")
-                        fig.colorbar(im, ax=ax, label="Doublets", pad=0.01)
-                        num = len(group)
-                        ax.set_xlabel(xlabel[feature_x])
-                        ax.set_ylabel(xlabel[feature_y])
-                        ax.set_title(f"{NICKNAMES[system]} layers {layers}. N={num}")
-                        pdf.savefig()
-                        plt.close()
+                fig, ax = plt.subplots()
+                h2d, _, _, im = ax.hist2d(
+                    group[feature_x],
+                    group[feature_y],
+                    bins=[bins[feature_x], bins[feature_y]],
+                    cmap="gist_rainbow",
+                    cmin=0.5,
+                )
+                if np.nansum(h2d) == 0:
+                    raise ValueError(f"No entries in 2d histogram. Fix the binning!")
+                fig.colorbar(im, ax=ax, label="Doublets", pad=0.01)
+                num = len(group)
+                ax.set_xlabel(xlabel[feature_x])
+                ax.set_ylabel(xlabel[feature_y])
+                ax.set_title(f"{NICKNAMES[system]} layers {layers}. N={num}")
+                pdf.savefig()
+                plt.close()
 
 
 
