@@ -165,6 +165,7 @@ class LineSegment:
                 segments["linesegment_layer_div_4"] = segments["doublet_layer_div_2_lower"] // 2
                 segments["linesegment_quadlayer"] = segments["doublet_doublelayer_div_2"]
                 segments["linesegment_dqoverpt"] = segments["doublet_qoverpt_upper"] - segments["doublet_qoverpt_lower"]
+                segments["linesegment_system"] = segments["doublet_system"]
 
                 # rz projection
                 slope_rz = np.divide(segments["doublet_z_upper"] - segments["doublet_z_lower"],
