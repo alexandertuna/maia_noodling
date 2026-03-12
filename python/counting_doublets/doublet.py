@@ -162,33 +162,37 @@ class DoubletMaker:
 
             return doublets, cutflow
 
-
-
+        # group loop
         groups = df.groupby(groupby_cols)
         all_doublets, all_cutflows = [], []
 
         for i_group, (cols, group) in enumerate(groups):
 
             doublets, cutflow = make_doublets_from_group(group)
-            size = doublets.memory_usage(deep=True).sum() * BYTE_TO_MB
-            length = len(doublets)
 
             all_doublets.append(doublets)
             all_cutflows.append(cutflow)
 
             if (self.signal and i_group % 100 == 0) or (not self.signal and i_group % 10 == 0):
+                length = len(doublets)
+                size = doublets.memory_usage(deep=True).sum() * BYTE_TO_MB
                 logger.info(f"Processed group {i_group}/{len(groups)}, doublet size = {size:.1f} MB, n(doublets) = {length} ...")
 
+        # concatenate doublets and cutflows
+        logger.info(f"Concatenating doublets ...")
         doublets = pd.concat(all_doublets, ignore_index=True)
         cutflow = pd.DataFrame(all_cutflows)
         for col in cutflow.columns:
             logger.info(f"Doublets cutflow, {col}: {cutflow[col].sum()}")
-
         if len(doublets) == 0:
             raise ValueError("No doublets found in the DataFrame")
 
-        logger.info(f"Total lower hits for doublets: {n_lower}")
-        logger.info(f"Total upper hits for doublets: {n_upper}")
-        logger.info(f"Concatenating doublets ...")
+        # announcements
+        logger.info(f"Total doublets: {len(doublets)}")
+        logger.info(f"Total doublets size: {doublets.memory_usage(deep=True).sum() * BYTE_TO_MB:.1f} MB")
+        counts = doublets.groupby(["simhit_system",
+                                   "simhit_layer_div_2"]).size()
+        for (system, doublelayer), total in counts.items():
+            logger.info(f"n(doublets) for system {system}, doublelayer {doublelayer}: {total}")
 
         return doublets
