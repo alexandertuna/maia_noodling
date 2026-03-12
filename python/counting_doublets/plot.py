@@ -68,18 +68,17 @@ class Plotter:
         with PdfPages(self.pdf) as pdf:
             self.plot_numbers_for_comparison(pdf)
             self.plot_time(pdf)
-            # self.plot_layer_occupancy_1d(pdf)
-            # self.plot_layer_occupancy_2d(pdf)
-            # self.plot_radius_vs_layer(pdf)
-            # self.plot_doublet_occupancy(pdf)
-            # self.plot_doublet_features(pdf)
-            self.plot_linesegment_features(pdf)
+            self.plot_layer_occupancy_1d(pdf)
+            self.plot_layer_occupancy_2d(pdf)
+            self.plot_radius_vs_layer(pdf)
+            self.plot_doublet_occupancy(pdf)
+            self.plot_doublet_features(pdf)
+            # self.plot_linesegment_features(pdf)
             if self.signal:
-                # self.write_denominator_info(pdf)
+                self.write_denominator_info(pdf)
                 # self.plot_efficiency_vs_kinematics(pdf)
                 # self.write_doublet_denominator_info(pdf)
                 # self.plot_doublet_quality_efficiency(pdf)
-                pass
 
 
     def plot_numbers_for_comparison(self, pdf: PdfPages):
@@ -194,12 +193,11 @@ class Plotter:
     def plot_time(self, pdf: PdfPages):
         logger.info(f"Plotting time")
         xlabel = "Sim. hit time [ns]" + r" minus $R/c$"
-        for system in SYSTEMS:
-            mask = (self.simhits["simhit_system"] == system)
+        for (system, simhits) in self.simhits.groupby("simhit_system"):
             bins = np.linspace(-10, 20, 301)
             fig, ax = plt.subplots()
             ax.hist(
-                self.simhits[mask]["simhit_t_corrected"],
+                simhits["simhit_t_corrected"],
                 bins=bins,
                 histtype="stepfilled",
                 color="yellow",
@@ -218,9 +216,7 @@ class Plotter:
 
     def plot_layer_occupancy_1d(self, pdf: PdfPages):
         logger.info(f"Plotting layer occupancy (1d)")
-        for system in SYSTEMS:
-            mask = (self.simhits["simhit_system"] == system)
-            simhits = self.simhits[mask]
+        for (system, simhits) in self.simhits.groupby("simhit_system"):
             bins = np.arange(simhits["simhit_layer"].min()-0.5,
                              simhits["simhit_layer"].max()+1.0,
                              1)
@@ -244,42 +240,35 @@ class Plotter:
 
     def plot_layer_occupancy_2d(self, pdf: PdfPages):
         logger.info(f"Plotting layer occupancy (2d)")
-        for system in SYSTEMS:
-            for layer in LAYERS:
-                mask = (
-                    (self.simhits["simhit_system"] == system) &
-                    (self.simhits["simhit_layer"] == layer)
-                )
-                logger.info(f"Occupancy of {NICKNAMES[system]} layer {layer}: {mask.sum()} sim hits")
-                if mask.sum() == 0:
-                    logger.info(f"No sim hits in {NICKNAMES[system]} layer {layer}, skipping 2d occupancy plot")
-                    continue
-                simhits = self.simhits[mask]
-                bins = [
-                    np.arange(-0.5, simhits["simhit_module"].max()+1.5, 1),
-                    np.arange(-0.5, simhits["simhit_sensor"].max()+1.5, 1),
-                ]
-                fig, ax = plt.subplots()
-                _, _, _, im = ax.hist2d(
-                    simhits["simhit_module"],
-                    simhits["simhit_sensor"],
-                    bins=bins,
-                    cmap="gist_rainbow",
-                    norm=colors.LogNorm(vmin=0.9),
-                )
-                ax.set_xlabel("Phi module")
-                ax.set_ylabel("Z sensor")
-                ax.set_title(f"{NICKNAMES[system]}, layer {layer}")
-                fig.colorbar(im, ax=ax, pad=0.01, label="Number of sim. hits")
-                pdf.savefig()
-                plt.close()
+        for ((system, layer), simhits) in self.simhits.groupby(["simhit_system",
+                                                                "simhit_layer",
+                                                                ]):
+            logger.info(f"Occupancy of {NICKNAMES[system]} layer {layer}: {len(simhits)} sim hits")
+            if len(simhits) == 0:
+                continue
+            bins = [
+                np.arange(-0.5, simhits["simhit_module"].max()+1.5, 1),
+                np.arange(-0.5, simhits["simhit_sensor"].max()+1.5, 1),
+            ]
+            fig, ax = plt.subplots()
+            _, _, _, im = ax.hist2d(
+                simhits["simhit_module"],
+                simhits["simhit_sensor"],
+                bins=bins,
+                cmap="gist_rainbow",
+                norm=colors.LogNorm(vmin=0.9),
+            )
+            ax.set_xlabel("Phi module")
+            ax.set_ylabel("Z sensor")
+            ax.set_title(f"{NICKNAMES[system]}, layer {layer}")
+            fig.colorbar(im, ax=ax, pad=0.01, label="Number of sim. hits")
+            pdf.savefig()
+            plt.close()
 
 
     def plot_radius_vs_layer(self, pdf: PdfPages):
         logger.info(f"Plotting radius vs layer")
-        for system in SYSTEMS:
-            mask = (self.simhits["simhit_system"] == system)
-            simhits = self.simhits[mask]
+        for (system, simhits) in self.simhits.groupby("simhit_system"):
             bins = [
                 np.arange(simhits["simhit_layer"].min() - 0.5,
                           simhits["simhit_layer"].max() + 1.0, 1),
@@ -326,51 +315,74 @@ class Plotter:
         return text, mask
 
 
+    def doublet_requirements(self, doublets: pd.DataFrame, req: str) -> tuple[str, pd.DataFrame]:
+        # return description and mask
+        doublelayer = doublets["simhit_layer_div_2"]
+        if len(doublelayer.unique()) != 1:
+            raise ValueError(f"Multiple doublelayers found: {doublelayer.unique()}")
+        doublelayer = doublelayer.iloc[0]
+        if req == REQ_PASSTHROUGH:
+            text = "No requirement"
+            mask = np.ones(len(doublets), dtype=bool)
+        elif req == REQ_XY:
+            text = f"|dr| < {DR_CUT[doublelayer]}mm"
+            mask = np.abs(doublets["doublet_dr"]) < DR_CUT[doublelayer]
+        elif req == REQ_RZ:
+            text = f"|dz| < {DZ_CUT[doublelayer]}mm"
+            mask = np.abs(doublets["doublet_dz"]) < DZ_CUT[doublelayer]
+        elif req == REQ_RZ_XY:
+            text = f"|dr| < {DR_CUT[doublelayer]}mm, |dz| < {DZ_CUT[doublelayer]}mm"
+            mask = (
+                (np.abs(doublets["doublet_dz"]) < DZ_CUT[doublelayer]) &
+                (np.abs(doublets["doublet_dr"]) < DR_CUT[doublelayer])
+            )
+        else:
+            raise ValueError(f"Unknown requirement: {req}")
+        return text, mask
+
+
     def plot_doublet_occupancy(self, pdf: PdfPages):
-        for system in SYSTEMS:
-            for doublelayer in DOUBLELAYERS:
-                zmax = None
-                for req in DOUBLET_REQS:
+        for ((system, doublelayer), group) in self.doublets.groupby(["simhit_system",
+                                                                     "simhit_layer_div_2",
+                                                                    ]):
+            zmax = None
+            for req in DOUBLET_REQS:
 
-                    req_text, req_mask = self.requirements(req, doublelayer)
-                    mask = (
-                        (self.doublets["simhit_system"] == system) &
-                        (self.doublets["simhit_layer_div_2"] == doublelayer) &
-                        req_mask
-                    )
-                    if mask.sum() == 0:
-                        logger.info(f"No doublets in {NICKNAMES[system]} double layer {doublelayer} passing {req}, skipping occupancy plot")
-                        continue
+                req_text, req_mask = self.doublet_requirements(group, req)
+                doublets = group[req_mask]
 
-                    logger.info(f"Occupancy of {NICKNAMES[system]} doublelayer {doublelayer}, {req}: {mask.sum()} doublets")
-                    layers = [doublelayer * 2, doublelayer * 2 + 1]
+                logger.info(f"Occupancy of {NICKNAMES[system]} doublelayer {doublelayer}, {req}: {len(doublets)} doublets")
+                if len(doublets) == 0:
+                    continue
 
-                    # skip these plots to save time
-                    # if not self.signal:
-                    #     continue
+                layers = [doublelayer * 2, doublelayer * 2 + 1]
 
-                    doublets = self.doublets[mask]
-                    bins = [
-                        np.arange(-0.5, doublets["simhit_module"].max()+1.5, 1),
-                        np.arange(-0.5, doublets["simhit_sensor"].max()+1.5, 1),
-                    ]
-                    fig, ax = plt.subplots()
-                    h2d, _, _, im = ax.hist2d(
-                        doublets["simhit_module"],
-                        doublets["simhit_sensor"],
-                        bins=bins,
-                        cmap="gist_rainbow",
-                        norm=colors.LogNorm(vmin=0.9),
-                    )
-                    if zmax is None:
-                        zmax = h2d.max()
-                    im.set_clim(0.9, zmax)
-                    ax.set_xlabel("Phi module")
-                    ax.set_ylabel("Z sensor")
-                    ax.set_title(f"{NICKNAMES[system]}, layers {layers}, {req_text}")
-                    fig.colorbar(im, ax=ax, label="Number of doublets", pad=0.01)
-                    pdf.savefig()
-                    plt.close()
+                # skip these plots to save time
+                # if not self.signal:
+                #     continue
+
+                # doublets = self.doublets[mask]
+                bins = [
+                    np.arange(-0.5, doublets["simhit_module"].max()+1.5, 1),
+                    np.arange(-0.5, doublets["simhit_sensor"].max()+1.5, 1),
+                ]
+                fig, ax = plt.subplots()
+                h2d, _, _, im = ax.hist2d(
+                    doublets["simhit_module"],
+                    doublets["simhit_sensor"],
+                    bins=bins,
+                    cmap="gist_rainbow",
+                    norm=colors.LogNorm(vmin=0.9),
+                )
+                if zmax is None:
+                    zmax = h2d.max()
+                im.set_clim(0.9, zmax)
+                ax.set_xlabel("Phi module")
+                ax.set_ylabel("Z sensor")
+                ax.set_title(f"{NICKNAMES[system]}, layers {layers}, {req_text}")
+                fig.colorbar(im, ax=ax, label="Number of doublets", pad=0.01)
+                pdf.savefig()
+                plt.close()
 
 
     def write_denominator_info(self, pdf: PdfPages):
@@ -516,13 +528,13 @@ class Plotter:
 
 
     def plot_doublet_features(self, pdf: PdfPages):
-        logger.info("Plotting signal doublet features ...")
+        logger.info("Plotting doublet features ...")
         baseline = self.baseline_doublet_mask() if self.signal else np.ones(len(self.doublets), dtype=bool)
 
         bins = {
-            "doublet_dz": np.linspace(-50, 50, 101) if self.signal else np.linspace(-49e3, 49e3, 101),
-            "doublet_dr": np.linspace(0, 600, 151) if self.signal else np.linspace(0, 1500, 101),
-            "doublet_dphi": np.linspace(-0.8, 0.8, 321) if self.signal else np.linspace(-3.2, 3.2, 201),
+            "doublet_dz": np.linspace(-150, 150, 301) if self.signal else np.linspace(-49e3, 49e3, 101),
+            "doublet_dr": np.linspace(0, 1000, 101) if self.signal else np.linspace(0, 1500, 101),
+            "doublet_dphi": np.linspace(-1.0, 1.0, 201) if self.signal else np.linspace(-3.2, 3.2, 201),
             "doublet_pt": np.linspace(0, 10, 101),
             "doublet_qoverpt": np.linspace(-0.8, 0.8, 161),
             "mcp_qoverpt": np.linspace(-0.8, 0.8, 161),
@@ -560,25 +572,18 @@ class Plotter:
                 True,
             ]:
 
-                for system in SYSTEMS:
-
-                    for doublelayer in DOUBLELAYERS:
+                for ((system, doublelayer), group) in self.doublets[baseline].groupby(["simhit_system",
+                                                                                       "simhit_layer_div_2",
+                                                                                       ]):
 
                         logger.info(f"Plotting signal doublet feature {feature}, system {system}, doublelayer {doublelayer} ...")
                         layers = [doublelayer * 2, doublelayer * 2 + 1]
-
-                        geo_mask = (
-                            (self.doublets["simhit_system"] == system) &
-                            (self.doublets["simhit_layer_div_2"] == doublelayer)
-                        )
-                        mask = baseline & geo_mask
-                        if mask.sum() == 0:
-                            logger.info(f"No doublets in {NICKNAMES[system]} double layer {doublelayer} passing baseline, skipping feature plot")
+                        if len(group) == 0:
                             continue
 
                         fig, ax = plt.subplots()
                         ax.hist(
-                            self.doublets[mask][feature],
+                            group[feature],
                             bins=bins[feature],
                             histtype="stepfilled",
                             color="crimson",
@@ -588,10 +593,10 @@ class Plotter:
                         )
                         if semilogy:
                             ax.semilogy()
-                        num = mask.sum()
-                        mean = np.mean(self.doublets[mask][feature])
-                        rms = np.sqrt(np.mean((self.doublets[mask][feature] - mean) ** 2))
-                        p997 = np.percentile(np.abs(self.doublets[mask][feature]), 99.7)
+                        num = len(group)
+                        mean = np.mean(group[feature])
+                        rms = np.sqrt(np.mean((group[feature] - mean) ** 2))
+                        p997 = np.percentile(np.abs(group[feature]), 99.7)
                         fmt = formatting[feature]
                         ax.set_ylim(0.8 if semilogy else 0, None)
                         ax.set_xlabel(xlabel[feature])
@@ -609,37 +614,39 @@ class Plotter:
             ("doublet_qoverpt", "mcp_qoverpt"),
         ]:
 
+            if not self.signal and any(["mcp" in feat for feat in [feature_x, feature_y]]):
+                continue
+
             for lognorm in [
                 False,
-                True,
+                # True,
             ]:
 
-                for system in SYSTEMS:
+                for ((system, doublelayer), group) in self.doublets[baseline].groupby(["simhit_system",
+                                                                                       "simhit_layer_div_2",
+                                                                                       ]):
 
-                    for doublelayer in DOUBLELAYERS:
+                # for system in SYSTEMS:
+                #     for doublelayer in DOUBLELAYERS:
 
                         logger.info(f"Plotting signal doublet features {feature_x} vs {feature_y}, system {system}, doublelayer {doublelayer} ...")
                         layers = [doublelayer * 2, doublelayer * 2 + 1]
-
-                        geo_mask = (
-                            (self.doublets["simhit_system"] == system) &
-                            (self.doublets["simhit_layer_div_2"] == doublelayer)
-                        )
-                        mask = baseline & geo_mask
-                        if mask.sum() == 0:
-                            logger.info(f"No doublets in {NICKNAMES[system]} double layer {doublelayer} passing baseline, skipping feature plot")
+                        if len(group) == 0:
                             continue
+
                         fig, ax = plt.subplots()
-                        _, _, _, im = ax.hist2d(
-                            self.doublets[mask][feature_x],
-                            self.doublets[mask][feature_y],
+                        h2d, _, _, im = ax.hist2d(
+                            group[feature_x],
+                            group[feature_y],
                             bins=[bins[feature_x], bins[feature_y]],
                             cmap="gist_rainbow",
                             cmin=0.5,
                             norm=colors.LogNorm(vmin=0.9) if lognorm else None,
                         )
+                        if np.nansum(h2d) == 0:
+                            raise ValueError(f"No entries in 2d histogram. Fix the binning!")
                         fig.colorbar(im, ax=ax, label="Doublets", pad=0.01)
-                        num = mask.sum()
+                        num = len(group)
                         ax.set_xlabel(xlabel[feature_x])
                         ax.set_ylabel(xlabel[feature_y])
                         ax.set_title(f"{NICKNAMES[system]} layers {layers}. N={num}")
