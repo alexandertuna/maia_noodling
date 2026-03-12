@@ -293,28 +293,6 @@ class Plotter:
             plt.close()
 
 
-    def requirements(self, req: str, doublelayer: int) -> tuple[str, pd.DataFrame]:
-        # return description and mask
-        if req == REQ_PASSTHROUGH:
-            text = "No requirement"
-            mask = np.ones(len(self.doublets), dtype=bool)
-        elif req == REQ_XY:
-            text = f"|dr| < {DR_CUT[doublelayer]}mm"
-            mask = np.abs(self.doublets["doublet_dr"]) < DR_CUT[doublelayer]
-        elif req == REQ_RZ:
-            text = f"|dz| < {DZ_CUT[doublelayer]}mm"
-            mask = np.abs(self.doublets["doublet_dz"]) < DZ_CUT[doublelayer]
-        elif req == REQ_RZ_XY:
-            text = f"|dr| < {DR_CUT[doublelayer]}mm, |dz| < {DZ_CUT[doublelayer]}mm"
-            mask = (
-                (np.abs(self.doublets["doublet_dz"]) < DZ_CUT[doublelayer]) &
-                (np.abs(self.doublets["doublet_dr"]) < DR_CUT[doublelayer])
-            )
-        else:
-            raise ValueError(f"Unknown requirement: {req}")
-        return text, mask
-
-
     def doublet_requirements(self, doublets: pd.DataFrame, req: str) -> tuple[str, pd.DataFrame]:
         # return description and mask
         doublelayer = doublets["simhit_layer_div_2"]
