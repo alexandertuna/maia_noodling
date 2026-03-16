@@ -94,9 +94,9 @@ def main():
 
     # make line segments
     linesegments = LineSegment(
-        doublets=doublets,
         signal=signal,
         cut_line_segments=ops.cut_line_segments,
+        doublets=doublets,
     ).df
 
     # plot stuff
@@ -120,7 +120,7 @@ def main():
 def options():
     parser = argparse.ArgumentParser(usage=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-i", default=FNAMES, help="Input slcio file or glob pattern")
-    parser.add_argument("--layers", nargs="+", type=int, default=[0, 1], help="List of numbers (default: [0, 1])")
+    parser.add_argument("--layers", nargs="+", type=int, default=[0, 1, 2, 3, 4, 5, 6, 7], help="List of layers to consider")
     parser.add_argument("--geometry", action="store_true", help="Load compact geometry from xml")
     parser.add_argument("--timelapse", action="store_true", help="Create timelapse gif")
     parser.add_argument("--inner", action="store_true", help="Include inner tracker hits in the analysis")
