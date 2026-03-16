@@ -3,7 +3,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from constants import DZ_CUT, DR_CUT
-from constants import SYSTEMS, DOUBLELAYERS
+from constants import SYSTEMS
 from constants import BYTE_TO_MB
 
 class ModuleMap:
@@ -90,7 +90,7 @@ class ModuleMap:
 
                 mask_system = df["simhit_system"] == system
 
-                for doublelayer in DOUBLELAYERS:
+                for doublelayer in [0, 1]: # old approach: hard-coded doublelayers
 
                     if doublelayer % 2 != 0:
                         continue
