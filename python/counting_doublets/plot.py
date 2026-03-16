@@ -34,7 +34,7 @@ from constants import MUON, ANTIMUON
 from constants import BARREL_TRACKER_MAX_ETA
 from constants import BARREL_TRACKER_MAX_RADIUS
 from constants import ONE_POINT_FIVE_GEV, ONE_MM, ZERO_POINT_ZERO_ONE_MM
-from constants import SYSTEMS, DOUBLELAYERS, QUADLAYERS, LAYERS, NICKNAMES, OUTER_TRACKER_BARREL
+from constants import NICKNAMES, OUTER_TRACKER_BARREL
 from constants import DZ_CUT, DR_CUT
 from constants import REQ_PASSTHROUGH, REQ_RZ, REQ_XY, REQ_RZ_XY
 from constants import DOUBLET_REQS
@@ -73,12 +73,12 @@ class Plotter:
             # self.plot_radius_vs_layer(pdf)
             # self.plot_doublet_occupancy(pdf)
             # self.plot_doublet_features(pdf)
-            self.plot_linesegment_features(pdf)
+            # self.plot_linesegment_features(pdf)
             if self.signal:
                 self.write_denominator_info(pdf)
-                # self.plot_doublet_efficiency_vs_kinematics(pdf)
-                # self.write_doublet_denominator_info(pdf)
-                # self.plot_doublet_quality_efficiency(pdf)
+                self.plot_doublet_efficiency_vs_kinematics(pdf)
+                self.write_doublet_denominator_info(pdf)
+                self.plot_doublet_quality_efficiency(pdf)
 
 
     def plot_numbers_for_comparison(self, pdf: PdfPages):
