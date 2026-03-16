@@ -107,12 +107,15 @@ DDZ_CUT = np.array([
 ])
 DQOVERPT_CUT = np.array([
     0.100, # quadlayer 0
+    0.121, # quadlayer 1
 ])
 LS_DZ_CUT = np.array([
     25, # mm # quadlayer 0
+    122, # mm # quadlayer 1
 ])
 LS_DR_CUT = np.array([
     282, # mm # quadlayer 0
+    753, # mm # quadlayer 1
 ])
 
 REQ_PASSTHROUGH = "no cuts"

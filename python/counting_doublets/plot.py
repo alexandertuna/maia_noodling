@@ -73,12 +73,12 @@ class Plotter:
             # self.plot_radius_vs_layer(pdf)
             # self.plot_doublet_occupancy(pdf)
             # self.plot_doublet_features(pdf)
-            # self.plot_linesegment_features(pdf)
+            self.plot_linesegment_features(pdf)
             if self.signal:
                 self.write_denominator_info(pdf)
-                self.plot_doublet_efficiency_vs_kinematics(pdf)
-                self.write_doublet_denominator_info(pdf)
-                self.plot_doublet_quality_efficiency(pdf)
+                # self.plot_doublet_efficiency_vs_kinematics(pdf)
+                # self.write_doublet_denominator_info(pdf)
+                # self.plot_doublet_quality_efficiency(pdf)
 
 
     def plot_numbers_for_comparison(self, pdf: PdfPages):
@@ -721,8 +721,8 @@ class Plotter:
         bins = {
             "linesegment_deta": np.linspace(-3.2, 3.2, 641) if not self.signal else np.linspace(-0.011, 0.011, 221),
             "linesegment_dphi": np.linspace(-3.2, 3.2, 321) if not self.signal else np.linspace(-0.08, 0.08, 201),
-            "linesegment_dr": np.linspace(0, 1500, 501) if not self.signal else np.linspace(0, 400, 201),
-            "linesegment_dz": np.linspace(-30000, 30000, 201) if not self.signal else np.linspace(-100, 100, 201),
+            "linesegment_dr": np.linspace(0, 1500, 501) if not self.signal else np.linspace(0, 1000, 401),
+            "linesegment_dz": np.linspace(-30000, 30000, 201) if not self.signal else np.linspace(-200, 200, 201),
             "linesegment_ddr": np.linspace(-300, 300, 601),
             "linesegment_ddz": np.linspace(-60, 60, 601),
             "linesegment_dqoverpt": np.linspace(-0.2, 0.2, 201),
@@ -762,27 +762,18 @@ class Plotter:
 
             for semilogy in [
                 False,
-                True,
+                # True,
             ]:
 
-                for system in SYSTEMS:
-
-                    for quadlayer in QUADLAYERS:
+                for ((system, quadlayer), group) in self.linesegments[baseline].groupby(["linesegment_system",
+                                                                                         "linesegment_quadlayer",
+                                                                                         ]):
 
                         logger.info(f"Plotting signal linesegment feature {feature}, system {system}, quadlayer {quadlayer} ...")
 
-                        geo_mask = (
-                            (self.linesegments["doublet_system"] == system) &
-                            (self.linesegments["linesegment_layer_div_4"] == quadlayer)
-                        )
-                        mask = baseline & geo_mask
-                        if mask.sum() == 0:
-                            logger.info(f"No linesegments in {NICKNAMES[system]} quadlayer {quadlayer} passing baseline, skipping feature plot")
-                            continue
-
                         fig, ax = plt.subplots()
                         ax.hist(
-                            self.linesegments[mask][feature],
+                            group[feature],
                             bins=bins[feature],
                             histtype="stepfilled",
                             color=color,
@@ -792,15 +783,15 @@ class Plotter:
                         )
                         if semilogy:
                             ax.semilogy()
-                        num = mask.sum()
-                        mean = np.mean(self.linesegments[mask][feature])
-                        rms = np.sqrt(np.mean((self.linesegments[mask][feature] - mean) ** 2))
-                        p997 = np.percentile(np.abs(self.linesegments[mask][feature]), 99.7)
+                        num = len(group)
+                        mean = np.mean(group[feature])
+                        rms = np.sqrt(np.mean((group[feature] - mean) ** 2))
+                        p997 = np.percentile(np.abs(group[feature]), 99.7)
                         fmt = formatting[feature]
                         ax.set_ylim(0.8 if semilogy else 0, None)
                         ax.set_xlabel(xlabel[feature])
                         ax.set_ylabel("Line Segments")
-                        ax.set_title(f"{NICKNAMES[system]}. N={num}, Mean={mean:{fmt}}, RMS={rms:{fmt}}")
+                        ax.set_title(f"{NICKNAMES[system]}. QL={quadlayer}. N={num}, Mean={mean:{fmt}}, RMS={rms:{fmt}}")
                         ax.text(0.05, 0.95, f"99.7% in {p997:{fmt}}", transform=ax.transAxes)
                         pdf.savefig()
                         plt.close()
@@ -810,35 +801,30 @@ class Plotter:
             ("linesegment_dphi", "linesegment_dr"),
         ]:
 
-            for system in SYSTEMS:
+            for ((system, quadlayer), group) in self.linesegments[baseline].groupby(["linesegment_system",
+                                                                                     "linesegment_quadlayer",
+                                                                                     ]):
 
-                for quadlayer in QUADLAYERS:
+                logger.info(f"Plotting signal linesegment features {feature_x} vs {feature_y}, system {system}, quadlayer {quadlayer} ...")
+                if len(group) == 0:
+                    logger.info(f"No linesegments in {NICKNAMES[system]} quadlayer {quadlayer} passing baseline, skipping feature plot")
+                    continue
 
-                    logger.info(f"Plotting signal linesegment features {feature_x} vs {feature_y}, system {system}, quadlayer {quadlayer} ...")
-
-                    geo_mask = (
-                        (self.linesegments["doublet_system"] == system) &
-                        (self.linesegments["linesegment_layer_div_4"] == quadlayer)
-                    )
-                    mask = baseline & geo_mask
-                    if mask.sum() == 0:
-                        logger.info(f"No linesegments in {NICKNAMES[system]} quadlayer {quadlayer} passing baseline, skipping feature plot")
-                        continue
-                    fig, ax = plt.subplots()
-                    _, _, _, im = ax.hist2d(
-                        self.linesegments[mask][feature_x],
-                        self.linesegments[mask][feature_y],
-                        bins=[bins[feature_x], bins[feature_y]],
-                        cmap="gist_rainbow",
-                        cmin=0.5,
-                    )
-                    fig.colorbar(im, ax=ax, label="Line Segments", pad=0.01)
-                    num = mask.sum()
-                    ax.set_xlabel(xlabel[feature_x])
-                    ax.set_ylabel(xlabel[feature_y])
-                    ax.set_title(f"{NICKNAMES[system]} layers {quadlayer}. N={num}")
-                    pdf.savefig()
-                    plt.close()
+                fig, ax = plt.subplots()
+                _, _, _, im = ax.hist2d(
+                    group[feature_x],
+                    group[feature_y],
+                    bins=[bins[feature_x], bins[feature_y]],
+                    cmap="gist_rainbow",
+                    cmin=0.5,
+                )
+                fig.colorbar(im, ax=ax, label="Line Segments", pad=0.01)
+                num = len(group)
+                ax.set_xlabel(xlabel[feature_x])
+                ax.set_ylabel(xlabel[feature_y])
+                ax.set_title(f"{NICKNAMES[system]} QL={quadlayer}. N={num}")
+                pdf.savefig()
+                plt.close()
 
 
 def first_exit_mask(doublets: pd.DataFrame) -> pd.Series:
