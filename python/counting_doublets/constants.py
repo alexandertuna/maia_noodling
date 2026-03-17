@@ -56,30 +56,30 @@ COLLECTIONS = [
 ]
 INNER_TRACKER_BARREL = 3
 OUTER_TRACKER_BARREL = 5
-SYSTEMS = [
-    # INNER_TRACKER_BARREL,
-    OUTER_TRACKER_BARREL,
-]
-LAYERS = [
-    0,
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7,
-]
-DOUBLELAYERS = [
-    0,
-    1,
-    2,
-    3,
-]
-QUADLAYERS = [
-    0,
-    1,
-]
+# SYSTEMS = [
+#     INNER_TRACKER_BARREL,
+#     OUTER_TRACKER_BARREL,
+# ]
+# LAYERS = [
+#     0,
+#     1,
+#     2,
+#     3,
+#     4,
+#     5,
+#     6,
+#     7,
+# ]
+# DOUBLELAYERS = [
+#     0,
+#     1,
+#     2,
+#     3,
+# ]
+# QUADLAYERS = [
+#     0,
+#     1,
+# ]
 
 DZ_CUT = np.array([
     22, # mm # doublelayer 0
@@ -95,18 +95,22 @@ DR_CUT = np.array([
 ])
 DETA_CUT = np.array([
     0.0023, # quadlayer 0
+    0.0041, # quadlayer 1
 ])
 DPHI_CUT = np.array([
     0.034, # quadlayer 0
+    0.038, # quadlayer 1
 ])
 DDR_CUT = np.array([
     69.0, # quadlayer 0
+    218.0, # quadlayer 1
 ])
 DDZ_CUT = np.array([
     20.0, # quadlayer 0
+    128.0, # quadlayer 1
 ])
 DQOVERPT_CUT = np.array([
-    0.100, # quadlayer 0
+    0.105, # quadlayer 0
     0.121, # quadlayer 1
 ])
 LS_DZ_CUT = np.array([
