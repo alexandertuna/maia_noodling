@@ -11,6 +11,7 @@ from doublet import DoubletMaker
 from plot import Plotter
 from modulemap import ModuleMap
 from linesegment import LineSegment
+from linesegment2 import LineSegment2
 from constants import SIGNAL
 
 
@@ -91,6 +92,13 @@ def main():
         if not signal:
             raise ValueError("Module map can only be made for signal files")
         modulemap = ModuleMap(doublets=doublets)
+
+    # make line segments
+    _ = LineSegment2(
+        signal=signal,
+        cut_line_segments=ops.cut_line_segments,
+        doublets=doublets,
+    ).df
 
     # make line segments
     linesegments = LineSegment(
