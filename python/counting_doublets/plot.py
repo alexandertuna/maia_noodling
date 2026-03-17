@@ -68,12 +68,12 @@ class Plotter:
         with PdfPages(self.pdf) as pdf:
             self.plot_numbers_for_comparison(pdf)
             self.plot_time(pdf)
-            # self.plot_layer_occupancy_1d(pdf)
-            # self.plot_layer_occupancy_2d(pdf)
-            # self.plot_radius_vs_layer(pdf)
-            # self.plot_doublet_occupancy(pdf)
-            # self.plot_doublet_features(pdf)
-            # self.plot_linesegment_features(pdf)
+            self.plot_layer_occupancy_1d(pdf)
+            self.plot_layer_occupancy_2d(pdf)
+            self.plot_radius_vs_layer(pdf)
+            self.plot_doublet_occupancy(pdf)
+            self.plot_doublet_features(pdf)
+            self.plot_linesegment_features(pdf)
             if self.signal:
                 self.write_denominator_info(pdf)
                 self.plot_doublet_efficiency_vs_kinematics(pdf)
