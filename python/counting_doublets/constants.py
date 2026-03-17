@@ -1,5 +1,8 @@
 import numpy as np
 
+MCP_PKL = "mcps.pkl"
+SIMHIT_PKL = "simhits.pkl"
+
 MUON = 13
 ANTIMUON = -MUON
 MUON_NEUTRINO = 14
