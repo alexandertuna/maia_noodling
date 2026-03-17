@@ -12,7 +12,7 @@ from plot import Plotter
 from modulemap import ModuleMap
 from linesegment import LineSegment
 from linesegment2 import LineSegment2
-from constants import SIGNAL
+from constants import SIGNAL, MCP_PKL, SIMHIT_PKL
 
 
 FNAMES = [
@@ -71,14 +71,24 @@ def main():
     logger.info(f"Cut doublets: {ops.cut_doublets}")
 
     # convert slcio to hits dataframe
-    converter = HitMaker(slcio_file_paths=fnames,
-                         load_geometry=geometry,
-                         signal=signal,
-                         inner=ops.inner,
-                         outer=ops.outer,
-                         layers=ops.layers,
-                         )
-    mcps, simhits = converter.convert()
+    if ops.read_from_pickle:
+        logger.info("Reading intermediate dataframes from pickle files ...")
+        mcps = pd.read_pickle(MCP_PKL)
+        simhits = pd.read_pickle(SIMHIT_PKL)
+    else:
+        converter = HitMaker(slcio_file_paths=fnames,
+                            load_geometry=geometry,
+                            signal=signal,
+                            inner=ops.inner,
+                            outer=ops.outer,
+                            layers=ops.layers,
+                            )
+        mcps, simhits = converter.convert()
+
+    if ops.write_to_pickle:
+        logger.info("Saving intermediate dataframes as pickle files ...")
+        mcps.to_pickle(MCP_PKL)
+        simhits.to_pickle(SIMHIT_PKL)
 
     # make doublets from hits
     doublets = DoubletMaker(
@@ -137,6 +147,8 @@ def options():
     parser.add_argument("--modulemap", action="store_true", help="Make module map in the analysis")
     parser.add_argument("--cut-doublets", action="store_true", help="Cut doublets based on DZ_CUT and DR_CUT")
     parser.add_argument("--cut-line-segments", action="store_true", help="Cut line segments based on [[ something ]]")
+    parser.add_argument("--read-from-pickle", action="store_true", help="Read slcio dataframes from pickle files")
+    parser.add_argument("--write-to-pickle", action="store_true", help="Save slcio dataframes as pickle files")
     return parser.parse_args()
 
 
