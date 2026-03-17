@@ -3,7 +3,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 from constants import DZ_CUT, DR_CUT
-from constants import SYSTEMS
 from constants import BYTE_TO_MB
 
 class ModuleMap:
@@ -86,7 +85,7 @@ class ModuleMap:
 
         for group, df in self.doublets.groupby(groupby_cols):
 
-            for system in SYSTEMS:
+            for system in [5]: # old approach: hard-coded systems
 
                 mask_system = df["simhit_system"] == system
 
