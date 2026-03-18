@@ -104,14 +104,14 @@ def main():
         modulemap = ModuleMap(doublets=doublets)
 
     # make line segments
-    _ = LineSegment2(
+    linesegments = LineSegment(
         signal=signal,
         cut_line_segments=ops.cut_line_segments,
         doublets=doublets,
     ).df
 
     # make line segments
-    linesegments = LineSegment(
+    _ = LineSegment2(
         signal=signal,
         cut_line_segments=ops.cut_line_segments,
         doublets=doublets,
