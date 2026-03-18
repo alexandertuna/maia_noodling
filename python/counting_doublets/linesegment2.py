@@ -9,10 +9,18 @@ from constants import BYTE_TO_MB
 
 class LineSegment2:
 
+    #
+    # To make doublets, we do 2 groupbys:
+    #  Layers 01, 23, ... grouped by doublet_doublelayer_mod_2
+    #  Layers 12, 34, ... grouped by doublet_doublelayer_plus_1_mod_2
+    #
+
     def __init__(self, doublets: pd.DataFrame, signal: bool, cut_line_segments: bool):
         self.df = None
         self.signal = signal
         self.cut_line_segments = cut_line_segments
+        self.lower_suffix = "lower"
+        self.upper_suffix = "upper"
         memory = doublets.memory_usage(deep=True).sum() * BYTE_TO_MB
         logger.info(f"Making linesegments with doublets memory {memory:.1f} MB ...")
         self.doublets = doublets.copy()
@@ -31,6 +39,31 @@ class LineSegment2:
             "simhit_module": "doublet_module",
         }
         self.doublets = self.doublets.rename(columns=rename)
+
+        # add columns for 2 groupbys
+        self.doublets["doublet_doublelayer_div_2"] = self.doublets["doublet_doublelayer"] // 2
+        self.doublets["doublet_doublelayer_mod_2"] = self.doublets["doublet_doublelayer"] % 2
+        self.doublets["doublet_doublelayer_plus_1"] = self.doublets["doublet_doublelayer"] + 1
+        self.doublets["doublet_doublelayer_plus_1_div_2"] = self.doublets["doublet_doublelayer_plus_1"] // 2
+        self.doublets["doublet_doublelayer_plus_1_mod_2"] = self.doublets["doublet_doublelayer_plus_1"] % 2
+
+        # prepare to drop columns after finding line segments
+        self.dropcols = [
+            "doublet_doublelayer_div_2",
+            "doublet_doublelayer_mod_2",
+            "doublet_doublelayer_plus_1",
+            "doublet_doublelayer_plus_1_div_2",
+            "doublet_doublelayer_plus_1_mod_2",
+        ]
+        for col in self.dropcols.copy():
+            self.dropcols.append(f"{col}_{self.lower_suffix}")
+            self.dropcols.append(f"{col}_{self.upper_suffix}")
+        for coord in ["x", "y", "z", "r", "p", "t_corrected", "costheta"]:
+            for simhit_suffix in [self.lower_suffix, self.upper_suffix]:
+                for doublet_suffix in [self.lower_suffix, self.upper_suffix]:
+                    self.dropcols.append(f"simhit_{coord}_{simhit_suffix}_{doublet_suffix}")
+
+        # announce memory
         memory = self.doublets.memory_usage(deep=True).sum() * BYTE_TO_MB
         logger.info(f"Memory usage after adding/removing columns: {memory:.1f} MB")
 
@@ -65,20 +98,32 @@ class LineSegment2:
         logger.info("Making line segments ...")
 
         # two loops:
-        # layers 01, 23, 45, ...
-        # layers 12, 34, 56, ...
+        # layers 01, 23, 45, ... (even)
+        # layers 12, 34, 56, ... (odd)
+        even, odd = 0, 1
 
-        return
-        groupby_cols = [
-            "file",
-            "doublet_system",
-            "doublet_doublelayer_div_2",
-        ] if self.signal else [
-            "file",
-            "i_event",
-            "doublet_system",
-            "doublet_doublelayer_div_2",
-        ]
+        groupby_cols = {
+            even: [
+                "file",
+                "doublet_system",
+                "doublet_doublelayer_div_2",
+            ] if self.signal else [
+                "file",
+                "i_event",
+                "doublet_system",
+                "doublet_doublelayer_div_2",
+            ],
+            odd: [
+                "file",
+                "doublet_system",
+                "doublet_doublelayer_plus_1_div_2",
+            ] if self.signal else [
+                "file",
+                "i_event",
+                "doublet_system",
+                "doublet_doublelayer_plus_1_div_2",
+            ],
+        }
 
         subgroup_cols = [
             "file",
@@ -87,116 +132,147 @@ class LineSegment2:
             "doublet_module",
         ]
 
-        keys = [
-            "file",
-            "i_event",
-            "doublet_system",
-            "doublet_doublelayer_div_2",
-        ]
+        keys = {
+            even: [
+                "file",
+                "i_event",
+                "doublet_system",
+                "doublet_doublelayer_div_2",
+            ],
+            odd: [
+                "file",
+                "i_event",
+                "doublet_system",
+                "doublet_doublelayer_plus_1_div_2",
+            ],
+        }
+
+        lower_vs_upper = {
+            even: "doublet_doublelayer_mod_2",
+            odd: "doublet_doublelayer_plus_1_mod_2",
+        }
 
         all_cutflows = []
         all_linesegments = []
 
-        for i_group, (cols, df) in enumerate(self.doublets.groupby(groupby_cols)):
+        for start in [even, odd]:
 
-            if (self.signal and i_group % 10 == 0) or (not self.signal):
-                n_group = len(self.doublets.groupby(groupby_cols))
-                logger.info(f"Processing group {i_group} / {n_group} for line segments ...")
+            for i_group, (cols, df) in enumerate(self.doublets.groupby(groupby_cols[start])):
 
-            lower = df[ df["doublet_doublelayer_mod_2"] == 0 ]
+                # progress bar
+                if (self.signal and i_group % 10 == 0) or (not self.signal):
+                    n_group = len(self.doublets.groupby(groupby_cols[start]))
+                    logger.info(f"Processing group {i_group} / {n_group} for line segments ...")
 
-            # mask_lower = (df["doublet_doublelayer_mod_2"] == 0)
-            # mask_upper = (df["doublet_doublelayer_mod_2"] == 1)
-            # lower = df[mask_lower]
-            # upper = df[mask_upper]
+                # get lower doublets
+                lower = df[ df[lower_vs_upper[start]] == 0 ]
 
-            for i_subgroup, (subcols, subdf) in enumerate(df.groupby(subgroup_cols)):
+                # get upper doublets
+                for i_subgroup, (subcols, subdf) in enumerate(df.groupby(subgroup_cols)):
 
-                n_subgroup = len(df.groupby(subgroup_cols))
-                logger.info(f"Processing subgroup {i_subgroup} / {n_subgroup} for line segments ...")
+                    upper = subdf[ subdf[lower_vs_upper[start]] == 1 ]
 
-                upper = subdf[ subdf["doublet_doublelayer_mod_2"] == 1 ]
+                    # progress bar
+                    n_subgroup = len(df.groupby(subgroup_cols))
+                    if i_subgroup > 0:
+                        logger.info(f"Processing subgroup {i_subgroup} / {n_subgroup} for line segments ...")
 
-                segments = lower.merge(
-                    upper,
-                    on=keys,
-                    how="inner",
-                    validate="many_to_many",
-                    suffixes=("_lower", "_upper"),
-                )
+                    # get all combinations of lower and upper
+                    segments = lower.merge(
+                        upper,
+                        on=keys[start],
+                        how="inner",
+                        validate="many_to_many",
+                        suffixes=("_lower", "_upper"),
+                    )
 
-                # assign i_mcp
-                segments["i_mcp"] = segments["i_mcp_lower"].where(segments["i_mcp_lower"] == segments["i_mcp_upper"], -1)
+                    # assign i_mcp
+                    segments["i_mcp"] = segments["i_mcp_lower"].where(segments["i_mcp_lower"] == segments["i_mcp_upper"], -1)
 
-                # assign more features
-                segments["linesegment_ddr"] = segments["doublet_dr_upper"] - segments["doublet_dr_lower"]
-                segments["linesegment_ddz"] = segments["doublet_dz_upper"] - segments["doublet_dz_lower"]
-                segments["linesegment_deta"] = segments["doublet_eta_upper"] - segments["doublet_eta_lower"]
-                segments["linesegment_dphi"] = segments["doublet_phi_upper"] - segments["doublet_phi_lower"]
-                segments["linesegment_dphi"] = (segments["linesegment_dphi"] + np.pi) % (2 * np.pi) - np.pi
-                segments["linesegment_layer_div_4"] = segments["doublet_layer_div_2_lower"] // 2
-                segments["linesegment_quadlayer"] = segments["doublet_doublelayer_div_2"]
-                segments["linesegment_dqoverpt"] = segments["doublet_qoverpt_upper"] - segments["doublet_qoverpt_lower"]
-                segments["linesegment_system"] = segments["doublet_system"]
+                    # rename some things
+                    rename = {
+                        "doublet_system": "linesegment_system",
+                    }
+                    segments = segments.rename(columns=rename)
 
-                # rz projection
-                slope_rz = np.divide(segments["doublet_z_upper"] - segments["doublet_z_lower"],
-                                     segments["doublet_r_upper"] - segments["doublet_r_lower"])
-                segments["linesegment_dz"] = segments["doublet_z_lower"] - segments["doublet_r_lower"] * slope_rz
+                    # assign more features
+                    segments["linesegment_ddr"] = segments["doublet_dr_upper"] - segments["doublet_dr_lower"]
+                    segments["linesegment_ddz"] = segments["doublet_dz_upper"] - segments["doublet_dz_lower"]
+                    segments["linesegment_deta"] = segments["doublet_eta_upper"] - segments["doublet_eta_lower"]
+                    segments["linesegment_dphi"] = segments["doublet_phi_upper"] - segments["doublet_phi_lower"]
+                    segments["linesegment_dphi"] = (segments["linesegment_dphi"] + np.pi) % (2 * np.pi) - np.pi
+                    segments["linesegment_dqoverpt"] = segments["doublet_qoverpt_upper"] - segments["doublet_qoverpt_lower"]
 
-                # xy projection
-                slope_xy = np.divide(segments["doublet_y_upper"] - segments["doublet_y_lower"],
-                                     segments["doublet_x_upper"] - segments["doublet_x_lower"])
-                intercept_xy = segments["doublet_y_lower"] -  segments["doublet_x_lower"] * slope_xy
-                segments["linesegment_dr"] = np.abs(intercept_xy) / np.sqrt(1 + slope_xy**2)
+                    # rz projection
+                    slope_rz = np.divide(segments["doublet_z_upper"] - segments["doublet_z_lower"],
+                                         segments["doublet_r_upper"] - segments["doublet_r_lower"])
+                    segments["linesegment_dz"] = segments["doublet_z_lower"] - segments["doublet_r_lower"] * slope_rz
 
-                # record some numbers
-                cutflow = {"all": len(segments)}
+                    # xy projection
+                    slope_xy = np.divide(segments["doublet_y_upper"] - segments["doublet_y_lower"],
+                                         segments["doublet_x_upper"] - segments["doublet_x_lower"])
+                    intercept_xy = segments["doublet_y_lower"] - segments["doublet_x_lower"] * slope_xy
+                    segments["linesegment_dr"] = np.abs(intercept_xy) / np.sqrt(1 + slope_xy**2)
 
-                # cut some doublets?
-                if self.cut_line_segments:
-                    # doublelayer = doublets["simhit_layer_div_2"]
-                    # mask_dr = np.abs(doublets["doublet_dr"]) < DR_CUT[doublelayer]
-                    # mask_dz = np.abs(doublets["doublet_dz"]) < DZ_CUT[doublelayer]
-                    # cutflow["dr"] = mask_dr.sum()
-                    # cutflow["dz"] = mask_dz.sum()
-                    # cutflow["drdz"] = (mask_dr & mask_dz).sum()
-                    # doublets = doublets[mask_dr & mask_dz]
-                    # DETA_CUT = 0.01
-                    # DPHI_CUT = 0.05
-                    ql = segments["linesegment_quadlayer"]
+                    # drop cols which were only necessary for this step
+                    segments.drop(columns=self.dropcols, errors="ignore", inplace=True)
 
-                    mask = {}
-                    mask["ddz"] = np.abs(segments["linesegment_ddz"]) < DDZ_CUT[ql]
-                    mask["dqoverpt"] = np.abs(segments["linesegment_dqoverpt"]) < DQOVERPT_CUT[ql]
-                    mask["dz"] = np.abs(segments["linesegment_dz"]) < LS_DZ_CUT[ql]
-                    mask["dr"] = np.abs(segments["linesegment_dr"]) < LS_DR_CUT[ql]
-                    mask["dphi"] = np.abs(segments["linesegment_dphi"]) < np.pi / 2.0
-                    mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dqoverpt"] & mask["ddz"]
+                    # record some numbers
+                    cutflow = {"all": len(segments)}
 
-                    # mask = (np.abs(segments["linesegment_deta"]) < DETA_CUT[ql]) & (np.abs(segments["linesegment_dphi"]) < DPHI_CUT[ql])
-                    for cut in mask.keys():
-                        cutflow[cut] = np.sum(mask[cut])
+                    # cut some doublets?
+                    if self.cut_line_segments:
 
-                    segments = segments[mask["and"]]
+                        raise NotImplementedError("cut-line-segments still depends on quadlayer")
+                        ql = segments["linesegment_quadlayer"]
 
-                    # cutflow["deta"] = np.sum(mask_deta)
-                    # cutflow["dphi"] = np.sum(mask_dphi)
-                    # cutflow["ddr"] = np.sum(mask_ddr)
-                    # cutflow["ddz"] = np.sum(mask_ddz)
-                    # cutflow["deta_dphi"] = np.sum(mask)
-                    # segments = segments[mask]
+                        mask = {}
+                        mask["ddz"] = np.abs(segments["linesegment_ddz"]) < DDZ_CUT[ql]
+                        mask["dqoverpt"] = np.abs(segments["linesegment_dqoverpt"]) < DQOVERPT_CUT[ql]
+                        mask["dz"] = np.abs(segments["linesegment_dz"]) < LS_DZ_CUT[ql]
+                        mask["dr"] = np.abs(segments["linesegment_dr"]) < LS_DR_CUT[ql]
+                        mask["dphi"] = np.abs(segments["linesegment_dphi"]) < np.pi / 2.0
+                        mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dqoverpt"] & mask["ddz"]
+                        for cut in mask.keys():
+                            cutflow[cut] = np.sum(mask[cut])
+                        segments = segments[mask["and"]]
 
-                # stats from this group
-                logger.info(f"Processed subgroup {i_subgroup} / {n_subgroup} which has {len(segments)} line segments ...")
+                    # stats from this group
+                    logger.info(f"Processed subgroup {i_subgroup} / {n_subgroup} which has {len(segments)} line segments ...")
 
-                # save them
-                all_cutflows.append(cutflow)
-                all_linesegments.append(segments)
+                    # save them
+                    all_cutflows.append(cutflow)
+                    all_linesegments.append(segments)
 
         # merge them
         logger.info(f"Merging {len(all_linesegments)} groups of line segments ...")
         self.df = pd.concat(all_linesegments, ignore_index=True)
+
+        # sort them
+        sortby = [
+            "file",
+            "i_event",
+            "i_mcp",
+            "doublet_doublelayer_lower",
+        ]
+        self.df = self.df.sort_values(by=sortby).reset_index(drop=True)
+        with pd.option_context("display.min_rows", 30, "display.max_rows", 30):
+            print(self.df[[
+                "file",
+                "i_event",
+                "i_mcp",
+                "linesegment_system",
+                "doublet_module_lower",
+                "doublet_module_upper",
+                "doublet_sensor_lower",
+                "doublet_sensor_upper",
+                "doublet_doublelayer_lower",
+                "doublet_doublelayer_upper",
+            ]])
+        print(self.df["doublet_doublelayer_lower"].unique())
+        print(self.df["doublet_doublelayer_upper"].unique())
+
+        # announce memory
         memory = self.df.memory_usage(deep=True).sum() * BYTE_TO_MB
         logger.info(f"Memory usage of line segments: {memory:.1f} MB")
 
@@ -205,7 +281,4 @@ class LineSegment2:
         for col in cutflow.columns:
             logger.info(f"Line segments cutflow, {col}: {cutflow[col].sum()}")
 
-        # with pd.option_context("display.min_rows", 50, "display.max_rows", 50):
-        #     logger.info("Line segments after merging doublets:")
-        #     logger.info(f"\n{self.df}")
 
