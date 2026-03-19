@@ -191,29 +191,29 @@ class LineSegment2:
 
                     # rename some things
                     rename = {
-                        "doublet_system": "linesegment_system",
+                        "doublet_system": "ls_system",
                     }
                     segments = segments.rename(columns=rename)
 
                     # assign more features
-                    segments["linesegment_ddr"] = segments["doublet_dr_upper"] - segments["doublet_dr_lower"]
-                    segments["linesegment_ddz"] = segments["doublet_dz_upper"] - segments["doublet_dz_lower"]
-                    segments["linesegment_deta"] = segments["doublet_eta_upper"] - segments["doublet_eta_lower"]
-                    segments["linesegment_dphi"] = segments["doublet_phi_upper"] - segments["doublet_phi_lower"]
-                    segments["linesegment_dphi"] = (segments["linesegment_dphi"] + np.pi) % (2 * np.pi) - np.pi
-                    segments["linesegment_dqoverpt"] = segments["doublet_qoverpt_upper"] - segments["doublet_qoverpt_lower"]
-                    segments["linesegment_doublelayer"] = segments["doublet_doublelayer_lower"]
+                    segments["ls_ddr"] = segments["doublet_dr_upper"] - segments["doublet_dr_lower"]
+                    segments["ls_ddz"] = segments["doublet_dz_upper"] - segments["doublet_dz_lower"]
+                    segments["ls_deta"] = segments["doublet_eta_upper"] - segments["doublet_eta_lower"]
+                    segments["ls_dphi"] = segments["doublet_phi_upper"] - segments["doublet_phi_lower"]
+                    segments["ls_dphi"] = (segments["ls_dphi"] + np.pi) % (2 * np.pi) - np.pi
+                    segments["ls_dqoverpt"] = segments["doublet_qoverpt_upper"] - segments["doublet_qoverpt_lower"]
+                    segments["ls_doublelayer"] = segments["doublet_doublelayer_lower"]
 
                     # rz projection
                     slope_rz = np.divide(segments["doublet_z_upper"] - segments["doublet_z_lower"],
                                          segments["doublet_r_upper"] - segments["doublet_r_lower"])
-                    segments["linesegment_dz"] = segments["doublet_z_lower"] - segments["doublet_r_lower"] * slope_rz
+                    segments["ls_dz"] = segments["doublet_z_lower"] - segments["doublet_r_lower"] * slope_rz
 
                     # xy projection
                     slope_xy = np.divide(segments["doublet_y_upper"] - segments["doublet_y_lower"],
                                          segments["doublet_x_upper"] - segments["doublet_x_lower"])
                     intercept_xy = segments["doublet_y_lower"] - segments["doublet_x_lower"] * slope_xy
-                    segments["linesegment_dr"] = np.abs(intercept_xy) / np.sqrt(1 + slope_xy**2)
+                    segments["ls_dr"] = np.abs(intercept_xy) / np.sqrt(1 + slope_xy**2)
 
                     # drop cols which were only necessary for this step
                     segments.drop(columns=self.dropcols, errors="ignore", inplace=True)
@@ -223,13 +223,13 @@ class LineSegment2:
 
                     # cut some doublets?
                     if self.cut_line_segments:
-                        dl = segments["linesegment_doublelayer"]
+                        dl = segments["ls_doublelayer"]
                         mask = {}
-                        mask["ddz"] = np.abs(segments["linesegment_ddz"]) < LS2_DDZ_CUT[dl]
-                        mask["dqoverpt"] = np.abs(segments["linesegment_dqoverpt"]) < LS2_DQOVERPT_CUT[dl]
-                        mask["dz"] = np.abs(segments["linesegment_dz"]) < LS2_DZ_CUT[dl]
-                        mask["dr"] = np.abs(segments["linesegment_dr"]) < LS2_DR_CUT[dl]
-                        mask["dphi"] = np.abs(segments["linesegment_dphi"]) < np.pi / 2.0
+                        mask["ddz"] = np.abs(segments["ls_ddz"]) < LS2_DDZ_CUT[dl]
+                        mask["dqoverpt"] = np.abs(segments["ls_dqoverpt"]) < LS2_DQOVERPT_CUT[dl]
+                        mask["dz"] = np.abs(segments["ls_dz"]) < LS2_DZ_CUT[dl]
+                        mask["dr"] = np.abs(segments["ls_dr"]) < LS2_DR_CUT[dl]
+                        mask["dphi"] = np.abs(segments["ls_dphi"]) < np.pi / 2.0
                         mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dqoverpt"] & mask["ddz"]
                         for cut in mask.keys():
                             cutflow[cut] = np.sum(mask[cut])
@@ -251,7 +251,7 @@ class LineSegment2:
             "file",
             "i_event",
             "i_mcp",
-            "linesegment_doublelayer",
+            "ls_doublelayer",
         ]
         self.df = self.df.sort_values(by=sortby).reset_index(drop=True)
 

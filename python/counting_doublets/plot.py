@@ -719,31 +719,31 @@ class Plotter:
         baseline = self.baseline_doublet_mask() if self.signal else np.ones(len(self.doublets), dtype=bool)
 
         bins = {
-            "linesegment_deta": np.linspace(-3.2, 3.2, 641) if not self.signal else np.linspace(-0.011, 0.011, 221),
-            "linesegment_dphi": np.linspace(-3.2, 3.2, 321) if not self.signal else np.linspace(-0.08, 0.08, 201),
-            "linesegment_dr": np.linspace(0, 1500, 501) if not self.signal else np.linspace(0, 1000, 401),
-            "linesegment_dz": np.linspace(-30000, 30000, 201) if not self.signal else np.linspace(-200, 200, 201),
-            "linesegment_ddr": np.linspace(-300, 300, 601),
-            "linesegment_ddz": np.linspace(-60, 60, 601),
-            "linesegment_dqoverpt": np.linspace(-0.2, 0.2, 201),
+            "ls_deta": np.linspace(-3.2, 3.2, 641) if not self.signal else np.linspace(-0.011, 0.011, 221),
+            "ls_dphi": np.linspace(-3.2, 3.2, 321) if not self.signal else np.linspace(-0.08, 0.08, 201),
+            "ls_dr": np.linspace(0, 1500, 501) if not self.signal else np.linspace(0, 1000, 401),
+            "ls_dz": np.linspace(-30000, 30000, 201) if not self.signal else np.linspace(-200, 200, 201),
+            "ls_ddr": np.linspace(-300, 300, 601),
+            "ls_ddz": np.linspace(-60, 60, 601),
+            "ls_dqoverpt": np.linspace(-0.2, 0.2, 201),
         }
         xlabel = {
-            "linesegment_deta": r"upper doublet eta - lower doublet eta",
-            "linesegment_dphi": r"upper doublet phi - lower doublet phi [rad]",
-            "linesegment_dr": "line segment dr [mm]",
-            "linesegment_dz": "line segment dz [mm]",
-            "linesegment_ddr": "upper doublet dr - lower doublet dr",
-            "linesegment_ddz": "upper doublet dz - lower doublet dz",
-            "linesegment_dqoverpt": "upper doublet q/pt - lower doublet q/pt",
+            "ls_deta": r"upper doublet eta - lower doublet eta",
+            "ls_dphi": r"upper doublet phi - lower doublet phi [rad]",
+            "ls_dr": "line segment dr [mm]",
+            "ls_dz": "line segment dz [mm]",
+            "ls_ddr": "upper doublet dr - lower doublet dr",
+            "ls_ddz": "upper doublet dz - lower doublet dz",
+            "ls_dqoverpt": "upper doublet q/pt - lower doublet q/pt",
         }
         formatting = {
-            "linesegment_deta": ".5f",
-            "linesegment_dphi": ".5f",
-            "linesegment_dr": ".1f",
-            "linesegment_dz": ".1f",
-            "linesegment_ddr": ".3f",
-            "linesegment_ddz": ".3f",
-            "linesegment_dqoverpt": ".3f",
+            "ls_deta": ".5f",
+            "ls_dphi": ".5f",
+            "ls_dr": ".1f",
+            "ls_dz": ".1f",
+            "ls_ddr": ".3f",
+            "ls_ddz": ".3f",
+            "ls_dqoverpt": ".3f",
         }
         color = "cornflowerblue" if self.signal else "crimson"
 
@@ -751,13 +751,13 @@ class Plotter:
 
         # 1d histograms
         for feature in [
-            "linesegment_deta",
-            "linesegment_dphi",
-            "linesegment_dr",
-            "linesegment_dz",
-            "linesegment_ddr",
-            "linesegment_ddz",
-            "linesegment_dqoverpt",
+            "ls_deta",
+            "ls_dphi",
+            "ls_dr",
+            "ls_dz",
+            "ls_ddr",
+            "ls_ddz",
+            "ls_dqoverpt",
         ]:
 
             for semilogy in [
@@ -765,8 +765,8 @@ class Plotter:
                 # True,
             ]:
 
-                for ((system, doublelayer), group) in self.linesegments[baseline].groupby(["linesegment_system",
-                                                                                           "linesegment_doublelayer",
+                for ((system, doublelayer), group) in self.linesegments[baseline].groupby(["ls_system",
+                                                                                           "ls_doublelayer",
                                                                                            ]):
 
                         logger.info(f"Plotting signal linesegment feature {feature}, system {system}, doublelayer {doublelayer} ...")
@@ -798,11 +798,11 @@ class Plotter:
 
         # 2d histograms
         for feature_x, feature_y in [
-            ("linesegment_dphi", "linesegment_dr"),
+            ("ls_dphi", "ls_dr"),
         ]:
 
-            for ((system, doublelayer), group) in self.linesegments[baseline].groupby(["linesegment_system",
-                                                                                       "linesegment_doublelayer",
+            for ((system, doublelayer), group) in self.linesegments[baseline].groupby(["ls_system",
+                                                                                       "ls_doublelayer",
                                                                                        ]):
 
                 logger.info(f"Plotting signal linesegment features {feature_x} vs {feature_y}, system {system}, doublelayer {doublelayer} ...")
