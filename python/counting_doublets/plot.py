@@ -765,11 +765,11 @@ class Plotter:
                 # True,
             ]:
 
-                for ((system, quadlayer), group) in self.linesegments[baseline].groupby(["linesegment_system",
-                                                                                         "linesegment_quadlayer",
-                                                                                         ]):
+                for ((system, doublelayer), group) in self.linesegments[baseline].groupby(["linesegment_system",
+                                                                                           "linesegment_doublelayer",
+                                                                                           ]):
 
-                        logger.info(f"Plotting signal linesegment feature {feature}, system {system}, quadlayer {quadlayer} ...")
+                        logger.info(f"Plotting signal linesegment feature {feature}, system {system}, doublelayer {doublelayer} ...")
 
                         fig, ax = plt.subplots()
                         ax.hist(
@@ -791,7 +791,7 @@ class Plotter:
                         ax.set_ylim(0.8 if semilogy else 0, None)
                         ax.set_xlabel(xlabel[feature])
                         ax.set_ylabel("Line Segments")
-                        ax.set_title(f"{NICKNAMES[system]}. QL={quadlayer}. N={num}, Mean={mean:{fmt}}, RMS={rms:{fmt}}")
+                        ax.set_title(f"{NICKNAMES[system]}. DL={doublelayer}. N={num}, Mean={mean:{fmt}}, RMS={rms:{fmt}}")
                         ax.text(0.05, 0.95, f"99.7% in {p997:{fmt}}", transform=ax.transAxes)
                         pdf.savefig()
                         plt.close()
@@ -801,13 +801,13 @@ class Plotter:
             ("linesegment_dphi", "linesegment_dr"),
         ]:
 
-            for ((system, quadlayer), group) in self.linesegments[baseline].groupby(["linesegment_system",
-                                                                                     "linesegment_quadlayer",
-                                                                                     ]):
+            for ((system, doublelayer), group) in self.linesegments[baseline].groupby(["linesegment_system",
+                                                                                       "linesegment_doublelayer",
+                                                                                       ]):
 
-                logger.info(f"Plotting signal linesegment features {feature_x} vs {feature_y}, system {system}, quadlayer {quadlayer} ...")
+                logger.info(f"Plotting signal linesegment features {feature_x} vs {feature_y}, system {system}, doublelayer {doublelayer} ...")
                 if len(group) == 0:
-                    logger.info(f"No linesegments in {NICKNAMES[system]} quadlayer {quadlayer} passing baseline, skipping feature plot")
+                    logger.info(f"No linesegments in {NICKNAMES[system]} doublelayer {doublelayer} passing baseline, skipping feature plot")
                     continue
 
                 fig, ax = plt.subplots()
@@ -822,7 +822,7 @@ class Plotter:
                 num = len(group)
                 ax.set_xlabel(xlabel[feature_x])
                 ax.set_ylabel(xlabel[feature_y])
-                ax.set_title(f"{NICKNAMES[system]} QL={quadlayer}. N={num}")
+                ax.set_title(f"{NICKNAMES[system]} DL={doublelayer}. N={num}")
                 pdf.savefig()
                 plt.close()
 
