@@ -111,7 +111,7 @@ def main():
     ).df
 
     # make line segments
-    _ = LineSegment2(
+    linesegments2 = LineSegment2(
         signal=signal,
         cut_line_segments=ops.cut_line_segments,
         doublets=doublets,
