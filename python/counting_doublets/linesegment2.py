@@ -4,7 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from constants import DZ_CUT, DR_CUT
-from constants import DDZ_CUT, DQOVERPT_CUT, LS_DZ_CUT, LS_DR_CUT
+from constants import LS2_DDZ_CUT, LS2_DQOVERPT_CUT, LS2_DZ_CUT, LS2_DR_CUT
 from constants import BYTE_TO_MB
 
 class LineSegment2:
@@ -222,15 +222,12 @@ class LineSegment2:
 
                     # cut some doublets?
                     if self.cut_line_segments:
-
-                        raise NotImplementedError("cut-line-segments still depends on quadlayer")
-                        ql = segments["linesegment_quadlayer"]
-
+                        dl = segments["doublet_doublelayer_lower"]
                         mask = {}
-                        mask["ddz"] = np.abs(segments["linesegment_ddz"]) < DDZ_CUT[ql]
-                        mask["dqoverpt"] = np.abs(segments["linesegment_dqoverpt"]) < DQOVERPT_CUT[ql]
-                        mask["dz"] = np.abs(segments["linesegment_dz"]) < LS_DZ_CUT[ql]
-                        mask["dr"] = np.abs(segments["linesegment_dr"]) < LS_DR_CUT[ql]
+                        mask["ddz"] = np.abs(segments["linesegment_ddz"]) < LS2_DDZ_CUT[dl]
+                        mask["dqoverpt"] = np.abs(segments["linesegment_dqoverpt"]) < LS2_DQOVERPT_CUT[dl]
+                        mask["dz"] = np.abs(segments["linesegment_dz"]) < LS2_DZ_CUT[dl]
+                        mask["dr"] = np.abs(segments["linesegment_dr"]) < LS2_DR_CUT[dl]
                         mask["dphi"] = np.abs(segments["linesegment_dphi"]) < np.pi / 2.0
                         mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dqoverpt"] & mask["ddz"]
                         for cut in mask.keys():
