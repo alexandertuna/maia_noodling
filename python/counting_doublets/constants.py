@@ -125,6 +125,28 @@ LS_DR_CUT = np.array([
     753, # mm # quadlayer 1
 ])
 
+LS2_DDZ_CUT = np.array([
+    20.0, # doublelayer 0
+    0.0, # doublelayer 1
+    128.0, # doublelayer 2
+])
+LS2_DQOVERPT_CUT = np.array([
+    0.105, # doublelayer 0
+    0.000, # doublelayer 1
+    0.121, # doublelayer 2
+])
+LS2_DZ_CUT = np.array([
+    25, # mm # doublelayer 0
+    0, # mm # doublelayer 1
+    122, # mm # doublelayer 2
+])
+LS2_DR_CUT = np.array([
+    282, # mm # doublelayer 0
+    0, # mm # doublelayer 1
+    753, # mm # doublelayer 2
+])
+
+
 REQ_PASSTHROUGH = "no cuts"
 REQ_RZ = "rz req."
 REQ_XY = "xy req."
