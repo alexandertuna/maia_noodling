@@ -202,6 +202,7 @@ class LineSegment2:
                     segments["linesegment_dphi"] = segments["doublet_phi_upper"] - segments["doublet_phi_lower"]
                     segments["linesegment_dphi"] = (segments["linesegment_dphi"] + np.pi) % (2 * np.pi) - np.pi
                     segments["linesegment_dqoverpt"] = segments["doublet_qoverpt_upper"] - segments["doublet_qoverpt_lower"]
+                    segments["linesegment_doublelayer"] = segments["doublet_doublelayer_lower"]
 
                     # rz projection
                     slope_rz = np.divide(segments["doublet_z_upper"] - segments["doublet_z_lower"],
@@ -222,7 +223,7 @@ class LineSegment2:
 
                     # cut some doublets?
                     if self.cut_line_segments:
-                        dl = segments["doublet_doublelayer_lower"]
+                        dl = segments["linesegment_doublelayer"]
                         mask = {}
                         mask["ddz"] = np.abs(segments["linesegment_ddz"]) < LS2_DDZ_CUT[dl]
                         mask["dqoverpt"] = np.abs(segments["linesegment_dqoverpt"]) < LS2_DQOVERPT_CUT[dl]
@@ -250,24 +251,9 @@ class LineSegment2:
             "file",
             "i_event",
             "i_mcp",
-            "doublet_doublelayer_lower",
+            "linesegment_doublelayer",
         ]
         self.df = self.df.sort_values(by=sortby).reset_index(drop=True)
-        with pd.option_context("display.min_rows", 30, "display.max_rows", 30):
-            print(self.df[[
-                "file",
-                "i_event",
-                "i_mcp",
-                "linesegment_system",
-                "doublet_module_lower",
-                "doublet_module_upper",
-                "doublet_sensor_lower",
-                "doublet_sensor_upper",
-                "doublet_doublelayer_lower",
-                "doublet_doublelayer_upper",
-            ]])
-        print(self.df["doublet_doublelayer_lower"].unique())
-        print(self.df["doublet_doublelayer_upper"].unique())
 
         # announce memory
         memory = self.df.memory_usage(deep=True).sum() * BYTE_TO_MB
