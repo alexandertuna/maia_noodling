@@ -99,6 +99,7 @@ class DoubletMaker:
             slope = np.divide(doublets["simhit_z_upper"] - doublets["simhit_z_lower"],
                               doublets["simhit_r_upper"] - doublets["simhit_r_lower"])
             doublets["doublet_dz"] = doublets["simhit_z_lower"] - doublets["simhit_r_lower"] * slope
+            doublets["doublet_theta_rz"] = np.arctan(slope)
 
             # doublet feature, xy dphi
             phi_local = np.arctan2(doublets["simhit_y_upper"] - doublets["simhit_y_lower"],
@@ -107,6 +108,7 @@ class DoubletMaker:
                                     (doublets["simhit_x_lower"] + doublets["simhit_x_upper"]) / 2.0)
             doublets["doublet_dphi"] = phi_local - phi_global
             doublets["doublet_dphi"] = (doublets["doublet_dphi"] + np.pi) % (2 * np.pi) - np.pi
+            doublets["doublet_theta_xy"] = phi_local
 
             # doublet feature: xy, dr at point of closest approach to origin
             slope_xy = np.divide(doublets["simhit_y_upper"] - doublets["simhit_y_lower"],
