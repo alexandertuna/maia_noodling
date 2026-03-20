@@ -5,6 +5,7 @@ logger = logging.getLogger(__name__)
 
 from constants import DZ_CUT, DR_CUT
 from constants import LS2_DDZ_CUT, LS2_DQOVERPT_CUT, LS2_DZ_CUT, LS2_DR_CUT
+from constants import LS2_DTHETA_RZ_CUT, LS2_DTHETA_XY_CUT
 from constants import BYTE_TO_MB
 
 class LineSegment2:
@@ -58,10 +59,11 @@ class LineSegment2:
         for col in self.dropcols.copy():
             self.dropcols.append(f"{col}_{self.lower_suffix}")
             self.dropcols.append(f"{col}_{self.upper_suffix}")
-        for coord in ["x", "y", "z", "r", "p", "t_corrected", "costheta"]:
-            for simhit_suffix in [self.lower_suffix, self.upper_suffix]:
-                for doublet_suffix in [self.lower_suffix, self.upper_suffix]:
-                    self.dropcols.append(f"simhit_{coord}_{simhit_suffix}_{doublet_suffix}")
+        if not self.signal:
+            for coord in ["x", "y", "z", "r", "p", "t_corrected", "costheta"]:
+                for simhit_suffix in [self.lower_suffix, self.upper_suffix]:
+                    for doublet_suffix in [self.lower_suffix, self.upper_suffix]:
+                        self.dropcols.append(f"simhit_{coord}_{simhit_suffix}_{doublet_suffix}")
 
         # announce memory
         memory = self.doublets.memory_usage(deep=True).sum() * BYTE_TO_MB
@@ -168,13 +170,13 @@ class LineSegment2:
                 lower = df[ df[lower_vs_upper[start]] == 0 ]
 
                 # get upper doublets
+                n_subgroup = len(df.groupby(subgroup_cols))
                 for i_subgroup, (subcols, subdf) in enumerate(df.groupby(subgroup_cols)):
 
                     upper = subdf[ subdf[lower_vs_upper[start]] == 1 ]
 
                     # progress bar
-                    n_subgroup = len(df.groupby(subgroup_cols))
-                    if i_subgroup > 0:
+                    if i_subgroup > 0 and i_subgroup % 10 == 0:
                         logger.info(f"Processing subgroup {i_subgroup} / {n_subgroup} for line segments ...")
 
                     # get all combinations of lower and upper
@@ -215,6 +217,12 @@ class LineSegment2:
                     intercept_xy = segments["doublet_y_lower"] - segments["doublet_x_lower"] * slope_xy
                     segments["ls_dr"] = np.abs(intercept_xy) / np.sqrt(1 + slope_xy**2)
 
+                    # angle differences (handle wraparound)
+                    segments["ls_dtheta_rz"] = segments["doublet_theta_rz_upper"] - segments["doublet_theta_rz_lower"]
+                    segments["ls_dtheta_xy"] = segments["doublet_theta_xy_upper"] - segments["doublet_theta_xy_lower"]
+                    segments["ls_dtheta_rz"] = (segments["ls_dtheta_rz"] + np.pi) % (2 * np.pi) - np.pi
+                    segments["ls_dtheta_xy"] = (segments["ls_dtheta_xy"] + np.pi) % (2 * np.pi) - np.pi
+
                     # drop cols which were only necessary for this step
                     segments.drop(columns=self.dropcols, errors="ignore", inplace=True)
 
@@ -227,16 +235,22 @@ class LineSegment2:
                         mask = {}
                         mask["ddz"] = np.abs(segments["ls_ddz"]) < LS2_DDZ_CUT[dl]
                         mask["dqoverpt"] = np.abs(segments["ls_dqoverpt"]) < LS2_DQOVERPT_CUT[dl]
+                        mask["dtheta_rz"] = np.abs(segments["ls_dtheta_rz"]) < LS2_DTHETA_RZ_CUT[dl]
+                        mask["dtheta_xy"] = np.abs(segments["ls_dtheta_xy"]) < LS2_DTHETA_XY_CUT[dl]
                         mask["dz"] = np.abs(segments["ls_dz"]) < LS2_DZ_CUT[dl]
                         mask["dr"] = np.abs(segments["ls_dr"]) < LS2_DR_CUT[dl]
                         mask["dphi"] = np.abs(segments["ls_dphi"]) < np.pi / 2.0
-                        mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dqoverpt"] & mask["ddz"]
+                        # mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dqoverpt"] & mask["ddz"]
+                        mask["drdz"] = mask["dz"] & mask["dr"] & mask["dphi"]
+                        mask["drdzdthetarz"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dtheta_rz"]
+                        mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dtheta_rz"] & mask["dtheta_xy"]
                         for cut in mask.keys():
                             cutflow[cut] = np.sum(mask[cut])
                         segments = segments[mask["and"]]
 
                     # stats from this group
-                    logger.info(f"Processed subgroup {i_subgroup} / {n_subgroup} which has {len(segments)} line segments ...")
+                    if i_subgroup > 0 and i_subgroup % 10 == 0:
+                        logger.info(f"Processed subgroup {i_subgroup} / {n_subgroup} which has {len(segments)} line segments ...")
 
                     # save them
                     all_cutflows.append(cutflow)
