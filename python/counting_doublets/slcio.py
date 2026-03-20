@@ -12,7 +12,7 @@ from constants import EPSILON, MCPARTICLE, PARTICLES_OF_INTEREST, SPEED_OF_LIGHT
 from constants import MM_TO_CM, CM_TO_MM
 from constants import XML
 from constants import INNER_TRACKER_BARREL_COLLECTION, OUTER_TRACKER_BARREL_COLLECTION, COLLECTIONS
-from constants import BYTE_TO_MB
+from constants import BYTE_TO_MB, NO_MCP
 
 _detector = None
 _surfman = None
@@ -197,7 +197,7 @@ def convert_one_file(
 
                 # associated MCParticle
                 mcp = hit.getMCParticle()
-                i_mcp = mcparticles.index(mcp) if mcp in mcparticles else -1
+                i_mcp = mcparticles.index(mcp) if mcp in mcparticles else NO_MCP
 
                 # hit/surface relations
                 if load_geometry:
