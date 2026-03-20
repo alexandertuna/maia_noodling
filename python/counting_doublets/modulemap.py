@@ -1,8 +1,9 @@
+import numpy as np
 import pandas as pd
 import logging
 logger = logging.getLogger(__name__)
 
-from constants import DZ_CUT, DR_CUT
+from constants import MD_DZ_CUT, MD_DR_CUT
 from constants import BYTE_TO_MB
 
 class ModuleMap:
@@ -46,8 +47,8 @@ class ModuleMap:
         doublelayer = self.doublets["simhit_layer_div_2"]
         self.doublets = self.doublets[
             (self.doublets["i_mcp_lower"] == self.doublets["i_mcp_upper"]) &
-            (self.doublets["doublet_dz"] < DZ_CUT[doublelayer]) &
-            (self.doublets["doublet_dr"] < DR_CUT[doublelayer])
+            (np.abs(self.doublets["doublet_dz"]) < MD_DZ_CUT[doublelayer]) &
+            (np.abs(self.doublets["doublet_dr"]) < MD_DR_CUT[doublelayer])
         ]
         self.doublets = self.doublets.rename(columns={"i_mcp_lower": "i_mcp"}).drop(columns=["i_mcp_upper"])
         memory = self.doublets.memory_usage(deep=True).sum() * BYTE_TO_MB

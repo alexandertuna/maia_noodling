@@ -35,7 +35,7 @@ from constants import BARREL_TRACKER_MAX_ETA
 from constants import BARREL_TRACKER_MAX_RADIUS
 from constants import ONE_POINT_FIVE_GEV, ONE_MM, ZERO_POINT_ZERO_ONE_MM
 from constants import NICKNAMES, OUTER_TRACKER_BARREL
-from constants import DZ_CUT, DR_CUT
+from constants import MD_DZ_CUT, MD_DR_CUT
 from constants import REQ_PASSTHROUGH, REQ_RZ, REQ_XY, REQ_RZ_XY
 from constants import DOUBLET_REQS
 from constants import MIN_COSTHETA, MIN_SIMHIT_PT_FRACTION, MAX_TIME
@@ -156,8 +156,8 @@ class Plotter:
             (self.doublets["simhit_p_upper"] / self.doublets["mcp_p"] > MIN_SIMHIT_PT_FRACTION)
         )
         quality_cuts = (
-            (np.abs(self.doublets["doublet_dz"]) < DZ_CUT[doublelayer]) &
-            (np.abs(self.doublets["doublet_dr"]) < DR_CUT[doublelayer]) &
+            (np.abs(self.doublets["doublet_dz"]) < MD_DZ_CUT[doublelayer]) &
+            (np.abs(self.doublets["doublet_dr"]) < MD_DR_CUT[doublelayer]) &
             baseline_cuts
         )
         doublets_0 = self.doublets[baseline_cuts & dl_0]
@@ -226,8 +226,8 @@ class Plotter:
             [self.doublets["simhit_layer_div_2"] == the_doublelayer, f"Doublets in layers {layers}"],
             # [self.doublets["simhit_sensor"] == 20, "z-sensor 20"],
             # [self.doublets["simhit_module"] == 0, "phi-module 0"],
-            [np.abs(self.doublets["doublet_dz"]) < DZ_CUT[the_doublelayer], f"Doublets with |dz| < {DZ_CUT[the_doublelayer]}mm"],
-            [np.abs(self.doublets["doublet_dr"]) < DR_CUT[the_doublelayer], f"Doublets with |dr| < {DR_CUT[the_doublelayer]}mm"],
+            [np.abs(self.doublets["doublet_dz"]) < MD_DZ_CUT[the_doublelayer], f"Doublets with |dz| < {MD_DZ_CUT[the_doublelayer]}mm"],
+            [np.abs(self.doublets["doublet_dr"]) < MD_DR_CUT[the_doublelayer], f"Doublets with |dr| < {MD_DR_CUT[the_doublelayer]}mm"],
         ]:
             mask &= req
             logger.info(f"* {label:<30} :: {mask.sum():>10}")
@@ -352,16 +352,16 @@ class Plotter:
             text = "No requirement"
             mask = np.ones(len(doublets), dtype=bool)
         elif req == REQ_XY:
-            text = f"|dr| < {DR_CUT[doublelayer]}mm"
-            mask = np.abs(doublets["doublet_dr"]) < DR_CUT[doublelayer]
+            text = f"|dr| < {MD_DR_CUT[doublelayer]}mm"
+            mask = np.abs(doublets["doublet_dr"]) < MD_DR_CUT[doublelayer]
         elif req == REQ_RZ:
-            text = f"|dz| < {DZ_CUT[doublelayer]}mm"
-            mask = np.abs(doublets["doublet_dz"]) < DZ_CUT[doublelayer]
+            text = f"|dz| < {MD_DZ_CUT[doublelayer]}mm"
+            mask = np.abs(doublets["doublet_dz"]) < MD_DZ_CUT[doublelayer]
         elif req == REQ_RZ_XY:
-            text = f"|dr| < {DR_CUT[doublelayer]}mm, |dz| < {DZ_CUT[doublelayer]}mm"
+            text = f"|dr| < {MD_DR_CUT[doublelayer]}mm, |dz| < {MD_DZ_CUT[doublelayer]}mm"
             mask = (
-                (np.abs(doublets["doublet_dz"]) < DZ_CUT[doublelayer]) &
-                (np.abs(doublets["doublet_dr"]) < DR_CUT[doublelayer])
+                (np.abs(doublets["doublet_dz"]) < MD_DZ_CUT[doublelayer]) &
+                (np.abs(doublets["doublet_dr"]) < MD_DR_CUT[doublelayer])
             )
         else:
             raise ValueError(f"Unknown requirement: {req}")
@@ -803,10 +803,10 @@ class Plotter:
             (np.abs(self.linesegments["mcp_eta"]) < BARREL_TRACKER_MAX_ETA) &
             (self.linesegments["mcp_vertex_r"] < ZERO_POINT_ZERO_ONE_MM) &
             (np.abs(self.linesegments["mcp_vertex_z"]) < ZERO_POINT_ZERO_ONE_MM) &
-            (np.abs(self.linesegments["doublet_dr_lower"]) < DR_CUT[dl_lower]) &
-            (np.abs(self.linesegments["doublet_dr_upper"]) < DR_CUT[dl_upper]) &
-            (np.abs(self.linesegments["doublet_dz_lower"]) < DZ_CUT[dl_lower]) &
-            (np.abs(self.linesegments["doublet_dz_upper"]) < DZ_CUT[dl_upper]) &
+            (np.abs(self.linesegments["doublet_dr_lower"]) < MD_DR_CUT[dl_lower]) &
+            (np.abs(self.linesegments["doublet_dr_upper"]) < MD_DR_CUT[dl_upper]) &
+            (np.abs(self.linesegments["doublet_dz_lower"]) < MD_DZ_CUT[dl_lower]) &
+            (np.abs(self.linesegments["doublet_dz_upper"]) < MD_DZ_CUT[dl_upper]) &
             np.ones(len(self.linesegments), dtype=bool)
         )
 

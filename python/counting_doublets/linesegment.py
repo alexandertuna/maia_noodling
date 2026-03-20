@@ -3,7 +3,7 @@ import pandas as pd
 import logging
 logger = logging.getLogger(__name__)
 
-from constants import DZ_CUT, DR_CUT
+from constants import MD_DZ_CUT, MD_DR_CUT
 from constants import LS_DDZ_CUT, LS_DQOVERPT_CUT, LS_DZ_CUT, LS_DR_CUT
 from constants import LS_DTHETA_RZ_CUT, LS_DTHETA_XY_CUT
 from constants import BYTE_TO_MB, NO_MCP
@@ -75,8 +75,8 @@ class LineSegment:
         logger.info("Filtering doublets for line segments ...")
         doublelayer = self.doublets["doublet_doublelayer"]
         self.doublets = self.doublets[
-            (self.doublets["doublet_dz"] < DZ_CUT[doublelayer]) &
-            (self.doublets["doublet_dr"] < DR_CUT[doublelayer])
+            (np.abs(self.doublets["doublet_dz"]) < MD_DZ_CUT[doublelayer]) &
+            (np.abs(self.doublets["doublet_dr"]) < MD_DR_CUT[doublelayer])
         ]
         memory = self.doublets.memory_usage(deep=True).sum() * BYTE_TO_MB
         logger.info(f"Memory usage after filtering doublets: {memory:.1f} MB")

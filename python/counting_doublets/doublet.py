@@ -4,7 +4,7 @@ import time
 import logging
 logger = logging.getLogger(__name__)
 
-from constants import DZ_CUT, DR_CUT
+from constants import MD_DZ_CUT, MD_DR_CUT
 from constants import MAGNETIC_FIELD, SPEED_OF_LIGHT
 from constants import BYTE_TO_MB, MEV_TO_GEV, NO_MCP
 
@@ -155,8 +155,8 @@ class DoubletMaker:
             # cut some doublets?
             if self.cut_doublets:
                 doublelayer = doublets["simhit_layer_div_2"]
-                mask_dr = np.abs(doublets["doublet_dr"]) < DR_CUT[doublelayer]
-                mask_dz = np.abs(doublets["doublet_dz"]) < DZ_CUT[doublelayer]
+                mask_dr = np.abs(doublets["doublet_dr"]) < MD_DR_CUT[doublelayer]
+                mask_dz = np.abs(doublets["doublet_dz"]) < MD_DZ_CUT[doublelayer]
                 cutflow["dr"] = mask_dr.sum()
                 cutflow["dz"] = mask_dz.sum()
                 cutflow["drdz"] = (mask_dr & mask_dz).sum()

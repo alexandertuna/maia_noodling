@@ -86,13 +86,13 @@ OUTER_TRACKER_BARREL = 5
 #     1,
 # ]
 
-DZ_CUT = np.array([
+MD_DZ_CUT = np.array([
     22, # mm # doublelayer 0
     29, # mm # doublelayer 1
     112, # mm # doublelayer 2
     137, # mm # doublelayer 3
 ])
-DR_CUT = np.array([
+MD_DR_CUT = np.array([
     260, # mm # doublelayer 0
     313, # mm # doublelayer 1
     720, # mm # doublelayer 2

@@ -139,7 +139,7 @@ def options():
     parser.add_argument("--outer", action="store_true", help="Include outer tracker hits in the analysis")
     parser.add_argument("--plot", action="store_true", help="Include plots in the analysis")
     parser.add_argument("--modulemap", action="store_true", help="Make module map in the analysis")
-    parser.add_argument("--cut-doublets", action="store_true", help="Cut doublets based on DZ_CUT and DR_CUT")
+    parser.add_argument("--cut-doublets", action="store_true", help="Cut doublets based on MD_DZ_CUT and MD_DR_CUT")
     parser.add_argument("--cut-line-segments", action="store_true", help="Cut line segments based on [[ something ]]")
     parser.add_argument("--read-from-pickle", action="store_true", help="Read slcio dataframes from pickle files")
     parser.add_argument("--write-to-pickle", action="store_true", help="Save slcio dataframes as pickle files")
