@@ -4,8 +4,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 from constants import DZ_CUT, DR_CUT
-from constants import LS2_DDZ_CUT, LS2_DQOVERPT_CUT, LS2_DZ_CUT, LS2_DR_CUT
-from constants import LS2_DTHETA_RZ_CUT, LS2_DTHETA_XY_CUT
+from constants import LS_DDZ_CUT, LS_DQOVERPT_CUT, LS_DZ_CUT, LS_DR_CUT
+from constants import LS_DTHETA_RZ_CUT, LS_DTHETA_XY_CUT
 from constants import BYTE_TO_MB, NO_MCP
 
 class LineSegment:
@@ -233,12 +233,12 @@ class LineSegment:
                     if self.cut_line_segments:
                         dl = segments["ls_doublelayer"]
                         mask = {}
-                        mask["ddz"] = np.abs(segments["ls_ddz"]) < LS2_DDZ_CUT[dl]
-                        mask["dqoverpt"] = np.abs(segments["ls_dqoverpt"]) < LS2_DQOVERPT_CUT[dl]
-                        mask["dtheta_rz"] = np.abs(segments["ls_dtheta_rz"]) < LS2_DTHETA_RZ_CUT[dl]
-                        mask["dtheta_xy"] = np.abs(segments["ls_dtheta_xy"]) < LS2_DTHETA_XY_CUT[dl]
-                        mask["dz"] = np.abs(segments["ls_dz"]) < LS2_DZ_CUT[dl]
-                        mask["dr"] = np.abs(segments["ls_dr"]) < LS2_DR_CUT[dl]
+                        mask["ddz"] = np.abs(segments["ls_ddz"]) < LS_DDZ_CUT[dl]
+                        mask["dqoverpt"] = np.abs(segments["ls_dqoverpt"]) < LS_DQOVERPT_CUT[dl]
+                        mask["dtheta_rz"] = np.abs(segments["ls_dtheta_rz"]) < LS_DTHETA_RZ_CUT[dl]
+                        mask["dtheta_xy"] = np.abs(segments["ls_dtheta_xy"]) < LS_DTHETA_XY_CUT[dl]
+                        mask["dz"] = np.abs(segments["ls_dz"]) < LS_DZ_CUT[dl]
+                        mask["dr"] = np.abs(segments["ls_dr"]) < LS_DR_CUT[dl]
                         mask["dphi"] = np.abs(segments["ls_dphi"]) < np.pi / 2.0
                         # mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dqoverpt"] & mask["ddz"]
                         mask["drdz"] = mask["dz"] & mask["dr"] & mask["dphi"]

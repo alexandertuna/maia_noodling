@@ -98,61 +98,33 @@ DR_CUT = np.array([
     720, # mm # doublelayer 2
     807, # mm # doublelayer 3
 ])
-DETA_CUT = np.array([
-    0.0023, # quadlayer 0
-    0.0041, # quadlayer 1
-])
-DPHI_CUT = np.array([
-    0.034, # quadlayer 0
-    0.038, # quadlayer 1
-])
-DDR_CUT = np.array([
-    69.0, # quadlayer 0
-    218.0, # quadlayer 1
-])
-DDZ_CUT = np.array([
-    20.0, # quadlayer 0
-    128.0, # quadlayer 1
-])
-DQOVERPT_CUT = np.array([
-    0.105, # quadlayer 0
-    0.121, # quadlayer 1
-])
-LS_DZ_CUT = np.array([
-    25, # mm # quadlayer 0
-    122, # mm # quadlayer 1
-])
-LS_DR_CUT = np.array([
-    282, # mm # quadlayer 0
-    753, # mm # quadlayer 1
-])
 
-LS2_DDZ_CUT = np.array([
+LS_DDZ_CUT = np.array([
     20.0, # doublelayer 0
     0.0, # doublelayer 1
     0.0, # doublelayer 2
 ])
-LS2_DQOVERPT_CUT = np.array([
+LS_DQOVERPT_CUT = np.array([
     0.105, # doublelayer 0
     0.000, # doublelayer 1
     0.000, # doublelayer 2
 ])
-LS2_DZ_CUT = np.array([
+LS_DZ_CUT = np.array([
     24, # mm # doublelayer 0
     0, # mm # doublelayer 1
     0, # mm # doublelayer 2
 ])
-LS2_DR_CUT = np.array([
+LS_DR_CUT = np.array([
     281, # mm # doublelayer 0
     0, # mm # doublelayer 1
     0, # mm # doublelayer 2
 ])
-LS2_DTHETA_RZ_CUT = np.array([
+LS_DTHETA_RZ_CUT = np.array([
     0.0075, # doublelayer 0
     0.0, # doublelayer 1
     0.0, # doublelayer 2
 ])
-LS2_DTHETA_XY_CUT = np.array([
+LS_DTHETA_XY_CUT = np.array([
     0.07, # doublelayer 0
     0.0, # doublelayer 1
     0.0, # doublelayer 2
