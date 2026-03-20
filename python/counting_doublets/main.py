@@ -11,7 +11,6 @@ from doublet import DoubletMaker
 from plot import Plotter
 from modulemap import ModuleMap
 from linesegment import LineSegment
-from linesegment2 import LineSegment2
 from constants import SIGNAL, MCP_PKL, SIMHIT_PKL, DOUBLET_PKL
 
 
@@ -106,7 +105,7 @@ def main():
         modulemap = ModuleMap(doublets=doublets)
 
     # make line segments
-    linesegments = LineSegment2(
+    linesegments = LineSegment(
         signal=signal,
         cut_line_segments=ops.cut_line_segments,
         doublets=doublets,
