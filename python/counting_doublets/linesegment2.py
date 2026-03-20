@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 from constants import DZ_CUT, DR_CUT
 from constants import LS2_DDZ_CUT, LS2_DQOVERPT_CUT, LS2_DZ_CUT, LS2_DR_CUT
 from constants import LS2_DTHETA_RZ_CUT, LS2_DTHETA_XY_CUT
-from constants import BYTE_TO_MB
+from constants import BYTE_TO_MB, NO_MCP
 
 class LineSegment2:
 
@@ -189,7 +189,7 @@ class LineSegment2:
                     )
 
                     # assign i_mcp
-                    segments["i_mcp"] = segments["i_mcp_lower"].where(segments["i_mcp_lower"] == segments["i_mcp_upper"], -1)
+                    segments["i_mcp"] = segments["i_mcp_lower"].where(segments["i_mcp_lower"] == segments["i_mcp_upper"], NO_MCP)
 
                     # rename some things
                     rename = {

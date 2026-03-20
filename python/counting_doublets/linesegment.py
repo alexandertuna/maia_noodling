@@ -5,7 +5,7 @@ logger = logging.getLogger(__name__)
 
 from constants import DZ_CUT, DR_CUT
 from constants import DDZ_CUT, DQOVERPT_CUT, LS_DZ_CUT, LS_DR_CUT
-from constants import BYTE_TO_MB
+from constants import BYTE_TO_MB, NO_MCP
 
 class LineSegment:
 
@@ -154,7 +154,7 @@ class LineSegment:
                 )
 
                 # assign i_mcp
-                segments["i_mcp"] = segments["i_mcp_lower"].where(segments["i_mcp_lower"] == segments["i_mcp_upper"], -1)
+                segments["i_mcp"] = segments["i_mcp_lower"].where(segments["i_mcp_lower"] == segments["i_mcp_upper"], NO_MCP)
 
                 # assign more features
                 segments["linesegment_ddr"] = segments["doublet_dr_upper"] - segments["doublet_dr_lower"]

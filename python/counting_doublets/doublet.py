@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 from constants import DZ_CUT, DR_CUT
 from constants import MAGNETIC_FIELD, SPEED_OF_LIGHT
-from constants import BYTE_TO_MB, MEV_TO_GEV
+from constants import BYTE_TO_MB, MEV_TO_GEV, NO_MCP
 
 class DoubletMaker:
 
@@ -142,7 +142,7 @@ class DoubletMaker:
             doublets["doublet_qoverpt"] = doublets["doublet_q"] / doublets["doublet_pt"]
 
             # doublet feature: mcp matching
-            doublets["i_mcp"] = doublets["i_mcp_lower"].where(doublets["i_mcp_lower"] == doublets["i_mcp_upper"], -1)
+            doublets["i_mcp"] = doublets["i_mcp_lower"].where(doublets["i_mcp_lower"] == doublets["i_mcp_upper"], NO_MCP)
 
             # drop columns which arent used downstream
             if not self.signal:
