@@ -12,7 +12,7 @@ from plot import Plotter
 from modulemap import ModuleMap
 from linesegment import LineSegment
 from linesegment2 import LineSegment2
-from constants import SIGNAL, MCP_PKL, SIMHIT_PKL
+from constants import SIGNAL, MCP_PKL, SIMHIT_PKL, DOUBLET_PKL
 
 
 FNAMES = [
@@ -70,12 +70,13 @@ def main():
     logger.info(f"Layers to consider: {ops.layers}")
     logger.info(f"Cut doublets: {ops.cut_doublets}")
 
-    # convert slcio to hits dataframe
     if ops.read_from_pickle:
         logger.info("Reading intermediate dataframes from pickle files ...")
         mcps = pd.read_pickle(MCP_PKL)
         simhits = pd.read_pickle(SIMHIT_PKL)
+        doublets = pd.read_pickle(DOUBLET_PKL)
     else:
+        # convert slcio to hits dataframe
         converter = HitMaker(slcio_file_paths=fnames,
                             load_geometry=geometry,
                             signal=signal,
@@ -85,17 +86,18 @@ def main():
                             )
         mcps, simhits = converter.convert()
 
+        # make doublets from hits
+        doublets = DoubletMaker(
+            signal=signal,
+            cut_doublets=ops.cut_doublets,
+            simhits=simhits,
+        ).df
+
     if ops.write_to_pickle:
         logger.info("Saving intermediate dataframes as pickle files ...")
         mcps.to_pickle(MCP_PKL)
         simhits.to_pickle(SIMHIT_PKL)
-
-    # make doublets from hits
-    doublets = DoubletMaker(
-        signal=signal,
-        cut_doublets=ops.cut_doublets,
-        simhits=simhits,
-    ).df
+        doublets.to_pickle(DOUBLET_PKL)
 
     # make module map
     if ops.modulemap:
