@@ -61,6 +61,7 @@ class Plotter:
         if self.signal:
             self.add_simhit_mcp_features()
             self.add_doublet_mcp_features()
+            self.add_linesegment_mcp_features()
 
 
     def plot(self):
@@ -112,7 +113,7 @@ class Plotter:
             mask &= req
             logger.info(f"* {label:<30} :: {mask.sum():>10}")
 
-        # part 2: doublets
+        # part 2a: doublets by hand
         doublet_cols = [
             "file",
             "i_event", # the event
@@ -134,6 +135,47 @@ class Plotter:
 
         same_mcp = doublets["i_mcp_lower"] == doublets["i_mcp_upper"]
         logger.info(f"* {'Doublets from same MCP':<30} :: {same_mcp.sum():>10}")
+
+        # part 2b: doublets with dr and dz cuts
+        doublelayer = self.doublets["simhit_layer_div_2"]
+        dl_0 = doublelayer == 0
+        dl_1 = doublelayer == 1
+        cuts = (
+            (self.doublets["i_mcp"] >= 0) &
+            (self.doublets["doublet_dz"] < DZ_CUT[doublelayer]) &
+            (self.doublets["doublet_dr"] < DR_CUT[doublelayer]) &
+            (np.abs(self.doublets["mcp_pdg"]) == MUON) &
+            (self.doublets["mcp_q"] != 0) &
+            (self.doublets["mcp_pt"] > ONE_POINT_FIVE_GEV) &
+            (np.abs(self.doublets["mcp_eta"]) < BARREL_TRACKER_MAX_ETA) &
+            (self.doublets["mcp_vertex_r"] < ZERO_POINT_ZERO_ONE_MM) &
+            (np.abs(self.doublets["mcp_vertex_z"]) < ZERO_POINT_ZERO_ONE_MM) &
+            (self.doublets["simhit_t_corrected_lower"] < MAX_TIME) &
+            (self.doublets["simhit_t_corrected_upper"] < MAX_TIME) &
+            (self.doublets["simhit_costheta_lower"] > MIN_COSTHETA) &
+            (self.doublets["simhit_costheta_upper"] > MIN_COSTHETA) &
+            (self.doublets["simhit_p_lower"] / self.doublets["mcp_p"] > MIN_SIMHIT_PT_FRACTION) &
+            (self.doublets["simhit_p_upper"] / self.doublets["mcp_p"] > MIN_SIMHIT_PT_FRACTION)
+        )
+        doublets_0 = self.doublets[cuts & dl_0]
+        doublets_1 = self.doublets[cuts & dl_1]
+        logger.info(f"* {'Doublets, drdz cuts, L01':<30} :: {len(doublets_0):>10}")
+        logger.info(f"* {'Doublets, drdz cuts, L23':<30} :: {len(doublets_1):>10}")
+
+        # part 3: line segments
+        keys = [
+            "file",
+            "i_event",
+            "i_mcp",
+        ]
+        segments = doublets_0.merge(
+            doublets_1,
+            on=keys,
+            how="inner",
+            validate="many_to_many",
+            suffixes=("_lower", "_upper"),
+        )
+        logger.info(f"* {'Line segments from doublets':<30} :: {len(segments):>10}")
 
 
     def plot_numbers_for_comparison_background(self, pdf: PdfPages):
@@ -477,7 +519,9 @@ class Plotter:
 
     def add_doublet_mcp_features(self):
         logger.info("Adding doublet mcp features ...")
-        # add mcp features when the doublet i_mcp_lower and i_mcp_upper match
+        if not self.signal:
+            raise ValueError("Should not be calling add_doublet_mcp_features for background")
+        # add mcp features when the doublet i_mcp lower and upper match
         # otherwise, assign 0
         mcp_cols = [
             "mcp_p",
@@ -490,8 +534,6 @@ class Plotter:
             "mcp_vertex_z",
             "mcp_qoverpt",
         ]
-        if not self.signal:
-            raise ValueError("Should not be calling add_doublet_mcp_features for background")
         merged = self.doublets.merge(
             self.mcps[["file", "i_event", "i_mcp", *mcp_cols]],
             left_on=["file", "i_event", "i_mcp"],
@@ -501,6 +543,34 @@ class Plotter:
         ) # .drop(columns=["i_mcp"])
         mask = merged["i_mcp"] >= 0 # merged["i_mcp_lower"].eq(merged["i_mcp_upper"])
         self.doublets[mcp_cols] = merged[mcp_cols].where(mask, 0).fillna(0)
+
+
+    def add_linesegment_mcp_features(self):
+        logger.info("Adding line segment mcp features ...")
+        if not self.signal:
+            raise ValueError("Should not be calling add_linesegment_mcp_features for background")
+        # add mcp features when the line segment i_mcp lower and upper match
+        # otherwise, assign 0
+        mcp_cols = [
+            "mcp_p",
+            "mcp_pt",
+            "mcp_eta",
+            "mcp_phi",
+            "mcp_pdg",
+            "mcp_q",
+            "mcp_vertex_r",
+            "mcp_vertex_z",
+            "mcp_qoverpt",
+        ]
+        merged = self.linesegments.merge(
+            self.mcps[["file", "i_event", "i_mcp", *mcp_cols]],
+            left_on=["file", "i_event", "i_mcp"],
+            right_on=["file", "i_event", "i_mcp"],
+            how="left",
+            validate="many_to_one",
+        )
+        mask = merged["i_mcp"] >= 0
+        self.linesegments[mcp_cols] = merged[mcp_cols].where(mask, 0).fillna(0)
 
 
     def plot_doublet_features(self, pdf: PdfPages):
@@ -714,9 +784,23 @@ class Plotter:
         plt.close()
 
 
+    def baseline_linesegment_mask(self) -> pd.Series:
+        return (
+            first_exit_mask_ls(self.linesegments) &
+            (self.linesegments["i_mcp"] >= 0) &
+            (self.linesegments["mcp_pdg"].isin([MUON, ANTIMUON])) &
+            (self.linesegments["mcp_q"] != 0) &
+            (self.linesegments["mcp_pt"] > ONE_POINT_FIVE_GEV) &
+            (np.abs(self.linesegments["mcp_eta"]) < BARREL_TRACKER_MAX_ETA) &
+            (self.linesegments["mcp_vertex_r"] < ZERO_POINT_ZERO_ONE_MM) &
+            (np.abs(self.linesegments["mcp_vertex_z"]) < ZERO_POINT_ZERO_ONE_MM) &
+            np.ones(len(self.linesegments), dtype=bool)
+        )
+
+
     def plot_linesegment_features(self, pdf: PdfPages):
         logger.info("Plotting signal linesegment features ...")
-        baseline = self.baseline_doublet_mask() if self.signal else np.ones(len(self.doublets), dtype=bool)
+        baseline = self.baseline_linesegment_mask() if self.signal else np.ones(len(self.linesegments), dtype=bool)
 
         bins = {
             "ls_deta": np.linspace(-3.2, 3.2, 641) if not self.signal else np.linspace(-0.011, 0.011, 221),
@@ -726,6 +810,8 @@ class Plotter:
             "ls_ddr": np.linspace(-300, 300, 601),
             "ls_ddz": np.linspace(-60, 60, 601),
             "ls_dqoverpt": np.linspace(-0.2, 0.2, 201),
+            "ls_dtheta_rz": np.linspace(-0.024, 0.024, 241),
+            "ls_dtheta_xy": np.linspace(-0.12, 0.12, 241),
         }
         xlabel = {
             "ls_deta": r"upper doublet eta - lower doublet eta",
@@ -735,6 +821,8 @@ class Plotter:
             "ls_ddr": "upper doublet dr - lower doublet dr",
             "ls_ddz": "upper doublet dz - lower doublet dz",
             "ls_dqoverpt": "upper doublet q/pt - lower doublet q/pt",
+            "ls_dtheta_rz": "upper doublet theta_rz - lower doublet theta_rz",
+            "ls_dtheta_xy": "upper doublet theta_xy - lower doublet theta_xy",
         }
         formatting = {
             "ls_deta": ".5f",
@@ -744,10 +832,10 @@ class Plotter:
             "ls_ddr": ".3f",
             "ls_ddz": ".3f",
             "ls_dqoverpt": ".3f",
+            "ls_dtheta_rz": ".5f",
+            "ls_dtheta_xy": ".4f",
         }
         color = "cornflowerblue" if self.signal else "crimson"
-
-        baseline = (self.linesegments["i_mcp"] >= 0) if self.signal else np.ones(len(self.linesegments), dtype=bool)
 
         # 1d histograms
         for feature in [
@@ -758,6 +846,8 @@ class Plotter:
             "ls_ddr",
             "ls_ddz",
             "ls_dqoverpt",
+            "ls_dtheta_rz",
+            "ls_dtheta_xy",
         ]:
 
             for semilogy in [
@@ -831,11 +921,28 @@ def first_exit_mask(doublets: pd.DataFrame) -> pd.Series:
     return (
         (doublets["simhit_t_corrected_lower"] < MAX_TIME) &
         (doublets["simhit_t_corrected_upper"] < MAX_TIME) &
-
         (doublets["simhit_costheta_lower"] > MIN_COSTHETA) &
         (doublets["simhit_costheta_upper"] > MIN_COSTHETA) &
         (doublets["simhit_p_lower"] / doublets["mcp_p"] > MIN_SIMHIT_PT_FRACTION) &
         (doublets["simhit_p_upper"] / doublets["mcp_p"] > MIN_SIMHIT_PT_FRACTION)
     )
 
+
+def first_exit_mask_ls(df: pd.DataFrame) -> pd.Series:
+    return (
+        (df["simhit_t_corrected_lower_lower"] < MAX_TIME) &
+        (df["simhit_t_corrected_lower_upper"] < MAX_TIME) &
+        (df["simhit_t_corrected_upper_lower"] < MAX_TIME) &
+        (df["simhit_t_corrected_upper_upper"] < MAX_TIME) &
+
+        (df["simhit_costheta_lower_lower"] > MIN_COSTHETA) &
+        (df["simhit_costheta_lower_upper"] > MIN_COSTHETA) &
+        (df["simhit_costheta_upper_lower"] > MIN_COSTHETA) &
+        (df["simhit_costheta_upper_upper"] > MIN_COSTHETA) &
+
+        (df["simhit_p_lower_lower"] / df["mcp_p"] > MIN_SIMHIT_PT_FRACTION) &
+        (df["simhit_p_lower_upper"] / df["mcp_p"] > MIN_SIMHIT_PT_FRACTION) &
+        (df["simhit_p_upper_lower"] / df["mcp_p"] > MIN_SIMHIT_PT_FRACTION) &
+        (df["simhit_p_upper_upper"] / df["mcp_p"] > MIN_SIMHIT_PT_FRACTION)
+    )
 
