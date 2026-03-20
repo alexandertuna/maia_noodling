@@ -140,10 +140,8 @@ class Plotter:
         doublelayer = self.doublets["simhit_layer_div_2"]
         dl_0 = doublelayer == 0
         dl_1 = doublelayer == 1
-        cuts = (
+        baseline_cuts = (
             (self.doublets["i_mcp"] >= 0) &
-            (self.doublets["doublet_dz"] < DZ_CUT[doublelayer]) &
-            (self.doublets["doublet_dr"] < DR_CUT[doublelayer]) &
             (np.abs(self.doublets["mcp_pdg"]) == MUON) &
             (self.doublets["mcp_q"] != 0) &
             (self.doublets["mcp_pt"] > ONE_POINT_FIVE_GEV) &
@@ -157,8 +155,17 @@ class Plotter:
             (self.doublets["simhit_p_lower"] / self.doublets["mcp_p"] > MIN_SIMHIT_PT_FRACTION) &
             (self.doublets["simhit_p_upper"] / self.doublets["mcp_p"] > MIN_SIMHIT_PT_FRACTION)
         )
-        doublets_0 = self.doublets[cuts & dl_0]
-        doublets_1 = self.doublets[cuts & dl_1]
+        quality_cuts = (
+            (np.abs(self.doublets["doublet_dz"]) < DZ_CUT[doublelayer]) &
+            (np.abs(self.doublets["doublet_dr"]) < DR_CUT[doublelayer]) &
+            baseline_cuts
+        )
+        doublets_0 = self.doublets[baseline_cuts & dl_0]
+        doublets_1 = self.doublets[baseline_cuts & dl_1]
+        logger.info(f"* {'Doublets, baseline, L01':<30} :: {len(doublets_0):>10}")
+        logger.info(f"* {'Doublets, baseline, L23':<30} :: {len(doublets_1):>10}")
+        doublets_0 = self.doublets[quality_cuts & dl_0]
+        doublets_1 = self.doublets[quality_cuts & dl_1]
         logger.info(f"* {'Doublets, drdz cuts, L01':<30} :: {len(doublets_0):>10}")
         logger.info(f"* {'Doublets, drdz cuts, L23':<30} :: {len(doublets_1):>10}")
 
@@ -785,6 +792,8 @@ class Plotter:
 
 
     def baseline_linesegment_mask(self) -> pd.Series:
+        dl_lower = self.linesegments["doublet_doublelayer_lower"]
+        dl_upper = self.linesegments["doublet_doublelayer_upper"]
         return (
             first_exit_mask_ls(self.linesegments) &
             (self.linesegments["i_mcp"] >= 0) &
@@ -794,6 +803,10 @@ class Plotter:
             (np.abs(self.linesegments["mcp_eta"]) < BARREL_TRACKER_MAX_ETA) &
             (self.linesegments["mcp_vertex_r"] < ZERO_POINT_ZERO_ONE_MM) &
             (np.abs(self.linesegments["mcp_vertex_z"]) < ZERO_POINT_ZERO_ONE_MM) &
+            (np.abs(self.linesegments["doublet_dr_lower"]) < DR_CUT[dl_lower]) &
+            (np.abs(self.linesegments["doublet_dr_upper"]) < DR_CUT[dl_upper]) &
+            (np.abs(self.linesegments["doublet_dz_lower"]) < DZ_CUT[dl_lower]) &
+            (np.abs(self.linesegments["doublet_dz_upper"]) < DZ_CUT[dl_upper]) &
             np.ones(len(self.linesegments), dtype=bool)
         )
 
