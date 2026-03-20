@@ -211,6 +211,7 @@ __marimo__/
 *.slcio
 *.hepmc
 *.parquet
+*.pkl
 .gwms-user-job-wrapper.sh
 
 # HEP / WHIZARD
