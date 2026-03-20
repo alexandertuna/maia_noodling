@@ -2,6 +2,7 @@ import numpy as np
 
 MCP_PKL = "mcps.pkl"
 SIMHIT_PKL = "simhits.pkl"
+DOUBLET_PKL = "doublets.pkl"
 
 MUON = 13
 ANTIMUON = -MUON
@@ -128,22 +129,32 @@ LS_DR_CUT = np.array([
 LS2_DDZ_CUT = np.array([
     20.0, # doublelayer 0
     0.0, # doublelayer 1
-    128.0, # doublelayer 2
+    0.0, # doublelayer 2
 ])
 LS2_DQOVERPT_CUT = np.array([
     0.105, # doublelayer 0
     0.000, # doublelayer 1
-    0.121, # doublelayer 2
+    0.000, # doublelayer 2
 ])
 LS2_DZ_CUT = np.array([
-    25, # mm # doublelayer 0
+    24, # mm # doublelayer 0
     0, # mm # doublelayer 1
-    122, # mm # doublelayer 2
+    0, # mm # doublelayer 2
 ])
 LS2_DR_CUT = np.array([
-    282, # mm # doublelayer 0
+    281, # mm # doublelayer 0
     0, # mm # doublelayer 1
-    753, # mm # doublelayer 2
+    0, # mm # doublelayer 2
+])
+LS2_DTHETA_RZ_CUT = np.array([
+    0.0075, # doublelayer 0
+    0.0, # doublelayer 1
+    0.0, # doublelayer 2
+])
+LS2_DTHETA_XY_CUT = np.array([
+    0.07, # doublelayer 0
+    0.0, # doublelayer 1
+    0.0, # doublelayer 2
 ])
 
 
