@@ -8,7 +8,7 @@ from constants import LS2_DDZ_CUT, LS2_DQOVERPT_CUT, LS2_DZ_CUT, LS2_DR_CUT
 from constants import LS2_DTHETA_RZ_CUT, LS2_DTHETA_XY_CUT
 from constants import BYTE_TO_MB, NO_MCP
 
-class LineSegment2:
+class LineSegment:
 
     #
     # To make doublets, we do 2 groupbys:
