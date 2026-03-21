@@ -154,7 +154,8 @@ class DoubletMaker:
 
             # doublet feature: truth info
             doublets["i_mcp"] = doublets["i_mcp_lower"].where(doublets["i_mcp_lower"] == doublets["i_mcp_upper"], NO_MCP)
-            doublets["doublet_first_exit"] = doublets["simhit_first_exit_lower"] & doublets["simhit_first_exit_upper"]
+            if self.signal:
+                doublets["doublet_first_exit"] = doublets["simhit_first_exit_lower"] & doublets["simhit_first_exit_upper"]
 
             # drop columns which arent used downstream
             doublets.drop(columns=drop_cols, inplace=True)

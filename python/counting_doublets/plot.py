@@ -217,21 +217,15 @@ class Plotter:
         # number of doublets
         mask = np.ones(len(self.doublets), dtype=bool)
         for [req, label] in [
-            [self.doublets["simhit_system"] == OUTER_TRACKER_BARREL, "Doublets in OTB"],
-            [self.doublets["simhit_layer_div_2"] == the_doublelayer, f"Doublets in layers {layers}"],
-            # [self.doublets["simhit_sensor"] == 20, "z-sensor 20"],
-            # [self.doublets["simhit_module"] == 0, "phi-module 0"],
+            [self.doublets["doublet_system"] == OUTER_TRACKER_BARREL, "Doublets in OTB"],
+            [self.doublets["doublet_doublelayer"] == the_doublelayer, f"Doublets in layers {layers}"],
+            # [self.doublets["doublet_sensor"] == 20, "z-sensor 20"],
+            # [self.doublets["doublet_module"] == 0, "phi-module 0"],
             [np.abs(self.doublets["doublet_dz"]) < MD_DZ_CUT[the_doublelayer], f"Doublets with |dz| < {MD_DZ_CUT[the_doublelayer]}mm"],
             [np.abs(self.doublets["doublet_dr"]) < MD_DR_CUT[the_doublelayer], f"Doublets with |dr| < {MD_DR_CUT[the_doublelayer]}mm"],
         ]:
             mask &= req
             logger.info(f"* {label:<30} :: {mask.sum():>10}")
-
-        # if mask.sum() < 50:
-        #     # for z in sorted(list(self.doublets[mask]["simhit_z_lower"]), reverse=True):
-        #     #     logger.info(f"lower z = {z}")
-        #     # for dz in sorted(list(np.abs(self.doublets[mask]["doublet_dz"])), reverse=True):
-        #     #     logger.info(f"dz = {dz}")
 
 
     def plot_time(self, pdf: PdfPages):
