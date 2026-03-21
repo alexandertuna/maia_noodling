@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 from slcio import SlcioToHitsDataFrame
 from constants import XML, CM_TO_MM
-from constants import MUON, ANTIMUON, ONE_POINT_FIVE_GEV, ZERO_POINT_ZERO_ONE_MM, BARREL_TRACKER_MAX_ETA
+from constants import MUON, ONE_POINT_FIVE_GEV, ZERO_POINT_ZERO_ONE_MM, BARREL_TRACKER_MAX_ETA
 from constants import INNER_TRACKER_BARREL, OUTER_TRACKER_BARREL, NICKNAMES
 
 FNAMES = [
@@ -74,7 +74,7 @@ def main():
 
     # count number of muons
     mask = (
-        (mcps["mcp_pdg"].isin([MUON, ANTIMUON])) &
+        (np.abs(mcps["mcp_pdg"]) == MUON) &
         (mcps["mcp_q"] != 0) &
         (mcps["mcp_pt"] > ONE_POINT_FIVE_GEV) &
         (mcps["mcp_vertex_r"] < ZERO_POINT_ZERO_ONE_MM) &

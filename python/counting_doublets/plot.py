@@ -30,7 +30,7 @@ rcParams.update({
     "figure.subplot.top": 0.95,
 })
 
-from constants import MUON, ANTIMUON
+from constants import MUON
 from constants import BARREL_TRACKER_MAX_ETA
 from constants import BARREL_TRACKER_MAX_RADIUS
 from constants import ONE_POINT_FIVE_GEV, ONE_MM, ZERO_POINT_ZERO_ONE_MM
@@ -487,7 +487,7 @@ class Plotter:
 
     def get_denominator_mask(self):
         mask = (
-            (self.mcps["mcp_pdg"].isin([MUON, ANTIMUON])) &
+            (np.abs(self.mcps["mcp_pdg"]) == MUON) &
             (self.mcps["mcp_q"] != 0) &
             (self.mcps["mcp_pt"] > ONE_POINT_FIVE_GEV) &
             (self.mcps["mcp_vertex_r"] < ZERO_POINT_ZERO_ONE_MM) &
@@ -697,7 +697,7 @@ class Plotter:
         return (
             (self.doublets["i_mcp"] != NO_MCP) &
             (self.doublets["doublet_first_exit"]) &
-            (self.doublets["mcp_pdg"].isin([MUON, ANTIMUON])) &
+            (np.abs(self.doublets["mcp_pdg"]) == MUON) &
             (self.doublets["mcp_q"] != 0) &
             (self.doublets["mcp_pt"] > ONE_POINT_FIVE_GEV) &
             (np.abs(self.doublets["mcp_eta"]) < BARREL_TRACKER_MAX_ETA) &
@@ -788,7 +788,7 @@ class Plotter:
         return (
             (self.linesegments["i_mcp"] != NO_MCP) &
             (self.linesegments["ls_first_exit"]) &
-            (self.linesegments["mcp_pdg"].isin([MUON, ANTIMUON])) &
+            (np.abs(self.linesegments["mcp_pdg"]) == MUON) &
             (self.linesegments["mcp_q"] != 0) &
             (self.linesegments["mcp_pt"] > ONE_POINT_FIVE_GEV) &
             (np.abs(self.linesegments["mcp_eta"]) < BARREL_TRACKER_MAX_ETA) &
