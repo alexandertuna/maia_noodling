@@ -50,9 +50,9 @@ class DoubletMaker:
         ]
         if self.signal:
             simhit_attrs_to_propagate += [
-                "simhit_t_corrected",
-                "simhit_p",
-                "simhit_costheta",
+                # "simhit_t_corrected",
+                # "simhit_p",
+                # "simhit_costheta",
                 "simhit_first_exit",
             ]
 
@@ -79,8 +79,6 @@ class DoubletMaker:
         lower_cols_rename = { attr: f"{attr}_lower" for attr in simhit_attrs_to_propagate }
         upper_cols_rename = { attr: f"{attr}_upper" for attr in simhit_attrs_to_propagate }
 
-        n_upper, n_lower = 0, 0
-
         def make_doublets_from_group(group: pd.DataFrame) -> pd.DataFrame:
 
             lower_mask = group["simhit_layer_mod_2"] == 0
@@ -89,12 +87,9 @@ class DoubletMaker:
             # logger.info("Getting lower and upper hits ...")
             lower = group[lower_mask].rename(columns=lower_cols_rename)[lower_cols]
             upper = group[upper_mask].rename(columns=upper_cols_rename)[upper_cols]
-            # n_lower += len(lower)
-            # n_upper += len(upper)
 
             # inner join to find doublets
             doublets = lower.merge(upper, on=doublet_cols, how="inner")
-            # sizes[0] = int(doublets.memory_usage(deep=True).sum() * BYTE_TO_MB)
 
             # doublet feature: rz
             slope = np.divide(doublets["simhit_z_upper"] - doublets["simhit_z_lower"],
