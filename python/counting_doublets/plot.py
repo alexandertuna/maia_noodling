@@ -504,7 +504,7 @@ class Plotter:
 
     def add_simhit_mcp_features(self):
         mcp_cols = [
-            "mcp_p",
+            # "mcp_p",
             "mcp_pt",
             "mcp_eta",
             "mcp_phi",
@@ -854,11 +854,11 @@ class Plotter:
         for feature in [
             "ls_deta",
             "ls_dphi",
-            "ls_dr",
-            "ls_dz",
             "ls_ddr",
             "ls_ddz",
             "ls_dqoverpt",
+            "ls_dr",
+            "ls_dz",
             "ls_dtheta_rz",
             "ls_dtheta_xy",
         ]:

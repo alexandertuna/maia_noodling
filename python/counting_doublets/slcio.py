@@ -13,6 +13,7 @@ from constants import MM_TO_CM, CM_TO_MM
 from constants import XML
 from constants import INNER_TRACKER_BARREL_COLLECTION, OUTER_TRACKER_BARREL_COLLECTION, COLLECTIONS
 from constants import BYTE_TO_MB, NO_MCP
+from constants import MIN_COSTHETA, MIN_SIMHIT_PT_FRACTION, MAX_TIME
 
 _detector = None
 _surfman = None
@@ -239,11 +240,8 @@ def convert_one_file(
                         'simhit_distance': distance,
                         'simhit_t': hit.getTime(),
                         'simhit_e': hit.getEDep(),
+                        'mcp_p': np.sqrt(mcp_px[i_mcp]**2 + mcp_py[i_mcp]**2 + mcp_pz[i_mcp]**2) if i_mcp != NO_MCP else 0,
                     })
-                    # 'simhit_pathlength': hit.getPathLength(),
-                    # 'simhit_distance': distance,
-                    # 'simhit_e': hit.getEDep(),
-
 
     # Close
     reader.close()
@@ -321,6 +319,11 @@ def postprocess_simhits(df: pd.DataFrame, signal: bool) -> pd.DataFrame:
         df["simhit_R"] = np.sqrt(df["simhit_x"]**2 + df["simhit_y"]**2 + df["simhit_z"]**2)
         df["simhit_p"] = np.sqrt(df["simhit_px"]**2 + df["simhit_py"]**2 + df["simhit_pz"]**2)
         df["simhit_costheta"] = (df["simhit_x"] * df["simhit_px"] + df["simhit_y"] * df["simhit_py"] + df["simhit_z"] * df["simhit_pz"]) / (df["simhit_R"] * df["simhit_p"])
+        df["simhit_first_exit"] = (
+            (df["simhit_t_corrected"] < MAX_TIME) &
+            (df["simhit_costheta"] > MIN_COSTHETA) &
+            (df["simhit_p"] / df["mcp_p"] > MIN_SIMHIT_PT_FRACTION)
+        )
 
     # remove unused columns
     if signal:
@@ -345,6 +348,8 @@ def postprocess_simhits(df: pd.DataFrame, signal: bool) -> pd.DataFrame:
     df["simhit_layer_mod_2"] = df["simhit_layer_mod_2"].astype(np.uint8)
     df["simhit_module"] = df["simhit_module"].astype(np.uint16)
     df["simhit_sensor"] = df["simhit_sensor"].astype(np.uint16)
+    if signal:
+        df["simhit_first_exit"] = df["simhit_first_exit"].astype(bool)
 
     # sort columns alphabetically
     return df[sorted(df.columns)]
