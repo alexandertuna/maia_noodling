@@ -137,7 +137,7 @@ class Plotter:
         logger.info(f"* {'Doublets from same MCP':<30} :: {same_mcp.sum():>10}")
 
         # part 2b: doublets with dr and dz cuts
-        doublelayer = self.doublets["simhit_layer_div_2"]
+        doublelayer = self.doublets["doublet_doublelayer"]
         dl_0 = doublelayer == 0
         dl_1 = doublelayer == 1
         baseline_cuts = (

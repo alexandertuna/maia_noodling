@@ -91,6 +91,15 @@ class DoubletMaker:
             # inner join to find doublets
             doublets = lower.merge(upper, on=doublet_cols, how="inner")
 
+            # rename some columns
+            rename = {
+                "simhit_system": "doublet_system",
+                "simhit_layer_div_2": "doublet_doublelayer",
+                "simhit_sensor": "doublet_sensor",
+                "simhit_module": "doublet_module",
+            }
+            doublets = doublets.rename(columns=rename)
+
             # doublet feature: rz
             slope = np.divide(doublets["simhit_z_upper"] - doublets["simhit_z_lower"],
                               doublets["simhit_r_upper"] - doublets["simhit_r_lower"])
@@ -151,7 +160,7 @@ class DoubletMaker:
 
             # cut some doublets?
             if self.cut_doublets:
-                doublelayer = doublets["simhit_layer_div_2"]
+                doublelayer = doublets["doublet_doublelayer"]
                 mask_dr = np.abs(doublets["doublet_dr"]) < MD_DR_CUT[doublelayer]
                 mask_dz = np.abs(doublets["doublet_dz"]) < MD_DZ_CUT[doublelayer]
                 cutflow["dr"] = mask_dr.sum()
@@ -189,8 +198,8 @@ class DoubletMaker:
         # announcements
         logger.info(f"Total doublets: {len(doublets)}")
         logger.info(f"Total doublets size: {doublets.memory_usage(deep=True).sum() * BYTE_TO_MB:.1f} MB")
-        counts = doublets.groupby(["simhit_system",
-                                   "simhit_layer_div_2"]).size()
+        counts = doublets.groupby(["doublet_system",
+                                   "doublet_doublelayer"]).size()
         for (system, doublelayer), total in counts.items():
             logger.info(f"n(doublets) for system {system}, doublelayer {doublelayer}: {total}")
 

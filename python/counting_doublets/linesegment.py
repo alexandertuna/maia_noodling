@@ -32,14 +32,6 @@ class LineSegment:
 
 
     def add_remove_columns_from_doublets(self):
-        # rename columns
-        rename = {
-            "simhit_system": "doublet_system",
-            "simhit_layer_div_2": "doublet_doublelayer",
-            "simhit_sensor": "doublet_sensor",
-            "simhit_module": "doublet_module",
-        }
-        self.doublets = self.doublets.rename(columns=rename)
 
         # add columns for 2 groupbys
         self.doublets["doublet_doublelayer_div_2"] = self.doublets["doublet_doublelayer"] // 2
