@@ -53,6 +53,7 @@ class DoubletMaker:
                 "simhit_t_corrected",
                 "simhit_p",
                 "simhit_costheta",
+                "simhit_first_exit",
             ]
 
         drop_cols = [
@@ -141,8 +142,9 @@ class DoubletMaker:
             doublets["doublet_pt"] = SPEED_OF_LIGHT * MAGNETIC_FIELD * doublets["doublet_circle_radius"] * 1e-6
             doublets["doublet_qoverpt"] = doublets["doublet_q"] / doublets["doublet_pt"]
 
-            # doublet feature: mcp matching
+            # doublet feature: truth info
             doublets["i_mcp"] = doublets["i_mcp_lower"].where(doublets["i_mcp_lower"] == doublets["i_mcp_upper"], NO_MCP)
+            doublets["doublet_first_exit"] = doublets["simhit_first_exit_lower"] & doublets["simhit_first_exit_upper"]
 
             # drop columns which arent used downstream
             if not self.signal:

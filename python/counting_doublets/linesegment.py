@@ -188,8 +188,9 @@ class LineSegment:
                         suffixes=("_lower", "_upper"),
                     )
 
-                    # assign i_mcp
+                    # assign truth info
                     segments["i_mcp"] = segments["i_mcp_lower"].where(segments["i_mcp_lower"] == segments["i_mcp_upper"], NO_MCP)
+                    segments["ls_first_exit"] = segments["doublet_first_exit_lower"] & segments["doublet_first_exit_upper"]
 
                     # rename some things
                     rename = {

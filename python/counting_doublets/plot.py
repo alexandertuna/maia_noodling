@@ -37,7 +37,7 @@ from constants import ONE_POINT_FIVE_GEV, ONE_MM, ZERO_POINT_ZERO_ONE_MM
 from constants import NICKNAMES, OUTER_TRACKER_BARREL
 from constants import MD_DZ_CUT, MD_DR_CUT
 from constants import REQ_PASSTHROUGH, REQ_RZ, REQ_XY, REQ_RZ_XY
-from constants import DOUBLET_REQS
+from constants import DOUBLET_REQS, NO_MCP
 from constants import MIN_COSTHETA, MIN_SIMHIT_PT_FRACTION, MAX_TIME
 
 
@@ -698,11 +698,10 @@ class Plotter:
                 plt.close()
 
 
-
     def baseline_doublet_mask(self) -> pd.Series:
         return (
-            first_exit_mask(self.doublets) &
-            (self.doublets["i_mcp_lower"] == self.doublets["i_mcp_upper"]) &
+            (self.doublets["i_mcp"] != NO_MCP) &
+            (self.doublets["doublet_first_exit"]) &
             (self.doublets["mcp_pdg"].isin([MUON, ANTIMUON])) &
             (self.doublets["mcp_q"] != 0) &
             (self.doublets["mcp_pt"] > ONE_POINT_FIVE_GEV) &
@@ -795,8 +794,8 @@ class Plotter:
         dl_lower = self.linesegments["doublet_doublelayer_lower"]
         dl_upper = self.linesegments["doublet_doublelayer_upper"]
         return (
-            first_exit_mask_ls(self.linesegments) &
-            (self.linesegments["i_mcp"] >= 0) &
+            (self.linesegments["i_mcp"] != NO_MCP) &
+            (self.linesegments["ls_first_exit"]) &
             (self.linesegments["mcp_pdg"].isin([MUON, ANTIMUON])) &
             (self.linesegments["mcp_q"] != 0) &
             (self.linesegments["mcp_pt"] > ONE_POINT_FIVE_GEV) &
