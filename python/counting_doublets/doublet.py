@@ -57,14 +57,20 @@ class DoubletMaker:
             ]
 
         drop_cols = [
-            "simhit_z_upper",
-            "simhit_z_lower",
-            "simhit_r_upper",
-            "simhit_r_lower",
             "simhit_x_upper",
             "simhit_x_lower",
             "simhit_y_upper",
             "simhit_y_lower",
+            "simhit_z_upper",
+            "simhit_z_lower",
+            "simhit_r_upper",
+            "simhit_r_lower",
+            # "simhit_p_upper",
+            # "simhit_p_lower",
+            # "simhit_t_corrected_upper",
+            # "simhit_t_corrected_lower",
+            # "simhit_costheta_upper",
+            # "simhit_costheta_lower",
             "i_mcp_upper",
             "i_mcp_lower",
             # "doublet_r",
@@ -151,9 +157,9 @@ class DoubletMaker:
             doublets["doublet_first_exit"] = doublets["simhit_first_exit_lower"] & doublets["simhit_first_exit_upper"]
 
             # drop columns which arent used downstream
-            if not self.signal:
-                doublets.drop(columns=drop_cols, inplace=True)
-                # sizes[1] = int(doublets.memory_usage(deep=True).sum() * BYTE_TO_MB)
+            doublets.drop(columns=drop_cols, inplace=True)
+            # if not self.signal:
+            #     doublets.drop(columns=drop_cols, inplace=True)
 
             # record some numbers
             cutflow = {"all": len(doublets)}

@@ -51,11 +51,6 @@ class LineSegment:
         for col in self.dropcols.copy():
             self.dropcols.append(f"{col}_{self.lower_suffix}")
             self.dropcols.append(f"{col}_{self.upper_suffix}")
-        # if not self.signal:
-        for coord in ["x", "y", "z", "r", "p", "t_corrected", "costheta"]:
-            for simhit_suffix in [self.lower_suffix, self.upper_suffix]:
-                for doublet_suffix in [self.lower_suffix, self.upper_suffix]:
-                    self.dropcols.append(f"simhit_{coord}_{simhit_suffix}_{doublet_suffix}")
 
         # announce memory
         memory = self.doublets.memory_usage(deep=True).sum() * BYTE_TO_MB
