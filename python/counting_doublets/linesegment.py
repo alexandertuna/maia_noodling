@@ -25,32 +25,19 @@ class LineSegment:
         memory = doublets.memory_usage(deep=True).sum() * BYTE_TO_MB
         logger.info(f"Making linesegments with doublets memory {memory:.1f} MB ...")
         self.doublets = doublets.copy()
-        self.add_remove_columns_from_doublets()
+        self.prep_doublets()
         self.filter_doublets()
         self.sort_doublets()
         self.make_linesegments()
 
 
-    def add_remove_columns_from_doublets(self):
-
+    def prep_doublets(self):
         # add columns for 2 groupbys
         self.doublets["doublet_doublelayer_div_2"] = self.doublets["doublet_doublelayer"] // 2
         self.doublets["doublet_doublelayer_mod_2"] = self.doublets["doublet_doublelayer"] % 2
         self.doublets["doublet_doublelayer_plus_1"] = self.doublets["doublet_doublelayer"] + 1
         self.doublets["doublet_doublelayer_plus_1_div_2"] = self.doublets["doublet_doublelayer_plus_1"] // 2
         self.doublets["doublet_doublelayer_plus_1_mod_2"] = self.doublets["doublet_doublelayer_plus_1"] % 2
-
-        # prepare to drop columns after finding line segments
-        self.dropcols = [
-            "doublet_doublelayer_div_2",
-            "doublet_doublelayer_mod_2",
-            "doublet_doublelayer_plus_1",
-            "doublet_doublelayer_plus_1_div_2",
-            "doublet_doublelayer_plus_1_mod_2",
-        ]
-        for col in self.dropcols.copy():
-            self.dropcols.append(f"{col}_{self.lower_suffix}")
-            self.dropcols.append(f"{col}_{self.upper_suffix}")
 
         # announce memory
         memory = self.doublets.memory_usage(deep=True).sum() * BYTE_TO_MB
@@ -180,12 +167,6 @@ class LineSegment:
                     if self.signal:
                         segments["ls_first_exit"] = segments["doublet_first_exit_lower"] & segments["doublet_first_exit_upper"]
 
-                    # rename some things
-                    rename = {
-                        "doublet_system": "ls_system",
-                    }
-                    segments = segments.rename(columns=rename)
-
                     # assign more features
                     segments["ls_ddr"] = segments["doublet_dr_upper"] - segments["doublet_dr_lower"]
                     segments["ls_ddz"] = segments["doublet_dz_upper"] - segments["doublet_dz_lower"]
@@ -212,8 +193,23 @@ class LineSegment:
                     segments["ls_dtheta_rz"] = (segments["ls_dtheta_rz"] + np.pi) % (2 * np.pi) - np.pi
                     segments["ls_dtheta_xy"] = (segments["ls_dtheta_xy"] + np.pi) % (2 * np.pi) - np.pi
 
-                    # drop cols which were only necessary for this step
-                    segments.drop(columns=self.dropcols, errors="ignore", inplace=True)
+                    # rename some things
+                    rename = {
+                        "doublet_system": "ls_system",
+                        "doublet_doublelayer_lower": "ls_doublelayer_lower",
+                        "doublet_doublelayer_upper": "ls_doublelayer_upper",
+                        "doublet_dr_lower": "ls_dr_lower",
+                        "doublet_dr_upper": "ls_dr_upper",
+                        "doublet_dz_lower": "ls_dz_lower",
+                        "doublet_dz_upper": "ls_dz_upper",
+                    }
+                    segments = segments.rename(columns=rename)
+
+                    # and drop other cols
+                    dropcols = ["i_mcp_lower", "i_mcp_upper"]
+                    dropcols.extend([col for col in segments.columns if col.startswith("simhit_")])
+                    dropcols.extend([col for col in segments.columns if col.startswith("doublet_")])
+                    segments.drop(columns=dropcols, errors="ignore", inplace=True)
 
                     # record some numbers
                     cutflow = {"all": len(segments)}

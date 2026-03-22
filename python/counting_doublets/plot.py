@@ -777,8 +777,8 @@ class Plotter:
 
 
     def baseline_linesegment_mask(self) -> pd.Series:
-        dl_lower = self.linesegments["doublet_doublelayer_lower"]
-        dl_upper = self.linesegments["doublet_doublelayer_upper"]
+        dl_lower = self.linesegments["ls_doublelayer_lower"]
+        dl_upper = self.linesegments["ls_doublelayer_upper"]
         return (
             (self.linesegments["i_mcp"] != NO_MCP) &
             (self.linesegments["ls_first_exit"]) &
@@ -788,10 +788,10 @@ class Plotter:
             (np.abs(self.linesegments["mcp_eta"]) < BARREL_TRACKER_MAX_ETA) &
             (self.linesegments["mcp_vertex_r"] < ZERO_POINT_ZERO_ONE_MM) &
             (np.abs(self.linesegments["mcp_vertex_z"]) < ZERO_POINT_ZERO_ONE_MM) &
-            (np.abs(self.linesegments["doublet_dr_lower"]) < MD_DR_CUT[dl_lower]) &
-            (np.abs(self.linesegments["doublet_dr_upper"]) < MD_DR_CUT[dl_upper]) &
-            (np.abs(self.linesegments["doublet_dz_lower"]) < MD_DZ_CUT[dl_lower]) &
-            (np.abs(self.linesegments["doublet_dz_upper"]) < MD_DZ_CUT[dl_upper]) &
+            (np.abs(self.linesegments["ls_dr_lower"]) < MD_DR_CUT[dl_lower]) &
+            (np.abs(self.linesegments["ls_dr_upper"]) < MD_DR_CUT[dl_upper]) &
+            (np.abs(self.linesegments["ls_dz_lower"]) < MD_DZ_CUT[dl_lower]) &
+            (np.abs(self.linesegments["ls_dz_upper"]) < MD_DZ_CUT[dl_upper]) &
             np.ones(len(self.linesegments), dtype=bool)
         )
 
