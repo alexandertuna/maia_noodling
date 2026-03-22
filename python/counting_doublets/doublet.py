@@ -112,13 +112,27 @@ class DoubletMaker:
             doublets["doublet_qoverpt"] = doublets["doublet_q"] / doublets["doublet_pt"]
 
             # doublet feature: truth info
-            doublets["i_mcp"] = doublets["i_mcp_lower"].where(doublets["i_mcp_lower"] == doublets["i_mcp_upper"], NO_MCP)
+            mcp_ok = doublets["i_mcp_lower"] == doublets["i_mcp_upper"]
+            doublets["i_mcp"] = doublets["i_mcp_lower"].where(mcp_ok, NO_MCP)
             if self.signal:
                 doublets["doublet_first_exit"] = doublets["simhit_first_exit_lower"] & doublets["simhit_first_exit_upper"]
+                for attr in [
+                    "mcp_pt",
+                    "mcp_eta",
+                    "mcp_phi",
+                    "mcp_pdg",
+                    "mcp_q",
+                    "mcp_vertex_r",
+                    "mcp_vertex_z",
+                    "mcp_qoverpt",
+                ]:
+                    doublets[attr] = doublets[f"{attr}_lower"].where(mcp_ok, 0)
 
             # drop columns which arent used downstream
             dropcols = ["i_mcp_lower", "i_mcp_upper"]
             dropcols.extend([col for col in doublets.columns if col.startswith("simhit_")])
+            dropcols.extend([col for col in doublets.columns if col.startswith("mcp_") and col.endswith("_lower")])
+            dropcols.extend([col for col in doublets.columns if col.startswith("mcp_") and col.endswith("_upper")])
             doublets.drop(columns=dropcols, inplace=True)
 
             # record some numbers
