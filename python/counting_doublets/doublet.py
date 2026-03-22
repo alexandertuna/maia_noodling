@@ -41,61 +41,20 @@ class DoubletMaker:
             "simhit_sensor", # the z-sensor
         ]
 
-        simhit_attrs_to_propagate = [
-            "i_mcp",
-            "simhit_r",
-            "simhit_z",
-            "simhit_x",
-            "simhit_y",
-        ]
-        if self.signal:
-            simhit_attrs_to_propagate += [
-                # "simhit_t_corrected",
-                # "simhit_p",
-                # "simhit_costheta",
-                "simhit_first_exit",
-            ]
-
-        drop_cols = [
-            "simhit_x_upper",
-            "simhit_x_lower",
-            "simhit_y_upper",
-            "simhit_y_lower",
-            "simhit_z_upper",
-            "simhit_z_lower",
-            "simhit_r_upper",
-            "simhit_r_lower",
-            # "simhit_p_upper",
-            # "simhit_p_lower",
-            # "simhit_t_corrected_upper",
-            # "simhit_t_corrected_lower",
-            # "simhit_costheta_upper",
-            # "simhit_costheta_lower",
-            "i_mcp_upper",
-            "i_mcp_lower",
-            # "doublet_r",
-            # "doublet_z",
-            # "doublet_x",
-            # "doublet_y",
-            "doublet_theta",
-        ]
-
-        lower_cols = doublet_cols + [ f"{attr}_lower" for attr in simhit_attrs_to_propagate ]
-        upper_cols = doublet_cols + [ f"{attr}_upper" for attr in simhit_attrs_to_propagate ]
-        lower_cols_rename = { attr: f"{attr}_lower" for attr in simhit_attrs_to_propagate }
-        upper_cols_rename = { attr: f"{attr}_upper" for attr in simhit_attrs_to_propagate }
-
         def make_doublets_from_group(group: pd.DataFrame) -> pd.DataFrame:
 
             lower_mask = group["simhit_layer_mod_2"] == 0
             upper_mask = group["simhit_layer_mod_2"] == 1
 
-            # logger.info("Getting lower and upper hits ...")
-            lower = group[lower_mask].rename(columns=lower_cols_rename)[lower_cols]
-            upper = group[upper_mask].rename(columns=upper_cols_rename)[upper_cols]
-
             # inner join to find doublets
-            doublets = lower.merge(upper, on=doublet_cols, how="inner")
+            doublets = pd.merge(
+                group[lower_mask],
+                group[upper_mask],
+                on=doublet_cols,
+                how="inner",
+                validate="many_to_many",
+                suffixes=("_lower", "_upper"),
+            )
 
             # rename some columns
             rename = {
@@ -158,9 +117,9 @@ class DoubletMaker:
                 doublets["doublet_first_exit"] = doublets["simhit_first_exit_lower"] & doublets["simhit_first_exit_upper"]
 
             # drop columns which arent used downstream
-            doublets.drop(columns=drop_cols, inplace=True)
-            # if not self.signal:
-            #     doublets.drop(columns=drop_cols, inplace=True)
+            dropcols = ["i_mcp_lower", "i_mcp_upper"]
+            dropcols.extend([col for col in doublets.columns if col.startswith("simhit_")])
+            doublets.drop(columns=dropcols, inplace=True)
 
             # record some numbers
             cutflow = {"all": len(doublets)}
