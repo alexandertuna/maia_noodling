@@ -163,9 +163,21 @@ class LineSegment:
                     )
 
                     # assign truth info
-                    segments["i_mcp"] = segments["i_mcp_lower"].where(segments["i_mcp_lower"] == segments["i_mcp_upper"], NO_MCP)
+                    mcp_ok = segments["i_mcp_lower"] == segments["i_mcp_upper"]
+                    segments["i_mcp"] = segments["i_mcp_lower"].where(mcp_ok, NO_MCP)
                     if self.signal:
                         segments["ls_first_exit"] = segments["doublet_first_exit_lower"] & segments["doublet_first_exit_upper"]
+                        for attr in [
+                            "mcp_pt",
+                            "mcp_eta",
+                            "mcp_phi",
+                            "mcp_pdg",
+                            "mcp_q",
+                            "mcp_vertex_r",
+                            "mcp_vertex_z",
+                            "mcp_qoverpt",
+                        ]:
+                            segments[attr] = segments[f"{attr}_lower"].where(mcp_ok, 0)
 
                     # assign more features
                     segments["ls_ddr"] = segments["doublet_dr_upper"] - segments["doublet_dr_lower"]
