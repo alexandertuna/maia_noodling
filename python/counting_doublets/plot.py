@@ -1,5 +1,6 @@
 import inspect
 import textwrap
+import time
 import numpy as np
 import pandas as pd
 import logging
@@ -59,7 +60,7 @@ class Plotter:
         self.linesegments = linesegments
         self.pdf = pdf
         if self.signal:
-            self.add_simhit_mcp_features()
+            # self.add_simhit_mcp_features()
             self.add_doublet_mcp_features()
             self.add_linesegment_mcp_features()
 
@@ -68,18 +69,19 @@ class Plotter:
         logger.info(f"Writing plots to {self.pdf} ...")
         with PdfPages(self.pdf) as pdf:
             self.plot_numbers_for_comparison(pdf)
+            self.write_date(pdf)
             self.plot_time(pdf)
             # self.plot_layer_occupancy_1d(pdf)
             # self.plot_layer_occupancy_2d(pdf)
             # self.plot_radius_vs_layer(pdf)
-            self.plot_doublet_occupancy(pdf)
-            self.plot_doublet_features(pdf)
-            self.plot_linesegment_features(pdf)
+            # self.plot_doublet_occupancy(pdf)
+            # self.plot_doublet_features(pdf)
+            # self.plot_linesegment_features(pdf)
             if self.signal:
-                self.write_denominator_info(pdf)
+                # self.write_denominator_info(pdf)
                 self.plot_doublet_efficiency_vs_kinematics(pdf)
-                self.write_doublet_denominator_info(pdf)
-                self.plot_doublet_quality_efficiency(pdf)
+                # self.write_doublet_denominator_info(pdf)
+                # self.plot_doublet_quality_efficiency(pdf)
 
 
     def plot_numbers_for_comparison(self, pdf: PdfPages):
@@ -226,6 +228,18 @@ class Plotter:
         ]:
             mask &= req
             logger.info(f"* {label:<30} :: {mask.sum():>10}")
+
+
+    def write_date(self, pdf: PdfPages):
+        logger.info(f"Writing the date and time")
+        now = time.strftime("%Y_%m_%d_%Hh%Mm%Ss")
+        text = f"Plots made at {now}"
+        fig, ax = plt.subplots(figsize=(8, 8))
+        args = {"ha":"left", "va":"top", "fontfamily":"monospace"}
+        ax.text(0.0, 0.7, text, **args, fontsize=16)
+        ax.axis("off")
+        pdf.savefig()
+        plt.close()
 
 
     def plot_time(self, pdf: PdfPages):
