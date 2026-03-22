@@ -229,9 +229,9 @@ def convert_one_file(
                     'simhit_t_corrected': hit.getTime() - (np.sqrt(hit.getPosition()[0]**2 + \
                                                                    hit.getPosition()[1]**2 + \
                                                                    hit.getPosition()[2]**2) / SPEED_OF_LIGHT),
-                    # 'simhit_pdg': hit.getMCParticle().getPDG(),
                 })
                 if signal:
+                    mcp_ok = i_mcp != NO_MCP
                     simhits[-1].update({
                         'simhit_px': hit.getMomentum()[0],
                         'simhit_py': hit.getMomentum()[1],
@@ -240,7 +240,17 @@ def convert_one_file(
                         'simhit_distance': distance,
                         'simhit_t': hit.getTime(),
                         'simhit_e': hit.getEDep(),
-                        'mcp_p': np.sqrt(mcp_px[i_mcp]**2 + mcp_py[i_mcp]**2 + mcp_pz[i_mcp]**2) if i_mcp != NO_MCP else 0,
+                        'mcp_px': mcp_px[i_mcp] if mcp_ok else 0,
+                        'mcp_py': mcp_py[i_mcp] if mcp_ok else 0,
+                        'mcp_pz': mcp_pz[i_mcp] if mcp_ok else 0,
+                        "mcp_pdg": mcp_pdg[i_mcp] if mcp_ok else 0,
+                        "mcp_q": mcp_q[i_mcp] if mcp_ok else 0,
+                        "mcp_vertex_x": mcp_vertex_x[i_mcp] if mcp_ok else 0,
+                        "mcp_vertex_y": mcp_vertex_y[i_mcp] if mcp_ok else 0,
+                        "mcp_vertex_z": mcp_vertex_z[i_mcp] if mcp_ok else 0,
+                        "mcp_endpoint_x": mcp_endpoint_x[i_mcp] if mcp_ok else 0,
+                        "mcp_endpoint_y": mcp_endpoint_y[i_mcp] if mcp_ok else 0,
+                        "mcp_endpoint_z": mcp_endpoint_z[i_mcp] if mcp_ok else 0,
                     })
 
     # Close
@@ -264,6 +274,7 @@ def convert_one_file(
     # And postprocess
     logger.info("Postprocessing DataFrames ...")
     mcps = postprocess_mcps(mcps)
+    simhits = postprocess_mcps(simhits)
     simhits = postprocess_simhits(simhits, signal)
 
     return mcps, simhits
@@ -318,7 +329,9 @@ def postprocess_simhits(df: pd.DataFrame, signal: bool) -> pd.DataFrame:
     if signal:
         df["simhit_R"] = np.sqrt(df["simhit_x"]**2 + df["simhit_y"]**2 + df["simhit_z"]**2)
         df["simhit_p"] = np.sqrt(df["simhit_px"]**2 + df["simhit_py"]**2 + df["simhit_pz"]**2)
-        df["simhit_costheta"] = (df["simhit_x"] * df["simhit_px"] + df["simhit_y"] * df["simhit_py"] + df["simhit_z"] * df["simhit_pz"]) / (df["simhit_R"] * df["simhit_p"])
+        df["simhit_costheta"] = (df["simhit_x"] * df["simhit_px"] +
+                                 df["simhit_y"] * df["simhit_py"] +
+                                 df["simhit_z"] * df["simhit_pz"]) / (df["simhit_R"] * df["simhit_p"])
         df["simhit_first_exit"] = (
             (df["simhit_t_corrected"] < MAX_TIME) &
             (df["simhit_costheta"] > MIN_COSTHETA) &
