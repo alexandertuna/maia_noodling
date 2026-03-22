@@ -59,10 +59,6 @@ class Plotter:
         self.doublets = doublets
         self.linesegments = linesegments
         self.pdf = pdf
-        if self.signal:
-            # self.add_simhit_mcp_features()
-            self.add_doublet_mcp_features()
-            self.add_linesegment_mcp_features()
 
 
     def plot(self):
@@ -503,84 +499,6 @@ class Plotter:
             (np.abs(self.mcps["mcp_eta"]) < BARREL_TRACKER_MAX_ETA)
         )
         return mask
-
-
-    def add_simhit_mcp_features(self):
-        mcp_cols = [
-            # "mcp_p",
-            "mcp_pt",
-            "mcp_eta",
-            "mcp_phi",
-            "mcp_pdg",
-            "mcp_q",
-            "mcp_vertex_r",
-            "mcp_vertex_z",
-        ]
-        if not self.signal:
-            raise ValueError("Should not be calling add_simhit_mcp_features for background")
-        self.simhits = self.simhits.merge(
-            self.mcps[["file", "i_event", "i_mcp", *mcp_cols]],
-            on=["file", "i_event", "i_mcp"],
-            how="left",
-            validate="many_to_one",
-        )
-        self.simhits[mcp_cols] = self.simhits[mcp_cols].fillna(0)
-
-
-    def add_doublet_mcp_features(self):
-        logger.info("Adding doublet mcp features ...")
-        if not self.signal:
-            raise ValueError("Should not be calling add_doublet_mcp_features for background")
-        # add mcp features when the doublet i_mcp lower and upper match
-        # otherwise, assign 0
-        mcp_cols = [
-            "mcp_p",
-            "mcp_pt",
-            "mcp_eta",
-            "mcp_phi",
-            "mcp_pdg",
-            "mcp_q",
-            "mcp_vertex_r",
-            "mcp_vertex_z",
-            "mcp_qoverpt",
-        ]
-        merged = self.doublets.merge(
-            self.mcps[["file", "i_event", "i_mcp", *mcp_cols]],
-            left_on=["file", "i_event", "i_mcp"],
-            right_on=["file", "i_event", "i_mcp"],
-            how="left",
-            validate="many_to_one",
-        ) # .drop(columns=["i_mcp"])
-        mask = merged["i_mcp"] >= 0 # merged["i_mcp_lower"].eq(merged["i_mcp_upper"])
-        self.doublets[mcp_cols] = merged[mcp_cols].where(mask, 0).fillna(0)
-
-
-    def add_linesegment_mcp_features(self):
-        logger.info("Adding line segment mcp features ...")
-        if not self.signal:
-            raise ValueError("Should not be calling add_linesegment_mcp_features for background")
-        # add mcp features when the line segment i_mcp lower and upper match
-        # otherwise, assign 0
-        mcp_cols = [
-            "mcp_p",
-            "mcp_pt",
-            "mcp_eta",
-            "mcp_phi",
-            "mcp_pdg",
-            "mcp_q",
-            "mcp_vertex_r",
-            "mcp_vertex_z",
-            "mcp_qoverpt",
-        ]
-        merged = self.linesegments.merge(
-            self.mcps[["file", "i_event", "i_mcp", *mcp_cols]],
-            left_on=["file", "i_event", "i_mcp"],
-            right_on=["file", "i_event", "i_mcp"],
-            how="left",
-            validate="many_to_one",
-        )
-        mask = merged["i_mcp"] >= 0
-        self.linesegments[mcp_cols] = merged[mcp_cols].where(mask, 0).fillna(0)
 
 
     def plot_doublet_features(self, pdf: PdfPages):
