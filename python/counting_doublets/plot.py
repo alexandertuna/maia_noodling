@@ -72,14 +72,14 @@ class Plotter:
             # self.plot_layer_occupancy_1d(pdf)
             # self.plot_layer_occupancy_2d(pdf)
             # self.plot_radius_vs_layer(pdf)
-            # self.plot_doublet_occupancy(pdf)
-            # self.plot_doublet_features(pdf)
+            self.plot_doublet_occupancy(pdf)
+            self.plot_doublet_features(pdf)
             self.plot_linesegment_features(pdf)
             if self.signal:
                 self.write_denominator_info(pdf)
-                # self.plot_doublet_efficiency_vs_kinematics(pdf)
-                # self.write_doublet_denominator_info(pdf)
-                # self.plot_doublet_quality_efficiency(pdf)
+                self.plot_doublet_efficiency_vs_kinematics(pdf)
+                self.write_doublet_denominator_info(pdf)
+                self.plot_doublet_quality_efficiency(pdf)
 
 
     def plot_numbers_for_comparison(self, pdf: PdfPages):
@@ -333,7 +333,7 @@ class Plotter:
 
     def doublet_requirements(self, doublets: pd.DataFrame, req: str) -> tuple[str, pd.DataFrame]:
         # return description and mask
-        doublelayer = doublets["simhit_layer_div_2"]
+        doublelayer = doublets["doublet_doublelayer"]
         if len(doublelayer.unique()) != 1:
             raise ValueError(f"Multiple doublelayers found: {doublelayer.unique()}")
         doublelayer = doublelayer.iloc[0]
@@ -358,8 +358,8 @@ class Plotter:
 
 
     def plot_doublet_occupancy(self, pdf: PdfPages):
-        for ((system, doublelayer), group) in self.doublets.groupby(["simhit_system",
-                                                                     "simhit_layer_div_2",
+        for ((system, doublelayer), group) in self.doublets.groupby(["doublet_system",
+                                                                     "doublet_doublelayer",
                                                                     ]):
             zmax = None
             for req in DOUBLET_REQS:
@@ -379,13 +379,13 @@ class Plotter:
 
                 # doublets = self.doublets[mask]
                 bins = [
-                    np.arange(-0.5, doublets["simhit_module"].max()+1.5, 1),
-                    np.arange(-0.5, doublets["simhit_sensor"].max()+1.5, 1),
+                    np.arange(-0.5, doublets["doublet_module"].max()+1.5, 1),
+                    np.arange(-0.5, doublets["doublet_sensor"].max()+1.5, 1),
                 ]
                 fig, ax = plt.subplots()
                 h2d, _, _, im = ax.hist2d(
-                    doublets["simhit_module"],
-                    doublets["simhit_sensor"],
+                    doublets["doublet_module"],
+                    doublets["doublet_sensor"],
                     bins=bins,
                     cmap="gist_rainbow",
                     norm=colors.LogNorm(vmin=0.9),
@@ -438,20 +438,20 @@ class Plotter:
         doublet_cols = [
             "file",
             "i_event", # the event
-            "simhit_system", # the system (IT, OT)
-            "simhit_layer_div_2", # the double layer
-            "simhit_module", # the phi-module
-            "simhit_sensor", # the z-sensor
+            "doublet_system", # the system (IT, OT)
+            "doublet_doublelayer", # the double layer
+            "doublet_module", # the phi-module
+            "doublet_sensor", # the z-sensor
         ]
 
         # filter doublets to only those with same parent mcp
-        same_parent = self.doublets["i_mcp"] >= 0
+        same_parent = self.doublets["i_mcp"] != NO_MCP
         doublets = self.doublets[same_parent][ doublet_cols + ["i_mcp"] ].drop_duplicates()
 
         # check if doublets's [file, i_event, i_mcp] is in denominator
         for kin in ["mcp_pt", "mcp_eta", "mcp_phi"]:
-            for ((system, doublelayer), group) in doublets.groupby(["simhit_system",
-                                                                    "simhit_layer_div_2",
+            for ((system, doublelayer), group) in doublets.groupby(["doublet_system",
+                                                                    "doublet_doublelayer",
                                                                     ]):
                 layers = [doublelayer * 2, doublelayer * 2 + 1]
 
@@ -614,8 +614,8 @@ class Plotter:
                 True,
             ]:
 
-                for ((system, doublelayer), group) in self.doublets[baseline].groupby(["simhit_system",
-                                                                                       "simhit_layer_div_2",
+                for ((system, doublelayer), group) in self.doublets[baseline].groupby(["doublet_system",
+                                                                                       "doublet_doublelayer",
                                                                                        ]):
 
                         logger.info(f"Plotting signal doublet feature {feature}, system {system}, doublelayer {doublelayer} ...")
@@ -659,8 +659,8 @@ class Plotter:
             if not self.signal and any(["mcp" in feat for feat in [feature_x, feature_y]]):
                 continue
 
-            for ((system, doublelayer), group) in self.doublets[baseline].groupby(["simhit_system",
-                                                                                    "simhit_layer_div_2",
+            for ((system, doublelayer), group) in self.doublets[baseline].groupby(["doublet_system",
+                                                                                   "doublet_doublelayer",
                                                                                     ]):
 
                 logger.info(f"Plotting signal doublet features {feature_x} vs {feature_y}, system {system}, doublelayer {doublelayer} ...")
@@ -726,8 +726,8 @@ class Plotter:
             "mcp_phi"
         ]):
 
-            for ((system, doublelayer), group) in self.doublets[baseline].groupby(["simhit_system",
-                                                                                   "simhit_layer_div_2",
+            for ((system, doublelayer), group) in self.doublets[baseline].groupby(["doublet_system",
+                                                                                   "doublet_doublelayer",
                                                                                    ]):
 
                 logger.info(f"Plotting doublet quality efficiency vs {kin}, system {system}, doublelayer {doublelayer} ...")
