@@ -128,7 +128,6 @@ LS_DTHETA_XY_CUT = np.array([
     0.078, # doublelayer 2
 ])
 
-
 REQ_PASSTHROUGH = "no cuts"
 REQ_RZ = "rz req."
 REQ_XY = "xy req."
@@ -139,6 +138,21 @@ DOUBLET_REQS = [
     REQ_RZ,
     REQ_RZ_XY,
 ]
+
+LS_REQ_DR_POS = "dr req."
+LS_REQ_DZ_POS = "dz req."
+LS_REQ_XY_ANG = "dtheta xy req."
+LS_REQ_RZ_ANG = "dtheta rz req."
+LS_REQ_ALL = "all reqs"
+LS_REQS = [
+    REQ_PASSTHROUGH,
+    LS_REQ_DR_POS,
+    LS_REQ_DZ_POS,
+    LS_REQ_XY_ANG,
+    LS_REQ_RZ_ANG,
+    LS_REQ_ALL,
+]
+
 NICKNAMES = {
     INNER_TRACKER_BARREL: "ITB",
     OUTER_TRACKER_BARREL: "OTB",
