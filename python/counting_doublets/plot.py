@@ -39,6 +39,8 @@ from constants import NICKNAMES, OUTER_TRACKER_BARREL
 from constants import MD_DZ_CUT, MD_DR_CUT
 from constants import REQ_PASSTHROUGH, REQ_RZ, REQ_XY, REQ_RZ_XY
 from constants import DOUBLET_REQS, NO_MCP
+from constants import LS_REQS, LS_REQ_DR_POS, LS_REQ_DZ_POS, LS_REQ_XY_ANG, LS_REQ_RZ_ANG, LS_REQ_ALL
+from constants import LS_DZ_CUT, LS_DR_CUT, LS_DTHETA_RZ_CUT, LS_DTHETA_XY_CUT
 from constants import MIN_COSTHETA, MIN_SIMHIT_PT_FRACTION, MAX_TIME
 
 
@@ -79,6 +81,7 @@ class Plotter:
                 # self.write_doublet_denominator_info(pdf)
                 # self.plot_doublet_quality_efficiency(pdf)
                 self.plot_segment_efficiency_vs_kinematics(pdf)
+                self.plot_segment_quality_efficiency(pdf)
 
 
     def plot_numbers_for_comparison(self, pdf: PdfPages):
@@ -910,3 +913,102 @@ class Plotter:
                 ax.set_ylim(0.7, 1.03)
                 pdf.savefig()
                 plt.close()
+
+
+    def plot_segment_quality_efficiency(self, pdf: PdfPages):
+
+        bins = {
+            "mcp_pt": np.linspace(0.0, 10.0, 201),
+            "mcp_eta": np.linspace(-0.7, 0.7, 281),
+            "mcp_phi": np.linspace(-3.2, 3.2, 321),
+        }
+        xlabel = {
+            "mcp_pt": r"Muon $p_T$ [GeV]",
+            "mcp_eta": r"Muon $\eta$",
+            "mcp_phi": r"Muon $\phi$ [rad]",
+        }
+
+        # only consider truth-match doublets
+        baseline = self.baseline_linesegment_mask()
+        logger.info(f"Segment efficiency: total segments: {len(self.linesegments)}")
+        logger.info(f"Segment efficiency: total segments in baseline: {baseline.sum()}")
+
+        # consider efficiency vs kinematics
+        for i_kin, kin in enumerate([
+            "mcp_pt",
+            "mcp_eta",
+            "mcp_phi"
+        ]):
+
+            for ((system, doublelayer), group) in self.linesegments[baseline].groupby(["ls_system",
+                                                                                       "ls_doublelayer",
+            ]):
+
+                logger.info(f"Plotting segment quality efficiency vs {kin}, system {system}, doublelayer {doublelayer} ...")
+                layer = doublelayer * 2
+                layers = range(layer, layer + 4)
+
+                for req in LS_REQS:
+                    req_text, req_mask = self.segment_requirements(group, req)
+                    denom = group
+                    numer = group[req_mask]
+                    if i_kin == 0:
+                        logger.info(f"Denom for system {system} layers {layers} {req}: {len(denom)} doublets")
+                        logger.info(f"Numer for system {system} layers {layers} {req}: {len(numer)} doublets")
+
+                    n_denom, edges = np.histogram(denom[kin], bins=bins[kin])
+                    n_numer, edges = np.histogram(numer[kin], bins=bins[kin])
+                    efficiency = np.divide(n_numer, n_denom, out=np.zeros_like(n_numer, dtype=float), where=n_denom!=0)
+                    centers = 0.5 * (edges[1:] + edges[:-1])
+
+                    fig, ax = plt.subplots()
+                    ax.plot(
+                        centers,
+                        efficiency,
+                        marker="o",
+                        markersize=1,
+                        linestyle="-",
+                        color="dodgerblue",
+                    )
+                    ax.set_xlabel(xlabel[kin])
+                    ax.set_ylabel("Segment quality efficiency")
+                    ax.set_title(f"{NICKNAMES[system]} layers {layers}: {req_text}")
+                    ax.set_ylim(0.965, 1.004)
+                    pdf.savefig()
+                    plt.close()
+
+
+    def segment_requirements(self, df: pd.DataFrame, req: str) -> tuple[str, pd.DataFrame]:
+        # return description and mask
+        doublelayer = df["ls_doublelayer"]
+        if len(doublelayer.unique()) != 1:
+            raise ValueError(f"Multiple doublelayers found: {doublelayer.unique()}")
+        doublelayer = doublelayer.iloc[0]
+        if req == REQ_PASSTHROUGH:
+            text = "No requirement"
+            mask = np.ones(len(df), dtype=bool)
+        elif req == LS_REQ_DR_POS:
+            text = f"|dr| < {LS_DR_CUT[doublelayer]}mm"
+            mask = np.abs(df["ls_dr"]) < LS_DR_CUT[doublelayer]
+        elif req == LS_REQ_DZ_POS:
+            text = f"|dz| < {LS_DZ_CUT[doublelayer]}mm"
+            mask = np.abs(df["ls_dz"]) < LS_DZ_CUT[doublelayer]
+        elif req == LS_REQ_RZ_ANG:
+            text = f"|dtheta(rz)| < {LS_DTHETA_RZ_CUT[doublelayer]}rad"
+            mask = np.abs(df["ls_dtheta_rz"]) < LS_DTHETA_RZ_CUT[doublelayer]
+        elif req == LS_REQ_XY_ANG:
+            text = f"|dtheta(xy)| < {LS_DTHETA_XY_CUT[doublelayer]}rad"
+            mask = np.abs(df["ls_dtheta_xy"]) < LS_DTHETA_XY_CUT[doublelayer]
+        elif req == LS_REQ_ALL:
+            text = f"All LS requirements"
+            mask = (
+                (np.abs(df["ls_dr"]) < LS_DR_CUT[doublelayer]) &
+                (np.abs(df["ls_dz"]) < LS_DZ_CUT[doublelayer]) &
+                (np.abs(df["ls_dtheta_rz"]) < LS_DTHETA_RZ_CUT[doublelayer]) &
+                (np.abs(df["ls_dtheta_xy"]) < LS_DTHETA_XY_CUT[doublelayer])
+            )
+        else:
+            raise ValueError(f"Unknown segment requirement: {req}")
+        return text, mask
+
+
