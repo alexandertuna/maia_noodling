@@ -78,6 +78,7 @@ class Plotter:
                 self.plot_doublet_efficiency_vs_kinematics(pdf)
                 # self.write_doublet_denominator_info(pdf)
                 # self.plot_doublet_quality_efficiency(pdf)
+                self.plot_segment_efficiency_vs_kinematics(pdf)
 
 
     def plot_numbers_for_comparison(self, pdf: PdfPages):
@@ -846,3 +847,66 @@ class Plotter:
                 pdf.savefig()
                 plt.close()
 
+
+    def plot_segment_efficiency_vs_kinematics(self, pdf: PdfPages):
+
+        bins = {
+            "mcp_pt": np.linspace(0.0, 10.0, 201),
+            "mcp_eta": np.linspace(-0.7, 0.7, 281),
+            "mcp_phi": np.linspace(-3.2, 3.2, 321),
+        }
+        xlabel = {
+            "mcp_pt": r"Muon $p_T$ [GeV]",
+            "mcp_eta": r"Muon $\eta$",
+            "mcp_phi": r"Muon $\phi$ [rad]",
+        }
+
+        # denominator
+        dmask = self.get_denominator_mask()
+        denom = self.mcps[dmask][["file", "i_event", "i_mcp", "mcp_pt", "mcp_eta", "mcp_phi"]]
+        if denom.duplicated().any():
+            raise ValueError("Denominator has duplicated rows!")
+
+        # numerator
+        segment_cols = [
+            "file", # the file
+            "i_event", # the event
+            "i_mcp", # the parent mc particle
+            "ls_system", # the system (IT, OT)
+            "ls_doublelayer", # the first double layer
+        ]
+
+        # filter doublets to only those with same parent mcp
+        same_parent = self.linesegments["i_mcp"] != NO_MCP
+        segments = self.linesegments[same_parent][segment_cols].drop_duplicates()
+
+        # check if segments's [file, i_event, i_mcp] is in denominator
+        for kin in ["mcp_pt", "mcp_eta", "mcp_phi"]:
+            for ((system, doublelayer), group) in segments.groupby(["ls_system",
+                                                                    "ls_doublelayer",
+                                                                    ]):
+                layer = doublelayer * 2
+                layers = range(layer, layer + 4)
+
+                segment_keys = group[["file", "i_event", "i_mcp"]].drop_duplicates()
+                merged = denom.merge(segment_keys, on=["file", "i_event", "i_mcp"], how="inner")
+
+                n_denom, edges = np.histogram(denom[kin], bins=bins[kin])
+                n_numer, edges = np.histogram(merged[kin], bins=bins[kin])
+                efficiency = np.divide(n_numer, n_denom, out=np.zeros_like(n_numer, dtype=float), where=n_denom!=0)
+                centers = 0.5 * (edges[1:] + edges[:-1])
+                fig, ax = plt.subplots()
+                ax.plot(
+                    centers,
+                    efficiency,
+                    marker="o",
+                    markersize=1,
+                    linestyle="-",
+                    color="dodgerblue",
+                )
+                ax.set_xlabel(xlabel[kin])
+                ax.set_ylabel("Segment finding efficiency")
+                ax.set_title(f"{NICKNAMES[system]}, layers {layers}")
+                ax.set_ylim(0.7, 1.03)
+                pdf.savefig()
+                plt.close()
