@@ -209,9 +209,6 @@ __marimo__/
 # Other
 *.bak
 *.pdf
-*.slcio
-*.hepmc
-*.evx
 *.parquet
 *.pkl
 .gwms-user-job-wrapper.sh
@@ -226,3 +223,7 @@ __marimo__/
 *.vg
 *.f90
 *.phs
+*.evx
+*.sin
+*.hepmc
+*.slcio
