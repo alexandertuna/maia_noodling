@@ -76,10 +76,10 @@ class Plotter:
             # self.plot_doublet_features(pdf)
             # self.plot_linesegment_features(pdf)
             if self.signal:
-                # self.write_denominator_info(pdf)
+                self.write_denominator_info(pdf)
                 self.plot_doublet_efficiency_vs_kinematics(pdf)
-                # self.write_doublet_denominator_info(pdf)
-                # self.plot_doublet_quality_efficiency(pdf)
+                self.write_doublet_denominator_info(pdf)
+                self.plot_doublet_quality_efficiency(pdf)
                 self.plot_segment_efficiency_vs_kinematics(pdf)
                 self.plot_segment_quality_efficiency(pdf)
 
