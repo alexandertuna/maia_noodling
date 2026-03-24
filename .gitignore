@@ -211,6 +211,7 @@ __marimo__/
 *.pdf
 *.slcio
 *.hepmc
+*.evx
 *.parquet
 *.pkl
 .gwms-user-job-wrapper.sh
