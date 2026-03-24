@@ -9,7 +9,9 @@ TRACKER = "OuterTrackerBarrelCollection"
 MUON = 13
 GEV_TO_KEV = 1e6
 PDG_TO_NAME = {
+    12: "electron neutrino",
     13: "muon",
+    14: "muon neutrino",
     211: "pion",
     321: "kaon",
     2212: "proton",
@@ -70,8 +72,9 @@ def main():
             if edep1kev and hit.getEDep() * GEV_TO_KEV < 1.0:
                 continue
 
-            logger.info(f"Event {i_event}, Sim hit {i_hit}:")
+            logger.info(f"Event {i_event}, Sim hit {i_hit}, edep: {hit.getEDep() * GEV_TO_KEV:.1f} keV")
             log_parentage(hit.getMCParticle())
+            logger.info("-" * 40)
 
 
 
