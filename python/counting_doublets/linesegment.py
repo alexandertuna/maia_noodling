@@ -226,7 +226,7 @@ class LineSegment:
                     # record some numbers
                     cutflow = {"all": len(segments)}
 
-                    # cut some doublets?
+                    # cut some segments?
                     if self.cut_line_segments:
                         dl = segments["ls_doublelayer"]
                         mask = {}
