@@ -1,5 +1,21 @@
 # maia_noodling
 
+## Relevant repositories
+
+- https://github.com/alexandertuna/k4geo/
+  - For the edited MAIA geometry
+- https://github.com/madbaron/SteeringMacros
+  - For sim, digi, and reco settings
+- https://github.com/madbaron/detector-simulation
+  - For scripts related to BIB processing
+  - Formerly for the MAIA geometry
+- https://github.com/MuonColliderSoft/mucoll-benchmarks/
+  - For particle gun event generation
+- https://github.com/madbaron/myMuCutils/
+  - For inspiration about batch processing data
+- https://github.com/madbaron/MyBIBUtils
+  - For BIB classes which we don't really use
+
 ## Notes on BIB sample productions
 
 - simulate_bib.2026_01_07_22h00m00s
