@@ -16,6 +16,19 @@
 - https://github.com/madbaron/MyBIBUtils
   - For BIB classes which we don't really use
 
+## Notes on where I go AWOL relative to baseline MAIA
+
+- `k4geo`
+  - Doublet geometry in the barrel tracker:
+  - `MuColl/MAIA/compact/MAIA_v0/InnerTracker_o2_v06_01.xml`
+  - `MuColl/MAIA/compact/MAIA_v0/OuterTracker_o2_v06_01.xml`
+- `SteeringMacros/PandoraSettings/PandoraSettingsDefault.xml`
+  - Change `<HistogramFile>` path to match my filesystem
+- `SteeringMacros/k4Reco/steer_reco.py`:
+  - Remove tracker endcap sim hits, tracker barrel digi hits, and tracker endcap digi hits from output
+  - Relax OverlayMIX integration times from `-0.36, 0.36` to `-5.0, 15.0`
+  - https://github.com/alexandertuna/SteeringMacros/tree/ShrinkOutputSize
+
 ## Notes on BIB sample productions
 
 - simulate_bib.2026_01_07_22h00m00s
