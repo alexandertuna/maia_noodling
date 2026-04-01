@@ -15,10 +15,12 @@ from matplotlib import rcParams
 rcParams.update({"font.size": 16})
 
 CODE = "/ceph/users/atuna/work/maia"
-XML = f"{CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
+# XML = f"{CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
+XML = f"{CODE}/k4geoMain/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
 # SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2025_12_05_12h49m00s/m5000p5000_timing_cuts_166.neutrinoGun_digi_100.slcio"
 # SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2025_12_05_12h49m00s/neutrinoGun_sim_100.slcio"
-SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2025_10_17_10h40m00s/BIB10TeV/sim_mm/BIB_sim_100.slcio"
+# SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2025_10_17_10h40m00s/BIB10TeV/sim_mm/BIB_sim_100.slcio"
+SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2026_03_31_13h44m00s/nuGun_filtered_0_30.slcio"
 COLLECTION = "InnerTrackerBarrelCollection"
 MCPARTICLE = "MCParticle"
 MM_TO_CM = 0.1
@@ -29,6 +31,12 @@ GEV_TO_KEV = 1e6
 
 
 def main():
+    df = slcio_df()
+    df = post_process(df)
+    plot(df)
+
+
+def slcio_df():
 
     # setup the detector
     detector = dd4hep.Detector.getInstance()
@@ -181,7 +189,10 @@ def main():
 
     # create dataframe
     print("Creating dataframe ...")
-    df = pd.DataFrame(hits)
+    return pd.DataFrame(hits)
+
+
+def post_process(df):
 
     # add some columns
     print("Adding columns to dataframe ...")
@@ -201,6 +212,9 @@ def main():
                            "display.max_rows", 50,
                           ):
         print(df)
+
+
+def plot(df):
 
     # show some stats
     inside = df[df["inside_bounds"] == True]
