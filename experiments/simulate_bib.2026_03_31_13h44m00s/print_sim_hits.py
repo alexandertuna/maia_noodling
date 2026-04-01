@@ -2,8 +2,34 @@ import argparse
 import contextlib
 import os
 import sys
+import numpy as np
+import pandas as pd
 import logging
 logger = logging.getLogger(__name__)
+
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib import rcParams
+rcParams.update({
+    "font.size": 16,
+    "figure.figsize": (8, 8),
+    "xtick.direction": "in",
+    "ytick.direction": "in",
+    "xtick.top": True,
+    "ytick.right": True,
+    "xtick.minor.visible": True,
+    "ytick.minor.visible": True,
+    "axes.grid": True,
+    "axes.grid.which": "both",
+    # "axes.axisbelow": True,
+    "grid.linewidth": 0.5,
+    "grid.alpha": 0.1,
+    "grid.color": "gray",
+    "figure.subplot.left": 0.15,
+    "figure.subplot.bottom": 0.09,
+    "figure.subplot.right": 0.97,
+    "figure.subplot.top": 0.95,
+})
 
 import pyLCIO
 import dd4hep, DDRec
@@ -45,6 +71,9 @@ def main():
     reader = pyLCIO.IOIMPL.LCFactory.getInstance().createLCReader()
     reader.open(ops.input)
 
+    # Record some info about hits
+    hits = []
+
     # For each event, print the number of sim hits in the tracker
     with open(ops.output, "w") as fi:
         for i, event in enumerate(reader):
@@ -67,19 +96,86 @@ def main():
 
                 surf = maps[INNER_TRACKER_BARREL_COLLECTION].find(hit.getCellID0()).second
                 pos = dd4hep.rec.Vector3D(hit.getPosition()[0] * MM_TO_CM,
-                                            hit.getPosition()[1] * MM_TO_CM,
-                                            hit.getPosition()[2] * MM_TO_CM)
+                                          hit.getPosition()[1] * MM_TO_CM,
+                                          hit.getPosition()[2] * MM_TO_CM)
+                mom = dd4hep.rec.Vector3D(hit.getMomentum()[0],
+                                          hit.getMomentum()[1],
+                                          hit.getMomentum()[2])
+                cos_theta = (mom * surf.normal()) / (mom.r() * surf.normal().r())
                 inside_bounds = surf.insideBounds(pos)
+                local = surf.globalToLocal(pos)
+                local_u, local_v = local[0], local[1]
+                origin_x, origin_y, origin_z = surf.origin()[0] * CM_TO_MM, surf.origin()[1] * CM_TO_MM, surf.origin()[2] * CM_TO_MM
+                inner_thickness, outer_thickness = surf.innerThickness() * CM_TO_MM, surf.outerThickness() * CM_TO_MM
+
+                u_norm = dd4hep.rec.Vector2D(1.0, 0.0)
+                v_norm = dd4hep.rec.Vector2D(0.0, 1.0)
+                u_len = surf.length_along_u()
+                v_len = surf.length_along_v()
+                u_vec = surf.localToGlobal(dd4hep.rec.Vector2D(u_norm[0] * u_len / 2.0,
+                                                               u_norm[1] * u_len / 2.0))
+                v_vec = surf.localToGlobal(dd4hep.rec.Vector2D(v_norm[0] * v_len / 2.0,
+                                                               v_norm[1] * v_len / 2.0))
+
+                outer_surface = dd4hep.rec.Vector3D(surf.normal()[0] * surf.outerThickness(),
+                                                    surf.normal()[1] * surf.outerThickness(),
+                                                    surf.normal()[2] * surf.outerThickness())
+                inner_surface = dd4hep.rec.Vector3D(surf.normal()[0] * surf.innerThickness(),
+                                                    surf.normal()[1] * surf.innerThickness(),
+                                                    surf.normal()[2] * surf.innerThickness())
+
+                outer_corner_0 = surf.origin() + outer_surface + u_vec + v_vec
+                outer_corner_1 = surf.origin() + outer_surface + u_vec - v_vec
+                outer_corner_2 = surf.origin() + outer_surface - u_vec + v_vec
+                outer_corner_3 = surf.origin() + outer_surface - u_vec - v_vec
+                inner_corner_0 = surf.origin() - inner_surface + u_vec + v_vec
+                inner_corner_1 = surf.origin() - inner_surface + u_vec - v_vec
+                inner_corner_2 = surf.origin() - inner_surface - u_vec + v_vec
+                inner_corner_3 = surf.origin() - inner_surface - u_vec - v_vec
                 distance = surf.distance(pos) * CM_TO_MM
+                d_byhand = (pos - surf.origin()) *  surf.normal() * CM_TO_MM
+                hits.append({
+                    "local_u": local_u,
+                    "local_v": local_v,
+                    "inside_bounds": inside_bounds,
+                    "pathlength": hit_pathlength,
+                    "distance": distance,
+                    "cos_theta": cos_theta,
+                    "origin_x": origin_x,
+                    "origin_y": origin_y,
+                    "origin_z": origin_z,
+                    "inner_thickness": inner_thickness,
+                    "outer_thickness": outer_thickness,
+                    "u_len": u_len,
+                    "v_len": v_len,
+                })
 
                 # msg = f"Sim hit {i_hit}: 
                 msg = (f"E={hit_e:5.2f} keV, pl={hit_pathlength:.3f}mm, time={hit_t:6.0f} ns, "
                        f"position=({hit_x:4.0f}, {hit_y:4.0f}, {hit_z:4.0f}) -> r={hit_r:4.0f}, "
                        f"cellID0={hit_cellid0:08x}, "
-                       f"inside={inside_bounds}, d={distance:.3f}mm"
+                       f"local=({local_u:.2f}, {local_v:.2f}), "
+                       f"inside={inside_bounds}, d={distance:.3f}mm, d_={d_byhand:.3f}mm, cos_theta={cos_theta:.3f}"
                        )
                 # logger.info(msg)
                 fi.write(msg + "\n")
+
+    df = pd.DataFrame(hits)
+    df["inside_bounds"] = df["inside_bounds"].astype(bool)
+    with PdfPages("sim_hits.pdf") as pdf:
+        print(df)
+        plot(df, pdf)
+
+
+def plot(df: pd.DataFrame, pdf: PdfPages) -> None:
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.scatter(df["local_u"], df["local_v"], c=df["inside_bounds"], cmap="coolwarm", s=10)
+    ax.set_xlabel("local_u (mm)")
+    ax.set_ylabel("local_v (mm)")
+    ax.set_title("Sim hit local positions colored by inside_bounds")
+    pdf.savefig()
+    plt.close()
+
 
 
 def options():
