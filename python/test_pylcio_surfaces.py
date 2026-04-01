@@ -12,7 +12,16 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import colors
 from matplotlib import rcParams
-rcParams.update({"font.size": 16})
+rcParams.update({
+    "font.size": 16,
+    "figure.figsize": (8, 8),
+    "xtick.direction": "in",
+    "ytick.direction": "in",
+    "xtick.top": True,
+    "ytick.right": True,
+    "xtick.minor.visible": True,
+    "ytick.minor.visible": True,
+})
 
 CODE = "/ceph/users/atuna/work/maia"
 # XML = f"{CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
@@ -208,10 +217,11 @@ def post_process(df):
     df = df.sort_values(by=["i_event", "layer", "module", "sensor"])
 
     # show the dataframe
-    with pd.option_context("display.min_rows", 50,
-                           "display.max_rows", 50,
-                          ):
-        print(df)
+    # with pd.option_context("display.min_rows", 50,
+    #                        "display.max_rows", 50,
+    #                       ):
+    #     print(df)
+    return df
 
 
 def plot(df):
@@ -228,7 +238,7 @@ def plot(df):
 
         # distance
         print("Plotting distance to surface ...")
-        fig, ax = plt.subplots(figsize=(8, 8))
+        fig, ax = plt.subplots()
         bins = np.linspace(-60, 60, 121)
         ax.hist(inside["distance"], bins=bins, alpha=0.5, label="Inside bounds")
         ax.hist(outside["distance"], bins=bins, alpha=0.5, label="Outside bounds")
@@ -244,7 +254,7 @@ def plot(df):
 
         # cos theta
         print("Plotting cosine of incidence angle ...")
-        fig, ax = plt.subplots(figsize=(8, 8))
+        fig, ax = plt.subplots()
         bins = np.linspace(-1, 1, 201)
         ax.hist(inside["cos_theta"], bins=bins, alpha=0.5, label="Inside bounds")
         ax.hist(outside["cos_theta"], bins=bins, alpha=0.5, label="Outside bounds")
@@ -262,7 +272,7 @@ def plot(df):
             np.linspace(0, 1, 501),
             np.linspace(0, 10, 201),
         ]:
-            fig, ax = plt.subplots(figsize=(8, 8))
+            fig, ax = plt.subplots()
             ax.hist(inside["path_length"], bins=bins, alpha=0.5, label="Inside bounds")
             ax.hist(outside["path_length"], bins=bins, alpha=0.5, label="Outside bounds")
             ax.set_xlabel("Path length [mm]")
@@ -281,7 +291,7 @@ def plot(df):
                             (outside, "outside"),
                            ]:
             for norm in [None, colors.LogNorm()]:
-                fig, ax = plt.subplots(figsize=(8, 8))
+                fig, ax = plt.subplots()
                 bins = [np.linspace(-1, 1, 201),
                         np.linspace(-60, 60, 121),
                         ]
@@ -308,7 +318,7 @@ def plot(df):
                             (outside, "outside"),
                            ]:
             for norm in [None, colors.LogNorm()]:
-                fig, ax = plt.subplots(figsize=(8, 8))
+                fig, ax = plt.subplots()
                 bins = 100
                 bins = [
                     np.linspace(0, 1, 501),
@@ -335,7 +345,7 @@ def plot(df):
         for the_df, tag in [(inside, "inside"),
                             (outside, "outside"),
                            ]:
-            fig, ax = plt.subplots(figsize=(8, 8))
+            fig, ax = plt.subplots()
             bins = [
                 np.linspace(-24, 24, 241),
                 np.linspace(-24, 24, 241),
@@ -369,7 +379,7 @@ def plot(df):
                     (abs(the_df["cos_theta"]) > cut_value_gt)
                 )
                 sel = the_df[mask]
-                fig, ax = plt.subplots(figsize=(8, 8))
+                fig, ax = plt.subplots()
                 _, _, _, im = ax.hist2d(
                     sel["local_u"],
                     sel["local_v"],
@@ -402,7 +412,7 @@ def plot(df):
                 (abs(the_df["cos_theta"]) > cut_cos_theta)
             )
             sel = the_df[mask]
-            fig, ax = plt.subplots(figsize=(8, 8))
+            fig, ax = plt.subplots()
             _, _, _, im = ax.hist2d(
                 sel["local_u"],
                 sel["local_v"],
