@@ -151,11 +151,13 @@ def main():
                 })
 
                 # msg = f"Sim hit {i_hit}: 
-                msg = (f"E={hit_e:5.2f} keV, pl={hit_pathlength:.3f}mm, time={hit_t:6.0f} ns, "
-                       f"position=({hit_x:4.0f}, {hit_y:4.0f}, {hit_z:4.0f}) -> r={hit_r:4.0f}, "
+                msg = (f"E={hit_e:8.4f} keV, pathlength={hit_pathlength:.3f}mm, time={hit_t:6.0f}ns, "
+                       f"position=({hit_x:4.0f}, {hit_y:4.0f}, {hit_z:4.0f}) "
+                       # f"-> r={hit_r:4.0f}, "
                        f"cellID0={hit_cellid0:08x}, "
                        f"local=({local_u:.2f}, {local_v:.2f}), "
-                       f"inside={inside_bounds}, d={distance:.3f}mm, d_={d_byhand:.3f}mm, cos_theta={cos_theta:.3f}"
+                       f"inside={inside_bounds}, d={distance:.3f}mm"
+                       # f"d_={d_byhand:.3f}mm, cos_theta={cos_theta:.3f}"
                        )
                 # logger.info(msg)
                 fi.write(msg + "\n")
