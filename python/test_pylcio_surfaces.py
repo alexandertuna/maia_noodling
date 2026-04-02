@@ -312,6 +312,35 @@ def plot(df):
                 pdf.savefig()
                 plt.close()
 
+
+        # distance vs path length
+        print("Plotting distance vs path length ...")
+        for the_df, tag in [(inside, "inside"),
+                            (outside, "outside"),
+                           ]:
+            for norm in [None, colors.LogNorm()]:
+                fig, ax = plt.subplots()
+                bins = [np.linspace(0, 1, 201),
+                        np.linspace(-60, 60, 121),
+                        ]
+                # log-z scale
+                _, _, _, im = ax.hist2d(
+                        the_df["path_length"],
+                        the_df["distance"],
+                        bins=bins,
+                        cmap="hot",
+                        cmin=0.5,
+                        norm=norm,
+                        )
+                fig.colorbar(im, ax=ax, pad=0.01, label="Counts")
+                ax.set_xlabel("Path length [mm]")
+                ax.set_ylabel("Distance to surface [um]")
+                ax.set_title(f"Distance vs path length {tag} bounds")
+                fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
+                pdf.savefig()
+                plt.close()
+
+
         # path length vs cos theta
         print("Plotting path length vs incidence angle ...")
         for the_df, tag in [(inside, "inside"),
