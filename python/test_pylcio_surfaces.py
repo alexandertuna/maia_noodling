@@ -28,7 +28,8 @@ CODE = "/ceph/users/atuna/work/maia"
 XML = f"{CODE}/k4geoMain/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
 # SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2025_12_05_12h49m00s/m5000p5000_timing_cuts_166.neutrinoGun_digi_100.slcio"
 # SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2025_12_05_12h49m00s/neutrinoGun_sim_100.slcio"
-# SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2025_10_17_10h40m00s/BIB10TeV/sim_mm/BIB_sim_100.slcio"
+# SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2026_01_07_22h00m00s/BIB10TeV/sim_mm/BIB_sim_100.slcio"
+# SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2026_03_31_13h44m00s/2026_03_31_15h01m00s/BIB_sim.sim_EVENT_None.slcio"
 SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2026_03_31_13h44m00s/nuGun_filtered_0_30.slcio"
 COLLECTION = "InnerTrackerBarrelCollection"
 MCPARTICLE = "MCParticle"
@@ -37,6 +38,7 @@ MM_TO_UM = 1e3
 CM_TO_UM = 1e4
 CM_TO_MM = 10.0
 GEV_TO_KEV = 1e6
+EPSILON = 1e-4
 
 
 def main():
@@ -87,21 +89,8 @@ def slcio_df():
             energy = hit.getEDep() * GEV_TO_KEV
             time = hit.getTime()
             path_length = hit.getPathLength()
-
-            # parent mc particle info
-            mcp = hit.getMCParticle()
-            i_mcp = mcps.index(mcp) if mcp else -1
-            mc_pid = mcp.getPDG() if mcp else 0
-            mc_e = mcp.getEnergy() if mcp else 0
-            mc_px = mcp.getMomentum()[0] if mcp else 0
-            mc_py = mcp.getMomentum()[1] if mcp else 0
-            mc_pz = mcp.getMomentum()[2] if mcp else 0
-            if mcp:
-                vx, vy, vz = mcp.getVertex()[0], mcp.getVertex()[1], mcp.getVertex()[2]
-                ex, ey, ez = mcp.getEndpoint()[0], mcp.getEndpoint()[1], mcp.getEndpoint()[2]
-                mc_path_length = np.sqrt((ex - vx)**2 + (ey - vy)**2 + (ez - vz)**2)
-            else:
-                mc_path_length = 0
+            if energy < 1.0: # keV
+                continue
 
             # hit/surface relations
             surf = _map.find(cellid0).second
@@ -115,6 +104,12 @@ def slcio_df():
             distance = surf.distance(pos) * CM_TO_UM
             local = surf.globalToLocal(pos)
             cos_theta = (mom * surf.normal()) / (mom.r() * surf.normal().r())
+            origin_x = surf.origin().x() * CM_TO_MM
+            origin_y = surf.origin().y() * CM_TO_MM
+            origin_z = surf.origin().z() * CM_TO_MM
+            normal_x = surf.normal().x() * CM_TO_MM
+            normal_y = surf.normal().y() * CM_TO_MM
+            normal_z = surf.normal().z() * CM_TO_MM
 
             if i_hit == 0:
                 print(f" Surface origin: {surf.origin()}")
@@ -132,6 +127,34 @@ def slcio_df():
                 print(f" Surface isVisible: {surf.type().isVisible()}")
                 print(f" Surface isUnbounded: {surf.type().isUnbounded()}")
                 # return
+
+            # parent mc particle info
+            mcp = hit.getMCParticle()
+            i_mcp = mcps.index(mcp) if mcp else -1
+            mc_pid = mcp.getPDG() if mcp else 0
+            mc_e = mcp.getEnergy() if mcp else 0
+            mc_px = mcp.getMomentum()[0] if mcp else 0
+            mc_py = mcp.getMomentum()[1] if mcp else 0
+            mc_pz = mcp.getMomentum()[2] if mcp else 0
+            mc_isstopped = int(mcp.isStopped()) if mcp else -1
+            if mcp:
+                vx, vy, vz = mcp.getVertex()[0], mcp.getVertex()[1], mcp.getVertex()[2]
+                ex, ey, ez = mcp.getEndpoint()[0], mcp.getEndpoint()[1], mcp.getEndpoint()[2]
+                mc_path_length = np.sqrt((ex - vx)**2 + (ey - vy)**2 + (ez - vz)**2)
+                vtx = dd4hep.rec.Vector3D(mcp.getVertex()[0] * MM_TO_CM,
+                                          mcp.getVertex()[1] * MM_TO_CM,
+                                          mcp.getVertex()[2] * MM_TO_CM)
+                end = dd4hep.rec.Vector3D(mcp.getEndpoint()[0] * MM_TO_CM,
+                                          mcp.getEndpoint()[1] * MM_TO_CM,
+                                          mcp.getEndpoint()[2] * MM_TO_CM)
+                mc_vertex_distance = surf.distance(vtx) * CM_TO_UM
+                mc_endpoint_distance = surf.distance(end) * CM_TO_UM
+            else:
+                vx, vy, vz = 0, 0, 0
+                ex, ey, ez = 0, 0, 0
+                mc_path_length = -1
+                mc_vertex_distance = -1
+                mc_endpoint_distance = -1
 
             """
             double VolPlaneImpl::distance(const Vector3D& point ) const {
@@ -184,13 +207,28 @@ def slcio_df():
                 "local_v": local.v() * CM_TO_MM,
                 "cos_theta": cos_theta,
                 "path_length": path_length,
+                "origin_x": origin_x,
+                "origin_y": origin_y,
+                "origin_z": origin_z,
+                "normal_x": normal_x,
+                "normal_y": normal_y,
+                "normal_z": normal_z,
                 "i_mcp": i_mcp,
                 "mc_pid": mc_pid,
                 "mc_e": mc_e,
                 "mc_px": mc_px,
                 "mc_py": mc_py,
                 "mc_pz": mc_pz,
+                "mc_vx": vx,
+                "mc_vy": vy,
+                "mc_vz": vz,
+                "mc_ex": ex,
+                "mc_ey": ey,
+                "mc_ez": ez,
                 "mc_path_length": mc_path_length,
+                "mc_isstopped": mc_isstopped,
+                "mc_vertex_distance": mc_vertex_distance,
+                "mc_endpoint_distance": mc_endpoint_distance,
             })
 
 
@@ -216,6 +254,28 @@ def post_process(df):
     print("Sorting dataframe ...")
     df = df.sort_values(by=["i_event", "layer", "module", "sensor"])
 
+    # a few numbers
+    sensor_edge = 48 # um
+    perp_path = 0.1 # mm
+    n_inside = (df["inside_bounds"] == True).sum()
+    n_outside = (df["inside_bounds"] == False).sum()
+    n_inside_short = ((df["inside_bounds"] == True) & (df["path_length"] < EPSILON)).sum()
+    n_outside_short = ((df["inside_bounds"] == False) & (df["path_length"] < EPSILON)).sum()
+    n_inside_edge = ((df["inside_bounds"] == True) & (df["abs_distance"] > sensor_edge)).sum()
+    n_inside_bulk = ((df["inside_bounds"] == True) & (df["abs_distance"] <= sensor_edge)).sum()
+    n_outside_edge = ((df["inside_bounds"] == False) & (df["abs_distance"] > sensor_edge)).sum()
+    n_outside_bulk = ((df["inside_bounds"] == False) & (df["abs_distance"] <= sensor_edge)).sum()
+    n_inside_long = ((df["inside_bounds"] == True) & (df["path_length"] > perp_path)).sum()
+    n_outside_long = ((df["inside_bounds"] == False) & (df["path_length"] > perp_path)).sum()
+    n_inside_medium = ((df["inside_bounds"] == True) & (df["path_length"].between(EPSILON, perp_path))).sum()
+    n_outside_medium = ((df["inside_bounds"] == False) & (df["path_length"].between(EPSILON, perp_path))).sum()
+    print(f"Number of hits inside bounds: {n_inside}, outside bounds: {n_outside}")
+    print(f"Number of hits with path length < {EPSILON}mm: inside bounds: {n_inside_short}, outside bounds: {n_outside_short}")
+    print(f"Number of hits with abs(distance) > {sensor_edge}um: inside bounds: {n_inside_edge}, outside bounds: {n_outside_edge}")
+    print(f"Number of hits with abs(distance) <= {sensor_edge}um: inside bounds: {n_inside_bulk}, outside bounds: {n_outside_bulk}")
+    print(f"Number of hits with path length > {perp_path}mm: inside bounds: {n_inside_long}, outside bounds: {n_outside_long}")
+    print(f"Number of hits with path length between {EPSILON}mm and {perp_path}mm: inside bounds: {n_inside_medium}, outside bounds: {n_outside_medium}")
+
     # show the dataframe
     # with pd.option_context("display.min_rows", 50,
     #                        "display.max_rows", 50,
@@ -235,6 +295,98 @@ def plot(df):
     print(outside["abs_distance"].describe())
 
     with PdfPages("test_pylcio_surfaces.pdf") as pdf:
+
+        # mc_isstopped
+        print("Plotting mc_isstopped to surface ...")
+        bins = [-2.5, -1.5, -0.5, 0.5, 1.5, 2.5]
+        fig, ax = plt.subplots()
+        ax.hist(inside["mc_isstopped"], bins=bins, alpha=0.5, label="Inside bounds")
+        ax.hist(outside["mc_isstopped"], bins=bins, alpha=0.5, label="Outside bounds")
+        ax.set_xlabel("MC is stopped")
+        ax.set_ylabel("Counts")
+        ax.set_title("MC is stopped of hits in InnerTrackerBarrel")
+        ax.legend()
+        fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
+        pdf.savefig()
+        ax.semilogy()
+        pdf.savefig()
+        plt.close()
+
+        # mc_path_length
+        print("Plotting mc_path_length to surface ...")
+        for bins in [
+            np.linspace(-2, 10, 241),
+            np.linspace(0, 100, 241),
+            np.linspace(0, 1000, 241),
+        ]:
+            fig, ax = plt.subplots()
+            ax.hist(inside["mc_path_length"], bins=bins, alpha=0.5, label="Inside bounds")
+            ax.hist(outside["mc_path_length"], bins=bins, alpha=0.5, label="Outside bounds")
+            ax.set_xlabel("MC pathlength [mm]")
+            ax.set_ylabel("Counts")
+            ax.set_title("MC pathlength of hits in InnerTrackerBarrel")
+            ax.legend()
+            fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
+            pdf.savefig()
+            ax.semilogy()
+            pdf.savefig()
+            plt.close()
+
+        # mc vertex distance
+        print("Plotting mc_vertex_distance to surface ...")
+        for bins in [
+            np.linspace(-1000, 1000, 101),
+        ]:
+            fig, ax = plt.subplots()
+            ax.hist(inside["mc_vertex_distance"], bins=bins, alpha=0.5, label="Inside bounds")
+            ax.hist(outside["mc_vertex_distance"], bins=bins, alpha=0.5, label="Outside bounds")
+            ax.set_xlabel("MC vertex distance [mm]")
+            ax.set_ylabel("Counts")
+            ax.set_title("MC vertex distance of hits in InnerTrackerBarrel")
+            ax.legend()
+            fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
+            pdf.savefig()
+            ax.semilogy()
+            pdf.savefig()
+            plt.close()
+
+        # mc endpoint distance
+        print("Plotting mc_endpoint_distance to surface ...")
+        for bins in [
+            np.linspace(-1000, 1000, 101),
+        ]:
+            fig, ax = plt.subplots()
+            ax.hist(inside["mc_endpoint_distance"], bins=bins, alpha=0.5, label="Inside bounds")
+            ax.hist(outside["mc_endpoint_distance"], bins=bins, alpha=0.5, label="Outside bounds")
+            ax.set_xlabel("MC endpoint distance [mm]")
+            ax.set_ylabel("Counts")
+            ax.set_title("MC endpoint distance of hits in InnerTrackerBarrel")
+            ax.legend()
+            fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
+            pdf.savefig()
+            ax.semilogy()
+            pdf.savefig()
+            plt.close()
+
+        # energy
+        print("Plotting energy to surface ...")
+        for bins in [
+            np.linspace(0, 10, 201),
+            np.linspace(0, 100, 201),
+            np.linspace(0, 1000, 201),
+        ]:
+            fig, ax = plt.subplots()
+            ax.hist(inside["energy"], bins=bins, alpha=0.5, label="Inside bounds")
+            ax.hist(outside["energy"], bins=bins, alpha=0.5, label="Outside bounds")
+            ax.set_xlabel("Energy [keV]")
+            ax.set_ylabel("Counts")
+            ax.set_title("Energy of hits in InnerTrackerBarrel")
+            ax.legend()
+            fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
+            pdf.savefig()
+            ax.semilogy()
+            pdf.savefig()
+            plt.close()
 
         # distance
         print("Plotting distance to surface ...")
@@ -269,6 +421,7 @@ def plot(df):
         # path length
         print("Plotting path length ...")
         for bins in [
+            np.linspace(0, 0.1, 501),
             np.linspace(0, 1, 501),
             np.linspace(0, 10, 201),
         ]:
@@ -284,6 +437,46 @@ def plot(df):
             ax.semilogy()
             pdf.savefig()
             plt.close()
+
+        # plots when path length less than 1e-3mm
+        cut = EPSILON
+        inside_cut = inside[inside["path_length"] < cut]
+        outside_cut = outside[outside["path_length"] < cut]
+        n_inside_cut = len(inside_cut)
+        n_outside_cut = len(outside_cut)
+
+        # distance when short path length
+        print("Plotting distance to surface when path length < 1e-3mm ...")
+        fig, ax = plt.subplots()
+        bins = np.linspace(-60, 60, 121)
+        ax.hist(inside_cut["distance"], bins=bins, alpha=0.5, label=f"Inside bounds, n={n_inside_cut}")
+        ax.hist(outside_cut["distance"], bins=bins, alpha=0.5, label=f"Outside bounds, n={n_outside_cut}")
+        ax.set_xlabel("Distance to surface [um]")
+        ax.set_ylabel("Counts") 
+        ax.set_title(f"Distance to surface when path length < {cut}mm in InnerTrackerBarrel")
+        ax.legend()
+        fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
+        pdf.savefig()
+        ax.semilogy()
+        pdf.savefig()
+        plt.close()
+
+        # energy when short path length
+        print("Plotting energy to surface when path length < 1e-3 mm ...")
+        fig, ax = plt.subplots()
+        bins = np.linspace(0, 10, 201)
+        ax.hist(inside_cut["energy"], bins=bins, alpha=0.5, label=f"Inside bounds, n={n_inside_cut}")
+        ax.hist(outside_cut["energy"], bins=bins, alpha=0.5, label=f"Outside bounds, n={n_outside_cut}")
+        ax.set_xlabel("Energy [keV]")
+        ax.set_ylabel("Counts")
+        ax.set_title(f"Energy when path length < {cut}mm in InnerTrackerBarrel")
+        ax.legend()
+        fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
+        pdf.savefig()
+        ax.semilogy()
+        pdf.savefig()
+        plt.close()
+        return
 
         # distance vs cos theta
         print("Plotting distance vs incidence angle ...")
