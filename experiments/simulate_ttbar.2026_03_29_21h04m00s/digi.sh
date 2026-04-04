@@ -6,7 +6,7 @@ NOW=$(date +%Y_%m_%d_%Hh%Mm%Ss)
 
 MAX_JOBS=25
 
-for EVENT in $(seq 0 99); do
+for EVENT in $(seq 0 0); do
 
     # Process at most $MAX_JOBS in parallel
     while (( $(jobs -rp | wc -l) >= MAX_JOBS )); do
@@ -16,10 +16,10 @@ for EVENT in $(seq 0 99); do
 
     STEER=steer_reco_${TYPEEVENT}_${EVENT}.py
 
-    cp ${CODE}/SteeringMacros/k4Reco/steer_reco.py ${STEER}
-    sed -i 's|{the_args.data}/sim/{the_args.TypeEvent}/|./|g' ${STEER}
-    sed -i 's|{the_args.data}/reco/{the_args.TypeEvent}/|./|g' ${STEER}
-    sed -i 's|{the_args.data}/recoBIB/{the_args.TypeEvent}/|./|g' ${STEER}
+    # cp ${CODE}/SteeringMacros/k4Reco/steer_reco.py ${STEER}
+    # sed -i 's|{the_args.data}/sim/{the_args.TypeEvent}/|./|g' ${STEER}
+    # sed -i 's|{the_args.data}/reco/{the_args.TypeEvent}/|./|g' ${STEER}
+    # sed -i 's|{the_args.data}/recoBIB/{the_args.TypeEvent}/|./|g' ${STEER}
     # sed -i 's|_reco_|_digi_|g' ${STEER}
 
     time k4run ${STEER} -n ${NEV} --TypeEvent ${TYPEEVENT} --InFileName ${EVENT} --code ${CODE} --skipTrackerConing & # --skipReco
