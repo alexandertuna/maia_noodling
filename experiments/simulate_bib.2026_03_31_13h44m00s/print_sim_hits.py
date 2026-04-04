@@ -41,7 +41,8 @@ MM_TO_CM = 0.1
 CM_TO_MM = 10.0
 
 CODE = "/ceph/users/atuna/work/maia"
-XML = f"{CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
+# XML = f"{CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
+XML = f"{CODE}/k4geoMain/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
 
 
 def main():
