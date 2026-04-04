@@ -3,6 +3,8 @@ Following the example of:
 https://github.com/iLCSoft/MarlinTrkProcessors/blob/master/source/Digitisers/src/DDPlanarDigiProcessor.cc
 """""
 import os, sys
+import numpy as np
+import pandas as pd
 import contextlib
 
 CODE = "/ceph/users/atuna/work/maia"
@@ -17,6 +19,10 @@ MM_TO_CM = 0.1
 MM_TO_UM = 1e3
 CM_TO_UM = 1e4
 CM_TO_MM = 10.0
+SPEED_OF_LIGHT = 299.792458  # mm/ns
+TIMEWINDOWMIN = -0.09
+TIMEWINDOWMAX = 0.15
+TIMEWINDOW = True
 
 
 def main():
@@ -24,6 +30,8 @@ def main():
 
 
 def parse_slcio():
+
+    print(f"Parsing {SLCIO}")
 
     # setup the detector quietly
     with silence_c_stdout_stderr():
@@ -41,6 +49,7 @@ def parse_slcio():
     total_hits = {collection: 0 for collection in COLLECTION}
     inside = {collection: 0 for collection in COLLECTION}
     outside = {collection: 0 for collection in COLLECTION}
+    times = []
 
     # load the file
     reader = pyLCIO.IOIMPL.LCFactory.getInstance().createLCReader()
@@ -65,16 +74,28 @@ def parse_slcio():
                 cellid0 = hit.getCellID0()
                 surf = surfmap[collection_name].find(cellid0).second
                 pos = dd4hep.rec.Vector3D(hit.getPosition()[0] * MM_TO_CM,
-                                        hit.getPosition()[1] * MM_TO_CM,
-                                        hit.getPosition()[2] * MM_TO_CM)
+                                          hit.getPosition()[1] * MM_TO_CM,
+                                          hit.getPosition()[2] * MM_TO_CM)
                 inside_bounds = surf.insideBounds(pos)
                 distance = surf.distance(pos) * CM_TO_UM
+
+                # position corrected by speed of light
+                corrected_time = hit.getTime() - (np.sqrt(hit.getPosition()[0]**2 + \
+                                                          hit.getPosition()[1]**2 + \
+                                                          hit.getPosition()[2]**2) / SPEED_OF_LIGHT)
+                if TIMEWINDOW and (corrected_time < TIMEWINDOWMIN or corrected_time > TIMEWINDOWMAX):
+                    total_hits[collection_name] -= 1
+                    continue
+                times.append(corrected_time)
 
                 if inside_bounds:
                     inside[collection_name] += 1
                 else:
                     outside[collection_name] += 1
 
+    # describe the timing distribution
+    times = pd.Series(times)
+    print(f"Timing distribution: mean={times.mean():.2f} ns, std={times.std():.2f} ns, min={times.min():.2f} ns, max={times.max():.2f} ns")
 
     # announce
     width = max(len(collection) for collection in COLLECTION)
