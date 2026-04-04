@@ -24,13 +24,13 @@ rcParams.update({
 })
 
 CODE = "/ceph/users/atuna/work/maia"
-# XML = f"{CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
-XML = f"{CODE}/k4geoMain/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
+XML = f"{CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
+# XML = f"{CODE}/k4geoMain/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
 # SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2025_12_05_12h49m00s/m5000p5000_timing_cuts_166.neutrinoGun_digi_100.slcio"
 # SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2025_12_05_12h49m00s/neutrinoGun_sim_100.slcio"
 # SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2026_01_07_22h00m00s/BIB10TeV/sim_mm/BIB_sim_100.slcio"
-# SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2026_03_31_13h44m00s/2026_03_31_15h01m00s/BIB_sim.sim_EVENT_None.slcio"
-SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2026_03_31_13h44m00s/nuGun_filtered_0_30.slcio"
+SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2026_03_31_13h44m00s/2026_03_31_15h01m00s/BIB_sim.sim_EVENT_None.slcio"
+# SLCIO = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2026_03_31_13h44m00s/nuGun_filtered_0_30.slcio"
 COLLECTION = "InnerTrackerBarrelCollection"
 MCPARTICLE = "MCParticle"
 MM_TO_CM = 0.1
@@ -89,6 +89,9 @@ def slcio_df():
             energy = hit.getEDep() * GEV_TO_KEV
             time = hit.getTime()
             path_length = hit.getPathLength()
+            hit_x = hit.getPosition()[0]
+            hit_y = hit.getPosition()[1]
+            hit_z = hit.getPosition()[2]
             if energy < 1.0: # keV
                 continue
 
@@ -207,6 +210,9 @@ def slcio_df():
                 "local_v": local.v() * CM_TO_MM,
                 "cos_theta": cos_theta,
                 "path_length": path_length,
+                "hit_x": hit_x,
+                "hit_y": hit_y,
+                "hit_z": hit_z,
                 "origin_x": origin_x,
                 "origin_y": origin_y,
                 "origin_z": origin_z,
@@ -295,6 +301,27 @@ def plot(df):
     print(outside["abs_distance"].describe())
 
     with PdfPages("test_pylcio_surfaces.pdf") as pdf:
+
+        # a few event displays
+        for i_row, (index, row) in enumerate(df.iterrows()):
+            if i_row > 100:
+                break
+            i_mcp, distance, energy, time, path_length = row["i_mcp"], row["distance"], row["energy"], row["time"], row["path_length"]
+            print(f"Plotting event {row['i_event']}, mcp {i_mcp}, layer {row['layer']}, module {row['module']}, sensor {row['sensor']} ...")
+            fig, ax = plt.subplots()
+            ax.scatter(row["origin_x"], row["origin_y"], s=100, c="green", marker="x", label="Surface origin")
+            ax.scatter(row["origin_x"] + row["normal_x"],
+                       row["origin_y"] + row["normal_y"], s=100, c="green", marker="x", label="Surface origin + normal")
+            ax.scatter(row["hit_x"], row["hit_y"], s=100, c="red", marker="o", label="Hit position")
+            ax.scatter(row["mc_vx"], row["mc_vy"], s=100, c="blue", marker="^", label="MC vertex")
+            ax.scatter(row["mc_ex"], row["mc_ey"], s=100, c="cyan", marker="^", label="MC endpoint")
+            ax.set_xlabel("X [mm]")
+            ax.set_ylabel("Y [mm]")
+            ax.set_title(f"{i_mcp}: D = {distance:.1f}um, E = {energy:.0f}keV, T = {time:.1f}ns, PL = {path_length:.2f}mm")
+            ax.legend()
+            fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
+            pdf.savefig()
+            plt.close()
 
         # mc_isstopped
         print("Plotting mc_isstopped to surface ...")
@@ -401,6 +428,7 @@ def plot(df):
         fig.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.09)
         pdf.savefig()
         ax.semilogy()
+        ax.set_ylim(0.5, None)
         pdf.savefig()
         plt.close()
 
