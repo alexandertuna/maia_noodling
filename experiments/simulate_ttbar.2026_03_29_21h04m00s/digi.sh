@@ -3,10 +3,11 @@ NEV=1
 TYPEEVENT="ttbar"
 NOW=$(date +%Y_%m_%d_%Hh%Mm%Ss)
 # export MARLIN_DLL=$(readlink -e ${CODE}/MyBIBUtils/build/lib/libMyBIBUtils.so):${MARLIN_DLL}
+EVENT_LOOP=$(seq 0 0)
 
 MAX_JOBS=25
 
-for EVENT in $(seq 0 0); do
+for EVENT in ${EVENT_LOOP}; do
 
     # Process at most $MAX_JOBS in parallel
     while (( $(jobs -rp | wc -l) >= MAX_JOBS )); do
@@ -22,10 +23,16 @@ for EVENT in $(seq 0 0); do
     # sed -i 's|{the_args.data}/recoBIB/{the_args.TypeEvent}/|./|g' ${STEER}
     # sed -i 's|_reco_|_digi_|g' ${STEER}
 
-    time k4run ${STEER} -n ${NEV} --TypeEvent ${TYPEEVENT} --InFileName ${EVENT} --code ${CODE} --skipTrackerConing & # --skipReco
+    time k4run ${STEER} -n ${NEV} --TypeEvent ${TYPEEVENT} --InFileName ${EVENT} --code ${CODE} --skipTrackerConing 2>&1 | tee log_${NOW}.txt &
     sleep 10
 
 done
 
 echo "Waiting for stragglers at $(date) ..."
 wait
+
+for EVENT in ${EVENT_LOOP}; do
+    echo "Moving this bad boi"
+    mv ${TYPEEVENT}_reco_${EVENT}.slcio ${TYPEEVENT}_reco_${EVENT}_${NOW}.slcio
+done
+
