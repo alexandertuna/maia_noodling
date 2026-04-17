@@ -886,9 +886,93 @@ RecoMCTruthLinker = MarlinProcessorWrapper("RecoMCTruthLinker")
 RecoMCTruthLinker.OutputLevel = INFO
 RecoMCTruthLinker.ProcessorType = "RecoMCTruthLinker"
 RecoMCTruthLinker.Parameters = {
+    "BremsstrahlungEnergyCut": ["1"],
+    "CalohitMCTruthLinkName": ["CalohitMCTruthLink"],
+    "ClusterCollection": ["PandoraClusters"],
+    "ClusterMCTruthLinkName": ["ClusterMCTruthLink"],
+    "FullRecoRelation": ["false"],
+    "InvertedNonDestructiveInteractionLogic": ["false"],
+    "KeepDaughtersPDG": ["22", "111", "310", "13", "211", "321", "3120"],
+    "MCParticleCollection": ["MCPhysicsParticles"],
+    "MCParticlesSkimmedName": ["MCParticlesSkimmed"],
+    "MCTruthClusterLinkName": [],
+    "MCTruthRecoLinkName": [],
+    "MCTruthTrackLinkName": [],
+    "RecoMCTruthLinkName": ["RecoMCTruthLink"],
+    "RecoParticleCollection": ["MergedRecoParticles"],
+    "SaveBremsstrahlungPhotons": ["false"],
+    "SimCaloHitCollections": [
+        "ECalBarrelCollection",
+        "ECalEndcapCollection",
+        "ECalPlugCollection",
+        "HCalBarrelCollection",
+        "HCalEndcapCollection",
+        "HCalRingCollection",
+        "YokeBarrelCollection",
+        "YokeEndcapCollection",
+        "LumiCalCollection",
+        "BeamCalCollection",
+    ],
+    "SimCalorimeterHitRelationNames": [
+        "EcalBarrelRelationsSimDigi",
+        "EcalEndcapRelationsSimDigi",
+        "HcalBarrelRelationsSimDigi",
+        "HcalEndcapRelationsSimDigi",
+    ],
+    "SimTrackerHitCollections": [
+        f"VertexBarrelCollection{Coned}",
+        f"VertexEndcapCollection{Coned}",
+        f"InnerTrackerBarrelCollection{Coned}",
+        f"OuterTrackerBarrelCollection{Coned}",
+        f"InnerTrackerEndcapCollection{Coned}",
+        f"OuterTrackerEndcapCollection{Coned}",
+    ],
+    "TrackCollection": ["SiTracks_Refitted"],
+    "TrackMCTruthLinkName": ["SiTracksMCTruthLink"],
+    "TrackerHitsRelInputCollections": [
+        f"VBTrackerHitsRelations{Coned}",
+        f"VETrackerHitsRelations{Coned}",
+        f"IBTrackerHitsRelations{Coned}",
+        f"IETrackerHitsRelations{Coned}",
+        f"OBTrackerHitsRelations{Coned}",
+        f"OETrackerHitsRelations{Coned}",
+    ],
+    "UseTrackerHitRelations": ["true"],
+    "UsingParticleGun": ["false"],
+    "daughtersECutMeV": ["10"],
+    # "clusterCollectionName": ["PandoraClusters"],
+    # "MCParticleCollectionName": ["MCParticle"],
+    # "trackCollectionName": ["SiTracks_Refitted"],
+}
+
+OverlayFalse = MarlinProcessorWrapper("OverlayFalse")
+OverlayFalse.OutputLevel = INFO
+OverlayFalse.ProcessorType = "OverlayTimingGeneric"
+OverlayFalse.Parameters = {
+    "BackgroundFileNames": [],
+    "Collection_IntegrationTimes": [
+        "VertexBarrelCollection", "-0.18", "0.18",
+        "VertexEndcapCollection", "-0.18", "0.18",
+        "InnerTrackerBarrelCollection", "-5.0", "15.0",
+        "InnerTrackerEndcapCollection", "-5.0", "15.0",
+        "OuterTrackerBarrelCollection", "-5.0", "15.0",
+        "OuterTrackerEndcapCollection", "-5.0", "15.0",
+        "ECalBarrelCollection", "-0.5", "15.",
+        "ECalEndcapCollection", "-0.5", "15.",
+        "HCalBarrelCollection", "-0.5", "15.",
+        "HCalEndcapCollection", "-0.5", "15.",
+        "YokeBarrelCollection", "-0.5", "15.",
+        "YokeEndcapCollection", "-0.5", "15."
+    ],
+    "Delta_t": ["0.5"],
     "MCParticleCollectionName": ["MCParticle"],
-    "trackCollectionName": ["SiTracks_Refitted"],
-    "clusterCollectionName": ["PandoraClusters"],
+    "MCPhysicsParticleCollectionName": ["MCPhysicsParticles"],
+    "NBunchtrain": ["0"],
+    "NumberBackground": ["0."],
+    "PhysicsBX": ["10"],
+    "Poisson_random_NOverlay": ["true"],
+    "RandomBx": ["false"],
+    "TPCDriftvelocity": ["0.05"],
 }
 
 OverlayMIX = MarlinProcessorWrapper("OverlayMIX")
@@ -964,6 +1048,7 @@ OverlayIP.Parameters = {
 algList.append(MyAIDAProcessor)
 algList.append(EventNumber)
 algList.append(InitDD4hep)
+algList.append(OverlayFalse)
 if the_args.enableBIB:
     algList.append(OverlayMIX)
 if the_args.enableIP:
