@@ -31,6 +31,14 @@
 
 ## Notes on BIB sample productions
 
+- simulate_bib.2026_04_21_16h00m00s
+  - Geo: https://github.com/alexandertuna/k4geo/tree/KITP_10TeV_ITOT_doublets_v04/
+  - Similar to the v01 geometry, except OT double-layers are evenly spaced instead of spaced as "super-layers"
+  - 100% BIB, no incoherent ee pairs
+- simulate_bib.2026_04_21_14h00m00s
+  - Geo: https://github.com/alexandertuna/k4geo/tree/KITP_10TeV_ITOT_doublets_v03/
+  - Add four more layers in the OT to make another "super-layer"
+  - 100% BIB, no incoherent ee pairs
 - simulate_bib.2026_01_07_22h00m00s
   - Geo: https://github.com/alexandertuna/k4geo/tree/KITP_10TeV_ITOT_doublets_v01/
   - Decrease OT doublet spacing from 6mm to 2mm, which is the same as IT
