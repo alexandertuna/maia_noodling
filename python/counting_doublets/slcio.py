@@ -274,7 +274,8 @@ def convert_one_file(
     # And postprocess
     logger.info("Postprocessing DataFrames ...")
     mcps = postprocess_mcps(mcps)
-    simhits = postprocess_mcps(simhits)
+    if signal:
+        simhits = postprocess_mcps(simhits)
     simhits = postprocess_simhits(simhits, signal)
 
     return mcps, simhits
