@@ -40,7 +40,7 @@ def options():
                         help="Path to XML file with inner tracker material stack data")
     parser.add_argument("--outer_xml", type=str, default=OUTER_XML,
                         help="Path to XML file with outer tracker material stack data")
-    parser.add_argument("--pdf", type=str, default="maia_doublet_v1.pdf",
+    parser.add_argument("--pdf", type=str, default="maia_doublet_v4.pdf",
                         help="Path to output PDF file")
     parser.add_argument("--plot_xy", action="store_true",
                         help="Enable plotting of XY geometry")
@@ -205,6 +205,10 @@ def plot_barrel_rz(df: pd.DataFrame, pdf: PdfPages) -> None:
             "red",
             "blue",
             "red",
+            "blue",
+            "red",
+            "blue",
+            "red",
         ],
     }
 
@@ -304,6 +308,10 @@ def plot_barrel_xy(df: pd.DataFrame, pdf: PdfPages) -> None:
             "red",
             "blue",
             "red",
+            "blue",
+            "red",
+            "blue",
+            "red",
         ],
     }
 
@@ -339,8 +347,17 @@ def plot_barrel_xy(df: pd.DataFrame, pdf: PdfPages) -> None:
             now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
             ax.text(0, 200, "IT, L0-L3", ha=ha)
             ax.text(0, 580, "IT, L4-L7", ha=ha)
-            ax.text(0, 940, "OT, L0-L3", ha=ha)
-            ax.text(0, 1230, "OT, L4-L7", ha=ha)
+            # v1
+            # ax.text(0, 920, "OT, L0-L3", ha=ha)
+            # ax.text(0, 1200, "OT, L4-L7", ha=ha)
+            # v2
+            FONTSIZE = 12
+            ax.text(0, 850, "OT, L0-L1", ha=ha, fontsize=FONTSIZE)
+            ax.text(0, 1050, "OT, L2-L3", ha=ha, fontsize=FONTSIZE)
+            ax.text(0, 1260, "OT, L4-L5", ha=ha, fontsize=FONTSIZE)
+            ax.text(0, 1480, "OT, L6-L7", ha=ha, fontsize=FONTSIZE)
+            # v3
+            # ax.text(700, 1400, "OT, L8-L11", ha=ha) # v3
             ax.text(0.02, 1.01, '"Layer" (r-coordinate)', transform=ax.transAxes, fontsize=16)
             ax.text(0.74, 1.01, now, transform=ax.transAxes, fontsize=10)
         elif it == 1:
