@@ -149,10 +149,6 @@ class LineSegment:
 
                     upper = subdf[ subdf[lower_vs_upper[start]] == 1 ]
 
-                    # progress bar
-                    if i_subgroup > 0 and i_subgroup % 10 == 0:
-                        logger.info(f"Processing subgroup {i_subgroup} / {n_subgroup} for line segments ...")
-
                     # get all combinations of lower and upper
                     segments = lower.merge(
                         upper,
@@ -210,6 +206,10 @@ class LineSegment:
                         "doublet_system": "ls_system",
                         "doublet_doublelayer_lower": "ls_doublelayer_lower",
                         "doublet_doublelayer_upper": "ls_doublelayer_upper",
+                        "doublet_module_lower": "ls_module_lower",
+                        "doublet_module_upper": "ls_module_upper",
+                        "doublet_sensor_lower": "ls_sensor_lower",
+                        "doublet_sensor_upper": "ls_sensor_upper",
                         "doublet_dr_lower": "ls_dr_lower",
                         "doublet_dr_upper": "ls_dr_upper",
                         "doublet_dz_lower": "ls_dz_lower",
@@ -245,7 +245,18 @@ class LineSegment:
                             cutflow[cut] = np.sum(mask[cut])
                         segments = segments[mask["and"]]
 
-                    # stats from this group
+                        # debug_cols = [
+                        #     "file",
+                        #     "i_event", "ls_doublelayer_lower", "ls_doublelayer_upper", "ls_module_lower", "ls_module_upper", "ls_sensor_lower", "ls_sensor_upper", "ls_dz", "ls_dr", "ls_dtheta_rz", "ls_dtheta_xy",
+                        # ]
+                        # if True and len(segments) > 0:
+                        #     with pd.option_context('display.max_columns', None,
+                        #                            'display.width', None
+                        #                            ):
+                        #         dfstr = segments[debug_cols].to_string(index=False)
+                        #         logger.info(f"Debug line segments:\n{dfstr}")
+
+                    # progress bar and stats from this group
                     if i_subgroup > 0 and i_subgroup % 10 == 0:
                         logger.info(f"Processed subgroup {i_subgroup} / {n_subgroup} which has {len(segments)} line segments ...")
 
@@ -263,6 +274,10 @@ class LineSegment:
             "i_event",
             "i_mcp",
             "ls_doublelayer",
+            "ls_module_lower",
+            "ls_module_upper",
+            "ls_sensor_lower",
+            "ls_sensor_upper",
         ]
         self.df = self.df.sort_values(by=sortby).reset_index(drop=True)
 
