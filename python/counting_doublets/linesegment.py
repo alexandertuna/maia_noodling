@@ -184,6 +184,13 @@ class LineSegment:
                     segments["ls_dqoverpt"] = segments["doublet_qoverpt_upper"] - segments["doublet_qoverpt_lower"]
                     segments["ls_doublelayer"] = segments["doublet_doublelayer_lower"]
 
+                    # pass-through the simhit positions
+                    for coord in ["x", "y"]:
+                        segments[f"ls_{coord}_0"] = segments[f"doublet_{coord}_0_lower"]
+                        segments[f"ls_{coord}_1"] = segments[f"doublet_{coord}_1_lower"]
+                        segments[f"ls_{coord}_2"] = segments[f"doublet_{coord}_0_upper"]
+                        segments[f"ls_{coord}_3"] = segments[f"doublet_{coord}_1_upper"]
+
                     # rz projection
                     slope_rz = np.divide(segments["doublet_z_upper"] - segments["doublet_z_lower"],
                                          segments["doublet_r_upper"] - segments["doublet_r_lower"])

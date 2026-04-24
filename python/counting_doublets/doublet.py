@@ -99,6 +99,11 @@ class DoubletMaker:
             # positively charged particles have negative dphi, and vice versa
             doublets["doublet_q"] = (-1*np.sign(doublets["doublet_dphi"])).astype(np.int8)
 
+            # pass-through the simhit positions
+            for coord in ["x", "y"]:
+                doublets[f"doublet_{coord}_0"] = doublets[f"simhit_{coord}_lower"]
+                doublets[f"doublet_{coord}_1"] = doublets[f"simhit_{coord}_upper"]
+
             # doublet feature: radius of circle composed of the two hits and the origin. R = abc/4K
             # then get pt from R
             circle_a = doublets["simhit_r_lower"]
