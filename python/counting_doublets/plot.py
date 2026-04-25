@@ -74,14 +74,14 @@ class Plotter:
             # self.plot_radius_vs_layer(pdf)
             # self.plot_doublet_occupancy(pdf)
             # self.plot_doublet_features(pdf)
-            # self.plot_linesegment_features(pdf)
+            self.plot_linesegment_features(pdf)
             if self.signal:
                 self.write_denominator_info(pdf)
-                self.plot_doublet_efficiency_vs_kinematics(pdf)
-                self.write_doublet_denominator_info(pdf)
-                self.plot_doublet_quality_efficiency(pdf)
-                self.plot_segment_efficiency_vs_kinematics(pdf)
-                self.plot_segment_quality_efficiency(pdf)
+                # self.plot_doublet_efficiency_vs_kinematics(pdf)
+                # self.write_doublet_denominator_info(pdf)
+                # self.plot_doublet_quality_efficiency(pdf)
+                # self.plot_segment_efficiency_vs_kinematics(pdf)
+                # self.plot_segment_quality_efficiency(pdf)
 
 
     def plot_numbers_for_comparison(self, pdf: PdfPages):
@@ -746,6 +746,7 @@ class Plotter:
             "ls_dqoverpt": np.linspace(-0.2, 0.2, 201),
             "ls_dtheta_rz": np.linspace(-0.024, 0.024, 241),
             "ls_dtheta_xy": np.linspace(-0.12, 0.12, 241),
+            "ls_chi2_012": np.linspace(0, 2.0, 201),
         }
         xlabel = {
             "ls_deta": r"upper doublet eta - lower doublet eta",
@@ -757,6 +758,7 @@ class Plotter:
             "ls_dqoverpt": "upper doublet q/pt - lower doublet q/pt",
             "ls_dtheta_rz": "upper doublet theta_rz - lower doublet theta_rz",
             "ls_dtheta_xy": "upper doublet theta_xy - lower doublet theta_xy",
+            "ls_chi2_012": "Diff between circle(xy, 012) and 3 [mm]",
         }
         formatting = {
             "ls_deta": ".5f",
@@ -768,6 +770,7 @@ class Plotter:
             "ls_dqoverpt": ".3f",
             "ls_dtheta_rz": ".5f",
             "ls_dtheta_xy": ".4f",
+            "ls_chi2_012": ".4f",
         }
         color = "cornflowerblue" if self.signal else "crimson"
 
@@ -782,6 +785,7 @@ class Plotter:
             "ls_dz",
             "ls_dtheta_rz",
             "ls_dtheta_xy",
+            "ls_chi2_012",
         ]:
 
             for semilogy in [
