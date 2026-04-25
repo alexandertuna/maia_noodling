@@ -7,6 +7,7 @@ from constants import MD_DZ_CUT, MD_DR_CUT
 from constants import LS_DDZ_CUT, LS_DQOVERPT_CUT, LS_DZ_CUT, LS_DR_CUT
 from constants import LS_DTHETA_RZ_CUT, LS_DTHETA_XY_CUT
 from constants import BYTE_TO_MB, NO_MCP
+from constants import SPEED_OF_LIGHT, MAGNETIC_FIELD
 
 class LineSegment:
 
@@ -185,7 +186,7 @@ class LineSegment:
                     segments["ls_doublelayer"] = segments["doublet_doublelayer_lower"]
 
                     # pass-through the simhit positions
-                    for coord in ["x", "y"]:
+                    for coord in ["x", "y", "r"]:
                         segments[f"ls_{coord}_0"] = segments[f"doublet_{coord}_0_lower"]
                         segments[f"ls_{coord}_1"] = segments[f"doublet_{coord}_1_lower"]
                         segments[f"ls_{coord}_2"] = segments[f"doublet_{coord}_0_upper"]
@@ -207,6 +208,38 @@ class LineSegment:
                     segments["ls_dtheta_xy"] = segments["doublet_theta_xy_upper"] - segments["doublet_theta_xy_lower"]
                     segments["ls_dtheta_rz"] = (segments["ls_dtheta_rz"] + np.pi) % (2 * np.pi) - np.pi
                     segments["ls_dtheta_xy"] = (segments["ls_dtheta_xy"] + np.pi) % (2 * np.pi) - np.pi
+
+                    # find the circle (radius, x_center, y_center) formed from the first three hits
+                    circle_a = np.sqrt((segments["ls_x_1"] - segments["ls_x_0"])**2 +
+                                       (segments["ls_y_1"] - segments["ls_y_0"])**2)
+                    circle_b = np.sqrt((segments["ls_x_2"] - segments["ls_x_1"])**2 +
+                                       (segments["ls_y_2"] - segments["ls_y_1"])**2)
+                    circle_c = np.sqrt((segments["ls_x_0"] - segments["ls_x_2"])**2 +
+                                       (segments["ls_y_0"] - segments["ls_y_2"])**2)
+                    circle_s = 0.5 * (circle_a + circle_b + circle_c)
+                    circle_k = np.sqrt(circle_s * (circle_s - circle_a) * (circle_s - circle_b) * (circle_s - circle_c))
+                    circle_r = np.divide(circle_a * circle_b * circle_c, 4.0 * circle_k)
+                    circle_d = 2 * (segments["ls_x_0"] * (segments["ls_y_1"] - segments["ls_y_2"]) +
+                                    segments["ls_x_1"] * (segments["ls_y_2"] - segments["ls_y_0"]) +
+                                    segments["ls_x_2"] * (segments["ls_y_0"] - segments["ls_y_1"]))
+                    circle_x = np.divide(segments["ls_r_0"]**2 * (segments["ls_y_1"] - segments["ls_y_2"]) +
+                                         segments["ls_r_1"]**2 * (segments["ls_y_2"] - segments["ls_y_0"]) +
+                                         segments["ls_r_2"]**2 * (segments["ls_y_0"] - segments["ls_y_1"]),
+                                         circle_d)
+                    circle_y = np.divide(segments["ls_r_0"]**2 * (segments["ls_x_2"] - segments["ls_x_1"]) +
+                                         segments["ls_r_1"]**2 * (segments["ls_x_0"] - segments["ls_x_2"]) +
+                                         segments["ls_r_2"]**2 * (segments["ls_x_1"] - segments["ls_x_0"]),
+                                         circle_d)
+                    circle_diff = np.sqrt((segments["ls_x_3"] - circle_x)**2 + (segments["ls_y_3"] - circle_y)**2) - circle_r
+
+                    # calculate pt from circle radius
+                    # segments["ls_circle_x_012"] = circle_x
+                    # segments["ls_circle_y_012"] = circle_y
+                    # segments["ls_circle_r_012"] = circle_r
+                    # segments["ls_pt_012"] = SPEED_OF_LIGHT * MAGNETIC_FIELD * circle_r * 1e-6
+
+                    # calculate the distance from (x_3, y_3) to the circle
+                    segments["ls_chi2_012"] = np.abs(circle_diff)
 
                     # rename some things
                     rename = {
