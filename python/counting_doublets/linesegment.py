@@ -139,7 +139,7 @@ class LineSegment:
                 # progress bar
                 if (self.signal and i_group % 10 == 0) or (not self.signal):
                     n_group = len(self.doublets.groupby(groupby_cols[start]))
-                    logger.info(f"Processing group {i_group} / {n_group} for line segments ...")
+                    logger.info(f"Processing group {i_group} / {n_group} for line segments (n={len(df)}) ...")
 
                 # get lower doublets
                 lower = df[ df[lower_vs_upper[start]] == 0 ]
@@ -210,15 +210,7 @@ class LineSegment:
                     segments["ls_dtheta_xy"] = (segments["ls_dtheta_xy"] + np.pi) % (2 * np.pi) - np.pi
 
                     # find the circle (radius, x_center, y_center) formed from the first three hits
-                    circle_a = np.sqrt((segments["ls_x_1"] - segments["ls_x_0"])**2 +
-                                       (segments["ls_y_1"] - segments["ls_y_0"])**2)
-                    circle_b = np.sqrt((segments["ls_x_2"] - segments["ls_x_1"])**2 +
-                                       (segments["ls_y_2"] - segments["ls_y_1"])**2)
-                    circle_c = np.sqrt((segments["ls_x_0"] - segments["ls_x_2"])**2 +
-                                       (segments["ls_y_0"] - segments["ls_y_2"])**2)
-                    circle_s = 0.5 * (circle_a + circle_b + circle_c)
-                    circle_k = np.sqrt(circle_s * (circle_s - circle_a) * (circle_s - circle_b) * (circle_s - circle_c))
-                    circle_r = np.divide(circle_a * circle_b * circle_c, 4.0 * circle_k)
+                    BAD_CHI2 = 1e6
                     circle_d = 2 * (segments["ls_x_0"] * (segments["ls_y_1"] - segments["ls_y_2"]) +
                                     segments["ls_x_1"] * (segments["ls_y_2"] - segments["ls_y_0"]) +
                                     segments["ls_x_2"] * (segments["ls_y_0"] - segments["ls_y_1"]))
@@ -230,6 +222,10 @@ class LineSegment:
                                          segments["ls_r_1"]**2 * (segments["ls_x_0"] - segments["ls_x_2"]) +
                                          segments["ls_r_2"]**2 * (segments["ls_x_1"] - segments["ls_x_0"]),
                                          circle_d)
+                    circle_r = np.sqrt((segments["ls_x_0"] - circle_x)**2 + (segments["ls_y_0"] - circle_y)**2)
+                    circle_ok = circle_d != 0
+                    if np.any(~circle_ok):
+                        logger.warning(f"Found {np.sum(~circle_ok)} invalid circles with circle_d = 0")
                     circle_diff = np.sqrt((segments["ls_x_3"] - circle_x)**2 + (segments["ls_y_3"] - circle_y)**2) - circle_r
 
                     # calculate pt from circle radius
@@ -239,7 +235,7 @@ class LineSegment:
                     # segments["ls_pt_012"] = SPEED_OF_LIGHT * MAGNETIC_FIELD * circle_r * 1e-6
 
                     # calculate the distance from (x_3, y_3) to the circle
-                    segments["ls_chi2_012"] = np.abs(circle_diff)
+                    segments["ls_chi2_012"] = np.where(circle_ok, np.abs(circle_diff), BAD_CHI2)
 
                     # rename some things
                     rename = {
