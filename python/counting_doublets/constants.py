@@ -127,6 +127,23 @@ LS_DTHETA_XY_CUT = np.array([
     0.396, # doublelayer 1
     0.078, # doublelayer 2
 ])
+LS_CHI2_XY_CUT = np.array([
+    0.0, # doublelayer 0
+    0.0, # doublelayer 1
+    0.0, # doublelayer 2
+])
+QD_DZ_CUT = np.array([
+    0.0, # doublelayer 0
+])
+QD_DR_CUT = np.array([
+    0.0, # doublelayer 0
+])
+QD_DTHETA_RZ_CUT = np.array([
+    0.0, # doublelayer 0
+])
+QD_CHI2_XY_CUT = np.array([
+    0.0, # doublelayer 0
+])
 
 REQ_PASSTHROUGH = "no cuts"
 REQ_RZ = "rz req."
