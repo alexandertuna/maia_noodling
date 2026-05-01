@@ -11,6 +11,7 @@ from doublet import DoubletMaker
 from plot import Plotter
 from modulemap import ModuleMap
 from linesegment import LineSegment
+from quaddoublet import QuadDoublet
 from constants import SIGNAL, MCP_PKL, SIMHIT_PKL, DOUBLET_PKL
 
 FNAMES_BACKGROUND_100 = [
@@ -27,14 +28,14 @@ FNAMES_SIGNAL = [
     # muonGun, 2 GeV
     "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_300.slcio",
     "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_301.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_302.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_303.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_304.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_305.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_306.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_307.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_308.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_309.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_302.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_303.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_304.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_305.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_306.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_307.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_308.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_309.slcio",
 ]
 
 FNAMES = [
@@ -131,6 +132,13 @@ def main():
         doublets=doublets,
     ).df
 
+    # make quad doublets
+    quaddoublets = QuadDoublet(
+        signal=signal,
+        cut_quad_doublets=ops.cut_quad_doublets,
+        linesegments=linesegments,
+    ).df
+
     # plot stuff
     if ops.plot:
         logger.info("Creating plots ...")
@@ -161,6 +169,7 @@ def options():
     parser.add_argument("--modulemap", action="store_true", help="Make module map in the analysis")
     parser.add_argument("--cut-doublets", action="store_true", help="Cut doublets based on MD_DZ_CUT and MD_DR_CUT")
     parser.add_argument("--cut-line-segments", action="store_true", help="Cut line segments based on [[ something ]]")
+    parser.add_argument("--cut-quad-doublets", action="store_true", help="Cut quad doublets based on [[ something ]]")
     parser.add_argument("--read-from-pickle", action="store_true", help="Read slcio dataframes from pickle files")
     parser.add_argument("--write-to-pickle", action="store_true", help="Save slcio dataframes as pickle files")
     parser.add_argument("--signal", action="store_true", help="Use signal files in the analysis")
