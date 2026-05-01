@@ -1,0 +1,17 @@
+# container
++SingularityImage = "/cvmfs/unpacked.cern.ch/ghcr.io/muoncollidersoft/mucoll-sim-alma9:v2.9.8-amd64"
+
+executable = condor_sim.sh
+arguments  = $(FILENUM)
+output     = logs/condor_sim_out_$(FILENUM).$(ClusterId).$(ProcId).out
+error      = logs/condor_sim_err_$(FILENUM).$(ClusterId).$(ProcId).err
+log        = logs/condor_sim_log_$(FILENUM).$(ClusterId).$(ProcId).log
+
+# resources
+request_cpus   = 2
+request_memory = 8GB
+request_disk   = 4GB
++DESIRED_Sites = "T2_US_UCSD"
+
+# launch
+queue FILENUM from condor_sim.txt
