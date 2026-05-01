@@ -40,8 +40,9 @@ from constants import MD_DZ_CUT, MD_DR_CUT
 from constants import REQ_PASSTHROUGH, REQ_RZ, REQ_XY, REQ_RZ_XY
 from constants import DOUBLET_REQS, NO_MCP
 from constants import LS_REQS, LS_REQ_DR_POS, LS_REQ_DZ_POS, LS_REQ_XY_ANG, LS_REQ_RZ_ANG, LS_REQ_ALL
-from constants import LS_DZ_CUT, LS_DR_CUT, LS_DTHETA_RZ_CUT, LS_DTHETA_XY_CUT
+from constants import LS_DZ_CUT, LS_DR_CUT, LS_DTHETA_RZ_CUT, LS_DTHETA_XY_CUT, LS_CHI2_XY_CUT
 from constants import MIN_COSTHETA, MIN_SIMHIT_PT_FRACTION, MAX_TIME
+from constants import N_PHI_SLICES
 
 
 class Plotter:
@@ -73,7 +74,7 @@ class Plotter:
             # self.plot_layer_occupancy_2d(pdf)
             # self.plot_radius_vs_layer(pdf)
             # self.plot_doublet_occupancy(pdf)
-            # self.plot_doublet_features(pdf)
+            self.plot_doublet_features(pdf)
             self.plot_linesegment_features(pdf)
             if self.signal:
                 self.write_denominator_info(pdf)
@@ -184,6 +185,7 @@ class Plotter:
 
     def plot_numbers_for_comparison_background(self, pdf: PdfPages):
         layers = [0, 1]
+        # layers = [2, 3]
         the_doublelayer = layers[0] // 2
 
         # part 1: simhits
@@ -228,6 +230,23 @@ class Plotter:
         ]:
             mask &= req
             logger.info(f"* {label:<30} :: {mask.sum():>10}")
+
+        # part 3: line segments
+        if self.linesegments is None:
+            logger.info("No line segments, skipping ...")
+        else:
+            mask = np.ones(len(self.linesegments), dtype=bool)
+            for [req, label] in [
+                [self.linesegments["ls_system"] == OUTER_TRACKER_BARREL, "LS in OTB"],
+                [self.linesegments["ls_doublelayer"] == the_doublelayer, f"LS starting on layer {the_doublelayer}"],
+                [np.abs(self.linesegments["ls_dz"]) < LS_DZ_CUT[the_doublelayer], f"LS with |dz| < {LS_DZ_CUT[the_doublelayer]}mm"],
+                [np.abs(self.linesegments["ls_dr"]) < LS_DR_CUT[the_doublelayer], f"LS with |dr| < {LS_DR_CUT[the_doublelayer]}mm"],
+                [np.abs(self.linesegments["ls_dtheta_rz"]) < LS_DTHETA_RZ_CUT[the_doublelayer], f"LS with |dtheta_rz| < {LS_DTHETA_RZ_CUT[the_doublelayer]}"],
+                [np.abs(self.linesegments["ls_dtheta_xy"]) < LS_DTHETA_XY_CUT[the_doublelayer], f"LS with |dtheta_xy| < {LS_DTHETA_XY_CUT[the_doublelayer]}"],
+                [np.abs(self.linesegments["ls_chi2_012"]) < LS_CHI2_XY_CUT[the_doublelayer], f"LS with |chi2_xy| < {LS_CHI2_XY_CUT[the_doublelayer]}"],
+            ]:
+                mask &= req
+                logger.info(f"* {label:<30} :: {mask.sum():>10}")
 
 
     def write_date(self, pdf: PdfPages):
@@ -515,6 +534,7 @@ class Plotter:
             "doublet_dphi": np.linspace(-1.0, 1.0, 201) if self.signal else np.linspace(-3.2, 3.2, 201),
             "doublet_pt": np.linspace(0, 10, 101),
             "doublet_qoverpt": np.linspace(-0.8, 0.8, 161),
+            "doublet_phi_slice": np.linspace(-1, N_PHI_SLICES+1, N_PHI_SLICES+3),
             "mcp_qoverpt": np.linspace(-0.8, 0.8, 161),
             "mc_pt": np.linspace(0, 10, 101),
         }
@@ -524,9 +544,9 @@ class Plotter:
             "doublet_dphi": r"dphi in xy-plane [rad]",
             "doublet_pt": r"pT [GeV]",
             "doublet_qoverpt": r"Doublet q/pT [1/GeV]",
+            "doublet_phi_slice": r"Phi slice",
             "mcp_qoverpt": r"MC q/pT [1/GeV]",
             "mc_pt": r"MC pT [GeV]",
-
         }
         formatting = {
             "doublet_dz": ".1f",
@@ -534,6 +554,7 @@ class Plotter:
             "doublet_dphi": ".3f",
             "doublet_pt": ".1f",
             "doublet_qoverpt": ".3f",
+            "doublet_phi_slice": ".0f",
             "mcp_qoverpt": ".3f",
         }
 
@@ -543,6 +564,7 @@ class Plotter:
             "doublet_dr",
             "doublet_dphi",
             "doublet_pt",
+            "doublet_phi_slice",
         ]:
 
             for semilogy in [
@@ -758,7 +780,7 @@ class Plotter:
             "ls_dqoverpt": "upper doublet q/pt - lower doublet q/pt",
             "ls_dtheta_rz": "upper doublet theta_rz - lower doublet theta_rz",
             "ls_dtheta_xy": "upper doublet theta_xy - lower doublet theta_xy",
-            "ls_chi2_012": "Diff between circle(xy, 012) and 3 [mm]",
+            "ls_chi2_012": "Diff^2 between circle(xy, 012) and 3 [mm^2]",
         }
         formatting = {
             "ls_deta": ".5f",
@@ -770,7 +792,7 @@ class Plotter:
             "ls_dqoverpt": ".3f",
             "ls_dtheta_rz": ".5f",
             "ls_dtheta_xy": ".4f",
-            "ls_chi2_012": ".4f",
+            "ls_chi2_012": ".5f",
         }
         color = "cornflowerblue" if self.signal else "crimson"
 
@@ -826,7 +848,7 @@ class Plotter:
 
         # 2d histograms
         for feature_x, feature_y in [
-            ("ls_dphi", "ls_dr"),
+            # ("ls_dphi", "ls_dr"),
         ]:
 
             for ((system, doublelayer), group) in self.linesegments[baseline].groupby(["ls_system",
