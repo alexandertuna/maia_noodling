@@ -176,6 +176,12 @@ class LineSegment:
                         ]:
                             segments[attr] = segments[f"{attr}_lower"].where(mcp_ok, 0)
 
+                    # features: position
+                    segments["ls_r"] = (segments["doublet_r_lower"] + segments["doublet_r_upper"]) / 2
+                    segments["ls_z"] = (segments["doublet_z_lower"] + segments["doublet_z_upper"]) / 2
+                    segments["ls_x"] = (segments["doublet_x_lower"] + segments["doublet_x_upper"]) / 2
+                    segments["ls_y"] = (segments["doublet_y_lower"] + segments["doublet_y_upper"]) / 2
+
                     # assign more features
                     segments["ls_ddr"] = segments["doublet_dr_upper"] - segments["doublet_dr_lower"]
                     segments["ls_ddz"] = segments["doublet_dz_upper"] - segments["doublet_dz_lower"]
@@ -184,6 +190,9 @@ class LineSegment:
                     segments["ls_dphi"] = (segments["ls_dphi"] + np.pi) % (2 * np.pi) - np.pi
                     segments["ls_dqoverpt"] = segments["doublet_qoverpt_upper"] - segments["doublet_qoverpt_lower"]
                     segments["ls_doublelayer"] = segments["doublet_doublelayer_lower"]
+                    segments["ls_doublelayer_div_4"] = segments["doublet_doublelayer_lower"] // 4
+                    segments["ls_doublelayer_mod_4"] = segments["doublet_doublelayer_lower"] % 4
+                    segments["ls_doublelayer_even"] = (segments["doublet_doublelayer_lower"] % 2 == 0).astype(bool)
 
                     # pass-through the simhit positions
                     for coord in ["x", "y", "r"]:
@@ -228,12 +237,6 @@ class LineSegment:
                         logger.warning(f"Found {np.sum(~circle_ok)} invalid circles with circle_d = 0")
                     circle_diff = np.sqrt((segments["ls_x_3"] - circle_x)**2 + (segments["ls_y_3"] - circle_y)**2) - circle_r
 
-                    # calculate pt from circle radius
-                    # segments["ls_circle_x_012"] = circle_x
-                    # segments["ls_circle_y_012"] = circle_y
-                    # segments["ls_circle_r_012"] = circle_r
-                    # segments["ls_pt_012"] = SPEED_OF_LIGHT * MAGNETIC_FIELD * circle_r * 1e-6
-
                     # calculate the distance from (x_3, y_3) to the circle
                     segments["ls_chi2_012"] = np.where(circle_ok, np.abs(circle_diff), BAD_CHI2)
 
@@ -253,10 +256,16 @@ class LineSegment:
                     }
                     segments = segments.rename(columns=rename)
 
+                    # assign module and sensor from lower doublet (arbitrary choice)
+                    segments["ls_module"] = segments["ls_module_lower"]
+                    segments["ls_sensor"] = segments["ls_sensor_lower"]
+
                     # and drop other cols
                     dropcols = ["i_mcp_lower", "i_mcp_upper"]
                     dropcols.extend([col for col in segments.columns if col.startswith("simhit_")])
                     dropcols.extend([col for col in segments.columns if col.startswith("doublet_")])
+                    dropcols.extend([col for col in segments.columns if col.startswith("mcp_") and col.endswith("_lower")])
+                    dropcols.extend([col for col in segments.columns if col.startswith("mcp_") and col.endswith("_upper")])
                     segments.drop(columns=dropcols, errors="ignore", inplace=True)
 
                     # record some numbers
