@@ -109,28 +109,28 @@ LS_DQOVERPT_CUT = np.array([
 ])
 LS_DZ_CUT = np.array([
     24, # mm # doublelayer 0
-    55, # mm # doublelayer 1
+    0.0, # 55, # mm # doublelayer 1
     120, # mm # doublelayer 2
 ])
 LS_DR_CUT = np.array([
     281, # mm # doublelayer 0
-    468, # mm # doublelayer 1
+    0.0, # 468, # mm # doublelayer 1
     752, # mm # doublelayer 2
 ])
 LS_DTHETA_RZ_CUT = np.array([
     0.0075, # doublelayer 0
-    0.0453, # doublelayer 1
+    0.0000, # 0.0453, # doublelayer 1
     0.0130, # doublelayer 2
 ])
 LS_DTHETA_XY_CUT = np.array([
     0.070, # doublelayer 0
-    0.396, # doublelayer 1
+    0.000, # 0.396, # doublelayer 1
     0.078, # doublelayer 2
 ])
 LS_CHI2_XY_CUT = np.array([
-    0.0, # doublelayer 0
-    0.0, # doublelayer 1
-    0.0, # doublelayer 2
+    0.040, # doublelayer 0
+    0.000, # doublelayer 1
+    0.040, # doublelayer 2
 ])
 QD_DZ_CUT = np.array([
     0.0, # doublelayer 0
@@ -174,3 +174,5 @@ NICKNAMES = {
     INNER_TRACKER_BARREL: "ITB",
     OUTER_TRACKER_BARREL: "OTB",
 }
+
+N_PHI_SLICES = 2048
