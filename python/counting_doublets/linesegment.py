@@ -5,7 +5,7 @@ logger = logging.getLogger(__name__)
 
 from constants import MD_DZ_CUT, MD_DR_CUT
 from constants import LS_DDZ_CUT, LS_DQOVERPT_CUT, LS_DZ_CUT, LS_DR_CUT
-from constants import LS_DTHETA_RZ_CUT, LS_DTHETA_XY_CUT
+from constants import LS_DTHETA_RZ_CUT, LS_DTHETA_XY_CUT, LS_CHI2_XY_CUT
 from constants import BYTE_TO_MB, NO_MCP
 from constants import SPEED_OF_LIGHT, MAGNETIC_FIELD
 
@@ -106,7 +106,7 @@ class LineSegment:
             "file",
         ] if self.signal else [
             "file",
-            "doublet_module",
+            "doublet_phi_slice",
         ]
 
         keys = {
@@ -132,7 +132,10 @@ class LineSegment:
         all_cutflows = []
         all_linesegments = []
 
-        for start in [even, odd]:
+        for start in [
+            even,
+            # odd,
+        ]:
 
             for i_group, (cols, df) in enumerate(self.doublets.groupby(groupby_cols[start])):
 
@@ -238,7 +241,7 @@ class LineSegment:
                     circle_diff = np.sqrt((segments["ls_x_3"] - circle_x)**2 + (segments["ls_y_3"] - circle_y)**2) - circle_r
 
                     # calculate the distance from (x_3, y_3) to the circle
-                    segments["ls_chi2_012"] = np.where(circle_ok, np.abs(circle_diff), BAD_CHI2)
+                    segments["ls_chi2_012"] = np.where(circle_ok, circle_diff**2, BAD_CHI2)
 
                     # rename some things
                     rename = {
@@ -282,24 +285,14 @@ class LineSegment:
                         mask["dz"] = np.abs(segments["ls_dz"]) < LS_DZ_CUT[dl]
                         mask["dr"] = np.abs(segments["ls_dr"]) < LS_DR_CUT[dl]
                         mask["dphi"] = np.abs(segments["ls_dphi"]) < np.pi / 2.0
-                        # mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dqoverpt"] & mask["ddz"]
+                        mask["chi2_xy"] = np.abs(segments["ls_chi2_012"]) < LS_CHI2_XY_CUT[dl]
                         mask["drdz"] = mask["dz"] & mask["dr"] & mask["dphi"]
                         mask["drdzdthetarz"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dtheta_rz"]
                         mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dtheta_rz"] & mask["dtheta_xy"]
+                        # mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dtheta_rz"] & mask["chi2_xy"]
                         for cut in mask.keys():
                             cutflow[cut] = np.sum(mask[cut])
                         segments = segments[mask["and"]]
-
-                        # debug_cols = [
-                        #     "file",
-                        #     "i_event", "ls_doublelayer_lower", "ls_doublelayer_upper", "ls_module_lower", "ls_module_upper", "ls_sensor_lower", "ls_sensor_upper", "ls_dz", "ls_dr", "ls_dtheta_rz", "ls_dtheta_xy",
-                        # ]
-                        # if True and len(segments) > 0:
-                        #     with pd.option_context('display.max_columns', None,
-                        #                            'display.width', None
-                        #                            ):
-                        #         dfstr = segments[debug_cols].to_string(index=False)
-                        #         logger.info(f"Debug line segments:\n{dfstr}")
 
                     # progress bar and stats from this group
                     if i_subgroup > 0 and i_subgroup % 10 == 0:
