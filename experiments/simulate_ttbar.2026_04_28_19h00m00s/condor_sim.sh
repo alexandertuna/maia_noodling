@@ -18,15 +18,20 @@ INPUT=${THISDIR}/events_${TOTAL_EVENTS}.hepmc
 STEER=${CODE}/SteeringMacros/Sim/sim_steer_GEN_CONDOR.py
 COMPACT=${CODE}/detector-simulation/geometries/MAIA_v0/MAIA_v0.xml
 EVENTS_PER_JOB=1
-NOW=$(date +%Y_%m_%d_%Hh%Mm%Ss)
+# NOW=$(date +%Y_%m_%d_%Hh%Mm%Ss)
 
 # check arguments
 if [ -z "$1" ]; then
-    echo "Usage: $0 <skip_n_events>"
+    echo "Usage: $0 <skip_n_events> <output_tag>"
+    exit 1
+fi
+if [ -z "$2" ]; then
+    echo "Usage: $0 <skip_n_events> <output_tag>"
     exit 1
 fi
 SKIP_N_EVENTS=$1
-echo "Args: SKIP_N_EVENTS=${SKIP_N_EVENTS}"
+NOW=$2
+echo "Args: SKIP_N_EVENTS=${SKIP_N_EVENTS} NOW=${NOW}"
 
 # run simulation
 time ddsim --inputFile ${INPUT} \
