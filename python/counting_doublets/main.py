@@ -1,3 +1,6 @@
+"""
+Steering file for counting doublets in a LST-friendly MAIA detector
+"""
 import argparse
 from glob import glob
 import os
@@ -126,6 +129,7 @@ def main():
         modulemap = ModuleMap(doublets=doublets)
 
     # make line segments
+    # linesegments = None
     linesegments = LineSegment(
         signal=signal,
         cut_line_segments=ops.cut_line_segments,
@@ -133,11 +137,11 @@ def main():
     ).df
 
     # make quad doublets
-    quaddoublets = QuadDoublet(
-        signal=signal,
-        cut_quad_doublets=ops.cut_quad_doublets,
-        linesegments=linesegments,
-    ).df
+    # quaddoublets = QuadDoublet(
+    #     signal=signal,
+    #     cut_quad_doublets=ops.cut_quad_doublets,
+    #     linesegments=linesegments,
+    # ).df
 
     # plot stuff
     if ops.plot:
@@ -173,8 +177,8 @@ def options():
     parser.add_argument("--read-from-pickle", action="store_true", help="Read slcio dataframes from pickle files")
     parser.add_argument("--write-to-pickle", action="store_true", help="Save slcio dataframes as pickle files")
     parser.add_argument("--signal", action="store_true", help="Use signal files in the analysis")
-    parser.add_argument("--background10", action="store_true", help="Use background files (10%) in the analysis")
-    parser.add_argument("--background100", action="store_true", help="Use background files (100%) in the analysis")
+    parser.add_argument("--background10", action="store_true", help="Use background files (10 percent) in the analysis")
+    parser.add_argument("--background100", action="store_true", help="Use background files (100 percent) in the analysis")
     return parser.parse_args()
 
 
