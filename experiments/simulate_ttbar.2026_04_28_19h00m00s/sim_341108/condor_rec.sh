@@ -28,12 +28,8 @@ CODE=/ceph/users/atuna/work/maia
 TYPEEVENT="ttbar"
 export MARLIN_DLL=$(readlink -e ${CODE}/MyBIBUtils/build/lib/libMyBIBUtils.so):${MARLIN_DLL}
 
-# get steering file
-STEER=steer_reco_${TYPEEVENT}_${EVENT}.py
-cp ${CODE}/SteeringMacrosMain/k4Reco/steer_reco.py ${STEER}
-sed -i 's|{the_args.data}/sim/{the_args.TypeEvent}/|./tmp/|g' ${STEER}
-sed -i 's|{the_args.data}/reco/{the_args.TypeEvent}/|./|g' ${STEER}
-sed -i 's|{the_args.data}/recoBIB/{the_args.TypeEvent}/|./|g' ${STEER}
+# locate the steering file
+STEER=${SIM_DATA_DIR}/steer_reco_${TYPEEVENT}.py
 
 # copy data locally
 mkdir -p ./tmp/
