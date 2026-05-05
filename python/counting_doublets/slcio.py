@@ -45,6 +45,12 @@ class HitMaker:
         announce_inside_bounds(simhits)
         memory_usage = simhits.memory_usage(deep=True).sum() * BYTE_TO_MB
         logger.info(f"simhits.memory_usage: {memory_usage:.1f} MB")
+        counts = simhits.groupby([
+            "simhit_system",
+            "simhit_layer",
+        ]).size()
+        for (system, layer), total in counts.items():
+            logger.info(f"N(simhits) in system {system} layer {layer}: {total}")
         return mcps, simhits
 
 
