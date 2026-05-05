@@ -83,7 +83,7 @@ def main():
     if not fnames:
         raise ValueError("No input files found")
     geometry = ops.geometry
-    signal = any(SIGNAL in os.path.basename(fname) for fname in fnames)
+    signal = any(SIGNAL in os.path.basename(fname) for fname in fnames) or ops.signal
     if not ops.inner and not ops.outer:
         raise ValueError("At least one of --inner or --outer must be specified")
     logger.info(f"Detected {'signal' if signal else 'background'} files")
@@ -94,15 +94,15 @@ def main():
     logger.info(f"Cut doublets: {ops.cut_doublets}")
 
     # reading simhits and mcparticles
-    if ops.read_mcp and ops.read_simhit:
+    if ops.read_mcps and ops.read_simhits:
         logger.info("Reading simhits and mcps from pickle files ...")
-        mcps = pd.read_pickle(ops.read_mcp)
-        simhits = pd.read_pickle(ops.read_simhit)
+        mcps = pd.read_pickle(ops.read_mcps)
+        simhits = pd.read_pickle(ops.read_simhits)
     elif any([
-        ops.read_mcp and not ops.read_simhit,
-        ops.read_simhit and not ops.read_mcp,
+        ops.read_mcps and not ops.read_simhits,
+        ops.read_simhits and not ops.read_mcps,
     ]):
-        raise ValueError("Both --read-mcp and --read-simhit must be specified together")
+        raise ValueError("Both --read-mcps and --read-simhits must be specified together")
     else:
         # convert slcio to hits dataframe
         converter = HitMaker(slcio_file_paths=fnames,
@@ -115,17 +115,17 @@ def main():
         mcps, simhits = converter.convert()
 
     # writing simhits and mcparticles to pickle files
-    if ops.write_mcp:
+    if ops.write_mcps:
         logger.info("Saving mcps as pickle file ...")
-        mcps.to_pickle(ops.write_mcp)
-    if ops.write_simhit:
+        mcps.to_pickle(ops.write_mcps)
+    if ops.write_simhits:
         logger.info("Saving simhits as pickle file ...")
-        simhits.to_pickle(ops.write_simhit)
+        simhits.to_pickle(ops.write_simhits)
 
     # reading / making mini-doublets
-    if ops.read_md:
+    if ops.read_mds:
         logger.info("Reading mini-doublets from pickle file ...")
-        doublets = pd.read_pickle(ops.read_md)
+        doublets = pd.read_pickle(ops.read_mds)
     else:
         # make mini-doublets from hits
         doublets = DoubletMaker(
@@ -135,17 +135,17 @@ def main():
         ).df
 
     # writing mini-doublets to pickle file
-    if ops.write_md:
+    if ops.write_mds:
         logger.info("Saving mini-doublets as pickle file ...")
-        doublets.to_pickle(ops.write_md)
+        doublets.to_pickle(ops.write_mds)
 
     # make line segments
     # linesegments = None
-    linesegments = LineSegment(
-        signal=signal,
-        cut_line_segments=ops.cut_line_segments,
-        doublets=doublets,
-    ).df
+    # linesegments = LineSegment(
+    #     signal=signal,
+    #     cut_line_segments=ops.cut_line_segments,
+    #     doublets=doublets,
+    # ).df
 
     # make quad doublets
     # quaddoublets = QuadDoublet(
@@ -185,12 +185,12 @@ def options():
     parser.add_argument("--cut-doublets", action="store_true", help="Cut doublets based on MD_DZ_CUT and MD_DR_CUT")
     parser.add_argument("--cut-line-segments", action="store_true", help="Cut line segments based on [[ something ]]")
     parser.add_argument("--cut-quad-doublets", action="store_true", help="Cut quad doublets based on [[ something ]]")
-    parser.add_argument("--read-mcp", type=str, help="Read mcps from pickle file")
-    parser.add_argument("--write-mcp", type=str, help="Write mcps to pickle file")
-    parser.add_argument("--read-simhit", type=str, help="Read simhits from pickle file")
-    parser.add_argument("--write-simhit", type=str, help="Write simhits to pickle file")
-    parser.add_argument("--read-md", type=str, help="Read mini-doublets from pickle file")
-    parser.add_argument("--write-md", type=str, help="Write mini-doublets to pickle file")
+    parser.add_argument("--read-mcps", type=str, help="Read mcps from pickle file")
+    parser.add_argument("--write-mcps", type=str, help="Write mcps to pickle file")
+    parser.add_argument("--read-simhits", type=str, help="Read simhits from pickle file")
+    parser.add_argument("--write-simhits", type=str, help="Write simhits to pickle file")
+    parser.add_argument("--read-mds", type=str, help="Read mini-doublets from pickle file")
+    parser.add_argument("--write-mds", type=str, help="Write mini-doublets to pickle file")
     parser.add_argument("--signal", action="store_true", help="Use signal files in the analysis")
     parser.add_argument("--background10", action="store_true", help="Use background files (10 percent) in the analysis")
     parser.add_argument("--background100", action="store_true", help="Use background files (100 percent) in the analysis")
