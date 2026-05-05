@@ -31,7 +31,7 @@ parseConstants(CONSTANTS)
 
 read = LcioEvent()
 read.OutputLevel = INFO
-read.Files = [f"./{the_args.TypeEvent}_sim_{the_args.InFileName}.slcio"]
+read.Files = [f"./tmp/{the_args.TypeEvent}_sim_{the_args.InFileName}.slcio"]
 algList.append(read)
 
 EventNumber = MarlinProcessorWrapper("EventNumber")
