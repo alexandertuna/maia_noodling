@@ -93,11 +93,16 @@ def main():
     logger.info(f"Layers to consider: {ops.layers}")
     logger.info(f"Cut doublets: {ops.cut_doublets}")
 
-    if ops.read_from_pickle:
-        logger.info("Reading intermediate dataframes from pickle files ...")
-        mcps = pd.read_pickle(MCP_PKL)
-        simhits = pd.read_pickle(SIMHIT_PKL)
-        doublets = pd.read_pickle(DOUBLET_PKL)
+    # reading simhits and mcparticles
+    if ops.read_mcp and ops.read_simhit:
+        logger.info("Reading simhits and mcps from pickle files ...")
+        mcps = pd.read_pickle(ops.read_mcp)
+        simhits = pd.read_pickle(ops.read_simhit)
+    elif any([
+        ops.read_mcp and not ops.read_simhit,
+        ops.read_simhit and not ops.read_mcp,
+    ]):
+        raise ValueError("Both --read-mcp and --read-simhit must be specified together")
     else:
         # convert slcio to hits dataframe
         converter = HitMaker(slcio_file_paths=fnames,
@@ -109,24 +114,30 @@ def main():
                             )
         mcps, simhits = converter.convert()
 
-        # make doublets from hits
+    # writing simhits and mcparticles to pickle files
+    if ops.write_mcp:
+        logger.info("Saving mcps as pickle file ...")
+        mcps.to_pickle(ops.write_mcp)
+    if ops.write_simhit:
+        logger.info("Saving simhits as pickle file ...")
+        simhits.to_pickle(ops.write_simhit)
+
+    # reading / making mini-doublets
+    if ops.read_md:
+        logger.info("Reading mini-doublets from pickle file ...")
+        doublets = pd.read_pickle(ops.read_md)
+    else:
+        # make mini-doublets from hits
         doublets = DoubletMaker(
             signal=signal,
             cut_doublets=ops.cut_doublets,
             simhits=simhits,
         ).df
 
-    if ops.write_to_pickle:
-        logger.info("Saving intermediate dataframes as pickle files ...")
-        mcps.to_pickle(MCP_PKL)
-        simhits.to_pickle(SIMHIT_PKL)
-        doublets.to_pickle(DOUBLET_PKL)
-
-    # make module map
-    if ops.modulemap:
-        if not signal:
-            raise ValueError("Module map can only be made for signal files")
-        modulemap = ModuleMap(doublets=doublets)
+    # writing mini-doublets to pickle file
+    if ops.write_md:
+        logger.info("Saving mini-doublets as pickle file ...")
+        doublets.to_pickle(ops.write_md)
 
     # make line segments
     # linesegments = None
@@ -174,8 +185,12 @@ def options():
     parser.add_argument("--cut-doublets", action="store_true", help="Cut doublets based on MD_DZ_CUT and MD_DR_CUT")
     parser.add_argument("--cut-line-segments", action="store_true", help="Cut line segments based on [[ something ]]")
     parser.add_argument("--cut-quad-doublets", action="store_true", help="Cut quad doublets based on [[ something ]]")
-    parser.add_argument("--read-from-pickle", action="store_true", help="Read slcio dataframes from pickle files")
-    parser.add_argument("--write-to-pickle", action="store_true", help="Save slcio dataframes as pickle files")
+    parser.add_argument("--read-mcp", type=str, help="Read mcps from pickle file")
+    parser.add_argument("--write-mcp", type=str, help="Write mcps to pickle file")
+    parser.add_argument("--read-simhit", type=str, help="Read simhits from pickle file")
+    parser.add_argument("--write-simhit", type=str, help="Write simhits to pickle file")
+    parser.add_argument("--read-md", type=str, help="Read mini-doublets from pickle file")
+    parser.add_argument("--write-md", type=str, help="Write mini-doublets to pickle file")
     parser.add_argument("--signal", action="store_true", help="Use signal files in the analysis")
     parser.add_argument("--background10", action="store_true", help="Use background files (10 percent) in the analysis")
     parser.add_argument("--background100", action="store_true", help="Use background files (100 percent) in the analysis")
