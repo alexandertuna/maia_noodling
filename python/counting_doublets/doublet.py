@@ -53,9 +53,33 @@ class DoubletMaker:
                 group[upper_mask],
                 on=doublet_cols,
                 how="inner",
-                validate="many_to_many",
                 suffixes=("_lower", "_upper"),
             )
+
+            # doublet feature: xy, dr at point of closest approach to origin
+            slope_xy = np.divide(doublets["simhit_y_upper"] - doublets["simhit_y_lower"],
+                                 doublets["simhit_x_upper"] - doublets["simhit_x_lower"])
+            intercept_xy = doublets["simhit_y_lower"] - slope_xy * doublets["simhit_x_lower"]
+            doublets["doublet_dr"] = np.abs(intercept_xy) / np.sqrt(1 + slope_xy**2)
+
+            # doublet feature: rz
+            slope_rz = np.divide(doublets["simhit_z_upper"] - doublets["simhit_z_lower"],
+                                 doublets["simhit_r_upper"] - doublets["simhit_r_lower"])
+            doublets["doublet_dz"] = doublets["simhit_z_lower"] - doublets["simhit_r_lower"] * slope_rz
+            doublets["doublet_theta_rz"] = np.arctan(slope_rz)
+
+            # record some numbers
+            cutflow = {"all": len(doublets)}
+
+            # cut some doublets?
+            if self.cut_doublets:
+                doublelayer = doublets["simhit_layer_div_2"]
+                mask_dr = np.abs(doublets["doublet_dr"]) < MD_DR_CUT[doublelayer]
+                mask_dz = np.abs(doublets["doublet_dz"]) < MD_DZ_CUT[doublelayer]
+                cutflow["dr"] = mask_dr.sum()
+                cutflow["dz"] = mask_dz.sum()
+                cutflow["drdz"] = (mask_dr & mask_dz).sum()
+                doublets = doublets[mask_dr & mask_dz]
 
             # rename some columns
             rename = {
@@ -66,12 +90,6 @@ class DoubletMaker:
             }
             doublets = doublets.rename(columns=rename)
 
-            # doublet feature: rz
-            slope = np.divide(doublets["simhit_z_upper"] - doublets["simhit_z_lower"],
-                              doublets["simhit_r_upper"] - doublets["simhit_r_lower"])
-            doublets["doublet_dz"] = doublets["simhit_z_lower"] - doublets["simhit_r_lower"] * slope
-            doublets["doublet_theta_rz"] = np.arctan(slope)
-
             # doublet feature, xy dphi
             phi_local = np.arctan2(doublets["simhit_y_upper"] - doublets["simhit_y_lower"],
                                    doublets["simhit_x_upper"] - doublets["simhit_x_lower"])
@@ -80,12 +98,6 @@ class DoubletMaker:
             doublets["doublet_dphi"] = phi_local - phi_global
             doublets["doublet_dphi"] = (doublets["doublet_dphi"] + np.pi) % (2 * np.pi) - np.pi
             doublets["doublet_theta_xy"] = phi_local
-
-            # doublet feature: xy, dr at point of closest approach to origin
-            slope_xy = np.divide(doublets["simhit_y_upper"] - doublets["simhit_y_lower"],
-                                 doublets["simhit_x_upper"] - doublets["simhit_x_lower"])
-            intercept_xy = doublets["simhit_y_lower"] - slope_xy * doublets["simhit_x_lower"]
-            doublets["doublet_dr"] = np.abs(intercept_xy) / np.sqrt(1 + slope_xy**2)
 
             # doublet features: position
             doublets["doublet_r"] = (doublets["simhit_r_lower"] + doublets["simhit_r_upper"]) / 2
@@ -141,19 +153,6 @@ class DoubletMaker:
             dropcols.extend([col for col in doublets.columns if col.startswith("mcp_") and col.endswith("_lower")])
             dropcols.extend([col for col in doublets.columns if col.startswith("mcp_") and col.endswith("_upper")])
             doublets.drop(columns=dropcols, inplace=True)
-
-            # record some numbers
-            cutflow = {"all": len(doublets)}
-
-            # cut some doublets?
-            if self.cut_doublets:
-                doublelayer = doublets["doublet_doublelayer"]
-                mask_dr = np.abs(doublets["doublet_dr"]) < MD_DR_CUT[doublelayer]
-                mask_dz = np.abs(doublets["doublet_dz"]) < MD_DZ_CUT[doublelayer]
-                cutflow["dr"] = mask_dr.sum()
-                cutflow["dz"] = mask_dz.sum()
-                cutflow["drdz"] = (mask_dr & mask_dz).sum()
-                doublets = doublets[mask_dr & mask_dz]
 
             return doublets, cutflow
 
