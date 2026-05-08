@@ -139,19 +139,28 @@ def main():
         logger.info("Saving mini-doublets as pickle file ...")
         doublets.to_pickle(ops.write_mds)
 
-    # make line segments
-    # linesegments = None
-    # linesegments = LineSegment(
-    #     signal=signal,
-    #     cut_line_segments=ops.cut_line_segments,
-    #     doublets=doublets,
-    # ).df
+    # reading / making T2s (line segments)
+    if ops.read_t2s:
+        logger.info("Reading T2s (line segments) from pickle file ...")
+        t2s = pd.read_pickle(ops.read_t2s)
+    else:
+        # make T2s (line segments) from mini-doublets
+        t2s = LineSegment(
+            signal=signal,
+            cut_line_segments=ops.cut_line_segments,
+            doublets=doublets,
+        ).df
+
+    # writing T2s (line segments) to pickle file
+    if ops.write_t2s:
+        logger.info("Saving T2s (line segments) as pickle file ...")
+        t2s.to_pickle(ops.write_t2s)
 
     # make quad doublets
     # quaddoublets = QuadDoublet(
     #     signal=signal,
     #     cut_quad_doublets=ops.cut_quad_doublets,
-    #     linesegments=linesegments,
+    #     linesegments=t2s,
     # ).df
 
     # plot stuff
@@ -162,7 +171,7 @@ def main():
             mcps=mcps,
             simhits=simhits,
             doublets=doublets,
-            linesegments=linesegments,
+            linesegments=t2s,
             pdf="doublets.pdf",
         )
         plotter.plot()
@@ -191,6 +200,8 @@ def options():
     parser.add_argument("--write-simhits", type=str, help="Write simhits to pickle file")
     parser.add_argument("--read-mds", type=str, help="Read mini-doublets from pickle file")
     parser.add_argument("--write-mds", type=str, help="Write mini-doublets to pickle file")
+    parser.add_argument("--read-t2s", type=str, help="Read T2s (line segments) from pickle file")
+    parser.add_argument("--write-t2s", type=str, help="Write T2s (line segments) to pickle file")
     parser.add_argument("--signal", action="store_true", help="Use signal files in the analysis")
     parser.add_argument("--background10", action="store_true", help="Use background files (10 percent) in the analysis")
     parser.add_argument("--background100", action="store_true", help="Use background files (100 percent) in the analysis")
