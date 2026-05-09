@@ -84,6 +84,8 @@ def main():
         raise ValueError("No input files found")
     geometry = ops.geometry
     signal = any(SIGNAL in os.path.basename(fname) for fname in fnames) or ops.signal
+    cut_mds = ops.cut_doublets or not signal
+    cut_t2s = ops.cut_line_segments or not signal
     if not ops.inner and not ops.outer:
         raise ValueError("At least one of --inner or --outer must be specified")
     logger.info(f"Detected {'signal' if signal else 'background'} files")
@@ -91,7 +93,8 @@ def main():
     logger.info(f"Inner tracker: {ops.inner}")
     logger.info(f"Outer tracker: {ops.outer}")
     logger.info(f"Layers to consider: {ops.layers}")
-    logger.info(f"Cut doublets: {ops.cut_doublets}")
+    logger.info(f"Cut MDs: {cut_mds}")
+    logger.info(f"Cut T2s: {cut_t2s}")
 
     # reading simhits and mcparticles
     if ops.read_mcps and ops.read_simhits:
@@ -130,7 +133,7 @@ def main():
         # make mini-doublets from hits
         doublets = DoubletMaker(
             signal=signal,
-            cut_doublets=ops.cut_doublets,
+            cut_doublets=cut_mds,
             simhits=simhits,
         ).df
 
@@ -147,7 +150,7 @@ def main():
         # make T2s (line segments) from mini-doublets
         t2s = LineSegment(
             signal=signal,
-            cut_line_segments=ops.cut_line_segments,
+            cut_line_segments=cut_t2s,
             doublets=doublets,
         ).df
 
