@@ -98,7 +98,7 @@ def main():
 
     # reading simhits and mcparticles
     if ops.read_mcps and ops.read_simhits:
-        logger.info("Reading simhits and mcps from pickle files ...")
+        logger.info(f"Reading simhits {ops.read_simhits} and mcps {ops.read_mcps} from pickle files ...")
         mcps = pd.read_pickle(ops.read_mcps)
         simhits = pd.read_pickle(ops.read_simhits)
     elif any([
