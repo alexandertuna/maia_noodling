@@ -29,6 +29,11 @@ class LineSegment:
 
         self.MD_DZ_CUT = MD_DZ_CUT[self.geometry_version]
         self.MD_DR_CUT = MD_DR_CUT[self.geometry_version]
+        self.LS_DZ_CUT = LS_DZ_CUT[self.geometry_version]
+        self.LS_DR_CUT = LS_DR_CUT[self.geometry_version]
+        self.LS_DTHETA_RZ_CUT = LS_DTHETA_RZ_CUT[self.geometry_version]
+        self.LS_DTHETA_XY_CUT = LS_DTHETA_XY_CUT[self.geometry_version]
+        self.LS_CHI2_XY_CUT = LS_CHI2_XY_CUT[self.geometry_version]
 
         self.doublets = doublets.copy()
         self.prep_doublets()
@@ -212,8 +217,8 @@ class LineSegment:
                     mask = {}
                     if self.cut_line_segments:
                         dl = segments["ls_doublelayer"]
-                        mask["dz"] = np.abs(segments["ls_dz"]) < LS_DZ_CUT[dl]
-                        mask["dr"] = np.abs(segments["ls_dr"]) < LS_DR_CUT[dl]
+                        mask["dz"] = np.abs(segments["ls_dz"]) < self.LS_DZ_CUT[dl]
+                        mask["dr"] = np.abs(segments["ls_dr"]) < self.LS_DR_CUT[dl]
                         segments = segments[mask["dz"] & mask["dr"]]
 
                     # assign truth info
@@ -319,15 +324,12 @@ class LineSegment:
                     # cut some segments?
                     if self.cut_line_segments:
                         dl = segments["ls_doublelayer"]
-                        # mask = {}
-                        mask["ddz"] = np.abs(segments["ls_ddz"]) < LS_DDZ_CUT[dl]
-                        mask["dqoverpt"] = np.abs(segments["ls_dqoverpt"]) < LS_DQOVERPT_CUT[dl]
-                        mask["dtheta_rz"] = np.abs(segments["ls_dtheta_rz"]) < LS_DTHETA_RZ_CUT[dl]
-                        mask["dtheta_xy"] = np.abs(segments["ls_dtheta_xy"]) < LS_DTHETA_XY_CUT[dl]
-                        mask["dz"] = np.abs(segments["ls_dz"]) < LS_DZ_CUT[dl]
-                        mask["dr"] = np.abs(segments["ls_dr"]) < LS_DR_CUT[dl]
+                        mask["dtheta_rz"] = np.abs(segments["ls_dtheta_rz"]) < self.LS_DTHETA_RZ_CUT[dl]
+                        mask["dtheta_xy"] = np.abs(segments["ls_dtheta_xy"]) < self.LS_DTHETA_XY_CUT[dl]
+                        mask["dz"] = np.abs(segments["ls_dz"]) < self.LS_DZ_CUT[dl]
+                        mask["dr"] = np.abs(segments["ls_dr"]) < self.LS_DR_CUT[dl]
                         mask["dphi"] = np.abs(segments["ls_dphi"]) < np.pi / 2.0
-                        mask["chi2_xy"] = np.abs(segments["ls_chi2_012"]) < LS_CHI2_XY_CUT[dl]
+                        mask["chi2_xy"] = np.abs(segments["ls_chi2_012"]) < self.LS_CHI2_XY_CUT[dl]
                         mask["drdz"] = mask["dz"] & mask["dr"] & mask["dphi"]
                         mask["drdzdthetarz"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dtheta_rz"]
                         # mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dtheta_rz"] & mask["dtheta_xy"]

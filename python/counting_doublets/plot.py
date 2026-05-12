@@ -68,6 +68,11 @@ class Plotter:
         # shorthands for cuts
         self.MD_DZ_CUT = MD_DZ_CUT[self.geometry_version]
         self.MD_DR_CUT = MD_DR_CUT[self.geometry_version]
+        self.LS_DZ_CUT = LS_DZ_CUT[self.geometry_version]
+        self.LS_DR_CUT = LS_DR_CUT[self.geometry_version]
+        self.LS_DTHETA_RZ_CUT = LS_DTHETA_RZ_CUT[self.geometry_version]
+        self.LS_DTHETA_XY_CUT = LS_DTHETA_XY_CUT[self.geometry_version]
+        self.LS_CHI2_XY_CUT = LS_CHI2_XY_CUT[self.geometry_version]
 
 
     def plot(self):
@@ -245,11 +250,11 @@ class Plotter:
             for [req, label] in [
                 [self.linesegments["ls_system"] == OUTER_TRACKER_BARREL, "LS in OTB"],
                 [self.linesegments["ls_doublelayer"] == the_doublelayer, f"LS starting on layer {the_doublelayer}"],
-                [np.abs(self.linesegments["ls_dz"]) < LS_DZ_CUT[the_doublelayer], f"LS with |dz| < {LS_DZ_CUT[the_doublelayer]}mm"],
-                [np.abs(self.linesegments["ls_dr"]) < LS_DR_CUT[the_doublelayer], f"LS with |dr| < {LS_DR_CUT[the_doublelayer]}mm"],
-                [np.abs(self.linesegments["ls_dtheta_rz"]) < LS_DTHETA_RZ_CUT[the_doublelayer], f"LS with |dtheta_rz| < {LS_DTHETA_RZ_CUT[the_doublelayer]}"],
-                [np.abs(self.linesegments["ls_dtheta_xy"]) < LS_DTHETA_XY_CUT[the_doublelayer], f"LS with |dtheta_xy| < {LS_DTHETA_XY_CUT[the_doublelayer]}"],
-                [np.abs(self.linesegments["ls_chi2_012"]) < LS_CHI2_XY_CUT[the_doublelayer], f"LS with |chi2_xy| < {LS_CHI2_XY_CUT[the_doublelayer]}"],
+                [np.abs(self.linesegments["ls_dz"]) < self.LS_DZ_CUT[the_doublelayer], f"LS with |dz| < {self.LS_DZ_CUT[the_doublelayer]}mm"],
+                [np.abs(self.linesegments["ls_dr"]) < self.LS_DR_CUT[the_doublelayer], f"LS with |dr| < {self.LS_DR_CUT[the_doublelayer]}mm"],
+                [np.abs(self.linesegments["ls_dtheta_rz"]) < self.LS_DTHETA_RZ_CUT[the_doublelayer], f"LS with |dtheta_rz| < {self.LS_DTHETA_RZ_CUT[the_doublelayer]}"],
+                [np.abs(self.linesegments["ls_dtheta_xy"]) < self.LS_DTHETA_XY_CUT[the_doublelayer], f"LS with |dtheta_xy| < {self.LS_DTHETA_XY_CUT[the_doublelayer]}"],
+                [np.abs(self.linesegments["ls_chi2_012"]) < self.LS_CHI2_XY_CUT[the_doublelayer], f"LS with |chi2_xy| < {self.LS_CHI2_XY_CUT[the_doublelayer]}"],
             ]:
                 mask &= req
                 logger.info(f"* {label:<30} :: {mask.sum():>10}")
@@ -1021,23 +1026,23 @@ class Plotter:
             mask = np.ones(len(df), dtype=bool)
         elif req == LS_REQ_DR_POS:
             text = f"|dr| < {LS_DR_CUT[doublelayer]}mm"
-            mask = np.abs(df["ls_dr"]) < LS_DR_CUT[doublelayer]
+            mask = np.abs(df["ls_dr"]) < self.LS_DR_CUT[doublelayer]
         elif req == LS_REQ_DZ_POS:
-            text = f"|dz| < {LS_DZ_CUT[doublelayer]}mm"
-            mask = np.abs(df["ls_dz"]) < LS_DZ_CUT[doublelayer]
+            text = f"|dz| < {self.LS_DZ_CUT[doublelayer]}mm"
+            mask = np.abs(df["ls_dz"]) < self.LS_DZ_CUT[doublelayer]
         elif req == LS_REQ_RZ_ANG:
-            text = f"|dtheta(rz)| < {LS_DTHETA_RZ_CUT[doublelayer]}rad"
-            mask = np.abs(df["ls_dtheta_rz"]) < LS_DTHETA_RZ_CUT[doublelayer]
+            text = f"|dtheta(rz)| < {self.LS_DTHETA_RZ_CUT[doublelayer]}rad"
+            mask = np.abs(df["ls_dtheta_rz"]) < self.LS_DTHETA_RZ_CUT[doublelayer]
         elif req == LS_REQ_XY_ANG:
-            text = f"|dtheta(xy)| < {LS_DTHETA_XY_CUT[doublelayer]}rad"
-            mask = np.abs(df["ls_dtheta_xy"]) < LS_DTHETA_XY_CUT[doublelayer]
+            text = f"|dtheta(xy)| < {self.LS_DTHETA_XY_CUT[doublelayer]}rad"
+            mask = np.abs(df["ls_dtheta_xy"]) < self.LS_DTHETA_XY_CUT[doublelayer]
         elif req == LS_REQ_ALL:
             text = f"All LS requirements"
             mask = (
-                (np.abs(df["ls_dr"]) < LS_DR_CUT[doublelayer]) &
-                (np.abs(df["ls_dz"]) < LS_DZ_CUT[doublelayer]) &
-                (np.abs(df["ls_dtheta_rz"]) < LS_DTHETA_RZ_CUT[doublelayer]) &
-                (np.abs(df["ls_dtheta_xy"]) < LS_DTHETA_XY_CUT[doublelayer])
+                (np.abs(df["ls_dr"]) < self.LS_DR_CUT[doublelayer]) &
+                (np.abs(df["ls_dz"]) < self.LS_DZ_CUT[doublelayer]) &
+                (np.abs(df["ls_dtheta_rz"]) < self.LS_DTHETA_RZ_CUT[doublelayer]) &
+                (np.abs(df["ls_dtheta_xy"]) < self.LS_DTHETA_XY_CUT[doublelayer])
             )
         else:
             raise ValueError(f"Unknown segment requirement: {req}")
