@@ -27,11 +27,22 @@ FNAMES_BACKGROUND_10 = [
     "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_n5_p15_0.10/neutrinoGun_digi_3.slcio",
 ]
 
-FNAMES_SIGNAL = [
+FNAMES_SIGNAL_V04 = [
     # muonGun, 2 GeV
-    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_100.slcio",
-    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_101.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_100.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_101.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_102.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_103.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_104.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_105.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_106.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_107.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_108.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_109.slcio",
+]
 
+FNAMES_SIGNAL_V01 = [
+    # muonGun, 2 GeV
     "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_300.slcio",
     "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_301.slcio",
     "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_302.slcio",
@@ -81,18 +92,35 @@ FNAMES = [
 def main():
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s [%(levelname)s] %(message)s")
+
+    # parse options
     ops = options()
-    fnames = FNAMES_SIGNAL if ops.signal else (FNAMES_BACKGROUND_10 if ops.background10 else (FNAMES_BACKGROUND_100 if ops.background100 else get_filenames(ops.i)))
+    valid_geos = ["v01", "v04"]
+    if ops.geo not in valid_geos:
+        raise ValueError(f"Invalid geometry version specified, must be one of {valid_geos}")
+    if ops.signal:
+        if ops.geo == "v01":
+            fnames = FNAMES_SIGNAL_V01
+        elif ops.geo == "v04":
+            fnames = FNAMES_SIGNAL_V04
+        else:
+            raise ValueError(f"Invalid geometry version specified, must be one of {valid_geos}")
+    elif ops.background10:
+        fnames = FNAMES_BACKGROUND_10
+    elif ops.background100:
+        fnames = FNAMES_BACKGROUND_100
+    else:
+        fnames = get_filenames(ops.i)
     if not fnames:
         raise ValueError("No input files found")
-    if ops.geo not in ["v01", "v04"]:
-        raise ValueError("Invalid geometry version specified, must be one of ['v01', 'v04']")
     geometry = ops.geometry
     signal = any(SIGNAL in os.path.basename(fname) for fname in fnames) or ops.signal
     cut_mds = ops.cut_doublets or not signal
     cut_t2s = ops.cut_line_segments or not signal
     if not ops.inner and not ops.outer:
         raise ValueError("At least one of --inner or --outer must be specified")
+
+    # log some info
     logger.info(f"Detected {'signal' if signal else 'background'} files")
     logger.info(f"Found {len(fnames)} files")
     logger.info(f"Inner tracker: {ops.inner}")
