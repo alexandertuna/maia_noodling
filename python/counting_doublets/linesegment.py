@@ -7,7 +7,7 @@ from constants import MD_DZ_CUT, MD_DR_CUT
 from constants import LS_DDZ_CUT, LS_DQOVERPT_CUT, LS_DZ_CUT, LS_DR_CUT
 from constants import LS_DTHETA_RZ_CUT, LS_DTHETA_XY_CUT, LS_CHI2_XY_CUT
 from constants import BYTE_TO_MB, NO_MCP
-from constants import N_PHI_SLICES
+from constants import N_PHI_SLICES, N_ETA_SLICES, DETECTOR_MAX_ETA, DETECTOR_MAX_PHI
 
 class LineSegment:
 
@@ -319,8 +319,8 @@ class LineSegment:
                         mask["dqoverpt"] = np.abs(segments["ls_dqoverpt"]) < LS_DQOVERPT_CUT[dl]
                         mask["dtheta_rz"] = np.abs(segments["ls_dtheta_rz"]) < LS_DTHETA_RZ_CUT[dl]
                         mask["dtheta_xy"] = np.abs(segments["ls_dtheta_xy"]) < LS_DTHETA_XY_CUT[dl]
-                        # mask["dz"] = np.abs(segments["ls_dz"]) < LS_DZ_CUT[dl]
-                        # mask["dr"] = np.abs(segments["ls_dr"]) < LS_DR_CUT[dl]
+                        mask["dz"] = np.abs(segments["ls_dz"]) < LS_DZ_CUT[dl]
+                        mask["dr"] = np.abs(segments["ls_dr"]) < LS_DR_CUT[dl]
                         mask["dphi"] = np.abs(segments["ls_dphi"]) < np.pi / 2.0
                         mask["chi2_xy"] = np.abs(segments["ls_chi2_012"]) < LS_CHI2_XY_CUT[dl]
                         mask["drdz"] = mask["dz"] & mask["dr"] & mask["dphi"]
