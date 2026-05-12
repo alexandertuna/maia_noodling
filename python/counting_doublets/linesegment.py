@@ -7,7 +7,7 @@ from constants import MD_DZ_CUT, MD_DR_CUT
 from constants import LS_DDZ_CUT, LS_DQOVERPT_CUT, LS_DZ_CUT, LS_DR_CUT
 from constants import LS_DTHETA_RZ_CUT, LS_DTHETA_XY_CUT, LS_CHI2_XY_CUT
 from constants import BYTE_TO_MB, NO_MCP
-from constants import SPEED_OF_LIGHT, MAGNETIC_FIELD
+from constants import N_PHI_SLICES
 
 class LineSegment:
 
@@ -79,6 +79,7 @@ class LineSegment:
         # layers 12, 34, 56, ... (odd)
         even, odd = 0, 1
 
+        # groupby scheme
         groupby_cols = {
             even: [
                 "file",
@@ -102,13 +103,19 @@ class LineSegment:
             ],
         }
 
-        subgroup_cols = [
-            "file",
-        ] if self.signal else [
-            "file",
-            "doublet_phi_slice",
-        ]
+        # sub-groupby scheme
+        if self.cut_line_segments:
+            subgroup_cols = [
+                "file",
+                "doublet_eta_slice",
+                "doublet_phi_slice",
+            ]
+        else:
+            subgroup_cols = [
+                "file",
+            ]
 
+        # how to merge lower and upper doublets
         keys = {
             even: [
                 "file",
@@ -139,28 +146,70 @@ class LineSegment:
 
             for i_group, (cols, df) in enumerate(self.doublets.groupby(groupby_cols[start])):
 
+                group_cutflows = []
+
                 # progress bar
                 if (self.signal and i_group % 10 == 0) or (not self.signal):
                     n_group = len(self.doublets.groupby(groupby_cols[start]))
-                    logger.info(f"Processing group {i_group} / {n_group} for line segments (n={len(df)}) ...")
+                    logger.info(f"Processing group {i_group} / {n_group-1} for line segments (n={len(df)}) ...")
 
-                # get lower doublets
-                lower = df[ df[lower_vs_upper[start]] == 0 ]
+                # get lower doublets and upper doublets
+                entire_lower = df[ df[lower_vs_upper[start]] == 0 ]
+                entire_upper = df[ df[lower_vs_upper[start]] != 0 ]
 
-                # get upper doublets
-                n_subgroup = len(df.groupby(subgroup_cols))
-                for i_subgroup, (subcols, subdf) in enumerate(df.groupby(subgroup_cols)):
+                # get lower data for each eta,phi slice
+                subgroups = entire_lower.groupby(subgroup_cols)
+                n_subgroup = len(subgroups)
+                for i_subgroup, (subcols, lower) in enumerate(subgroups):
 
-                    upper = subdf[ subdf[lower_vs_upper[start]] == 1 ]
+                    # if not cutting line segments, then take all upper doublets for this group
+                    if not self.cut_line_segments:
+                        ok = np.ones(len(entire_upper), dtype=bool)
+
+                    # else, only consider upper in the same (or neighbor) eta/phi slice as lower
+                    else:
+                        [_, eta_slice, phi_slice] = subcols
+
+                        # get upper data for the same phi slice
+                        eta_ok = np.array([eta_slice-1, eta_slice, eta_slice+1]).astype(np.int16)
+                        phi_ok = np.array([phi_slice-1, phi_slice, phi_slice+1]).astype(np.int16)
+                        phi_ok = phi_ok % N_PHI_SLICES
+                        ok = (
+                            entire_upper["doublet_eta_slice"].isin(eta_ok) &
+                            entire_upper["doublet_phi_slice"].isin(phi_ok)
+                        )
+
+                    upper = entire_upper[ok]
 
                     # get all combinations of lower and upper
                     segments = lower.merge(
                         upper,
                         on=keys[start],
                         how="inner",
-                        validate="many_to_many",
                         suffixes=("_lower", "_upper"),
                     )
+
+                    # the doublelayer
+                    segments["ls_doublelayer"] = segments["doublet_doublelayer_lower"]
+
+                    # rz projection
+                    slope_rz = np.divide(segments["doublet_z_upper"] - segments["doublet_z_lower"],
+                                         segments["doublet_r_upper"] - segments["doublet_r_lower"])
+                    segments["ls_dz"] = segments["doublet_z_lower"] - segments["doublet_r_lower"] * slope_rz
+
+                    # xy projection
+                    slope_xy = np.divide(segments["doublet_y_upper"] - segments["doublet_y_lower"],
+                                         segments["doublet_x_upper"] - segments["doublet_x_lower"])
+                    intercept_xy = segments["doublet_y_lower"] - segments["doublet_x_lower"] * slope_xy
+                    segments["ls_dr"] = np.abs(intercept_xy) / np.sqrt(1 + slope_xy**2)
+
+                    # cut some segments? do this early to save computations
+                    mask = {}
+                    if self.cut_line_segments:
+                        dl = segments["ls_doublelayer"]
+                        mask["dz"] = np.abs(segments["ls_dz"]) < LS_DZ_CUT[dl]
+                        mask["dr"] = np.abs(segments["ls_dr"]) < LS_DR_CUT[dl]
+                        segments = segments[mask["dz"] & mask["dr"]]
 
                     # assign truth info
                     mcp_ok = segments["i_mcp_lower"] == segments["i_mcp_upper"]
@@ -192,7 +241,6 @@ class LineSegment:
                     segments["ls_dphi"] = segments["doublet_phi_upper"] - segments["doublet_phi_lower"]
                     segments["ls_dphi"] = (segments["ls_dphi"] + np.pi) % (2 * np.pi) - np.pi
                     segments["ls_dqoverpt"] = segments["doublet_qoverpt_upper"] - segments["doublet_qoverpt_lower"]
-                    segments["ls_doublelayer"] = segments["doublet_doublelayer_lower"]
                     segments["ls_doublelayer_div_4"] = segments["doublet_doublelayer_lower"] // 4
                     segments["ls_doublelayer_mod_4"] = segments["doublet_doublelayer_lower"] % 4
                     segments["ls_doublelayer_even"] = (segments["doublet_doublelayer_lower"] % 2 == 0).astype(bool)
@@ -203,17 +251,6 @@ class LineSegment:
                         segments[f"ls_{coord}_1"] = segments[f"doublet_{coord}_1_lower"]
                         segments[f"ls_{coord}_2"] = segments[f"doublet_{coord}_0_upper"]
                         segments[f"ls_{coord}_3"] = segments[f"doublet_{coord}_1_upper"]
-
-                    # rz projection
-                    slope_rz = np.divide(segments["doublet_z_upper"] - segments["doublet_z_lower"],
-                                         segments["doublet_r_upper"] - segments["doublet_r_lower"])
-                    segments["ls_dz"] = segments["doublet_z_lower"] - segments["doublet_r_lower"] * slope_rz
-
-                    # xy projection
-                    slope_xy = np.divide(segments["doublet_y_upper"] - segments["doublet_y_lower"],
-                                         segments["doublet_x_upper"] - segments["doublet_x_lower"])
-                    intercept_xy = segments["doublet_y_lower"] - segments["doublet_x_lower"] * slope_xy
-                    segments["ls_dr"] = np.abs(intercept_xy) / np.sqrt(1 + slope_xy**2)
 
                     # angle differences (handle wraparound)
                     segments["ls_dtheta_rz"] = segments["doublet_theta_rz_upper"] - segments["doublet_theta_rz_lower"]
@@ -277,30 +314,38 @@ class LineSegment:
                     # cut some segments?
                     if self.cut_line_segments:
                         dl = segments["ls_doublelayer"]
-                        mask = {}
+                        # mask = {}
                         mask["ddz"] = np.abs(segments["ls_ddz"]) < LS_DDZ_CUT[dl]
                         mask["dqoverpt"] = np.abs(segments["ls_dqoverpt"]) < LS_DQOVERPT_CUT[dl]
                         mask["dtheta_rz"] = np.abs(segments["ls_dtheta_rz"]) < LS_DTHETA_RZ_CUT[dl]
                         mask["dtheta_xy"] = np.abs(segments["ls_dtheta_xy"]) < LS_DTHETA_XY_CUT[dl]
-                        mask["dz"] = np.abs(segments["ls_dz"]) < LS_DZ_CUT[dl]
-                        mask["dr"] = np.abs(segments["ls_dr"]) < LS_DR_CUT[dl]
+                        # mask["dz"] = np.abs(segments["ls_dz"]) < LS_DZ_CUT[dl]
+                        # mask["dr"] = np.abs(segments["ls_dr"]) < LS_DR_CUT[dl]
                         mask["dphi"] = np.abs(segments["ls_dphi"]) < np.pi / 2.0
                         mask["chi2_xy"] = np.abs(segments["ls_chi2_012"]) < LS_CHI2_XY_CUT[dl]
                         mask["drdz"] = mask["dz"] & mask["dr"] & mask["dphi"]
                         mask["drdzdthetarz"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dtheta_rz"]
-                        mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dtheta_rz"] & mask["dtheta_xy"]
-                        # mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dtheta_rz"] & mask["chi2_xy"]
+                        # mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dtheta_rz"] & mask["dtheta_xy"]
+                        mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dtheta_rz"] & mask["chi2_xy"]
                         for cut in mask.keys():
                             cutflow[cut] = np.sum(mask[cut])
                         segments = segments[mask["and"]]
 
                     # progress bar and stats from this group
-                    if i_subgroup > 0 and i_subgroup % 10 == 0:
+                    if i_subgroup > 0 and i_subgroup % 100 == 0:
                         logger.info(f"Processed subgroup {i_subgroup} / {n_subgroup} which has {len(segments)} line segments ...")
 
                     # save them
+                    group_cutflows.append(cutflow)
                     all_cutflows.append(cutflow)
                     all_linesegments.append(segments)
+
+                # group cutflow
+                if not self.signal:
+                    cutflow = pd.DataFrame(group_cutflows)
+                    for col in cutflow.columns:
+                        logger.info(f"Line segments cutflow (group), {col}: {cutflow[col].sum()}")
+
 
         # merge them
         logger.info(f"Merging {len(all_linesegments)} groups of line segments ...")
