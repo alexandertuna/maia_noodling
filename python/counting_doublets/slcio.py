@@ -58,6 +58,7 @@ class HitMaker:
         logger.info(f"Converting {len(self.slcio_file_paths)} slcio files to a DataFrame ...")
         initializer = init_worker if self.load_geometry else init_dummy
         processes = min(mp.cpu_count(), len(self.slcio_file_paths))
+        logger.info(f"Using {processes} processes for conversion ...")
         with mp.Pool(processes=processes, initializer=initializer) as pool:
             n_map = len(self.slcio_file_paths)
             file_numbers = list(range(n_map))
@@ -124,7 +125,14 @@ def convert_one_file(
         import dd4hep
         import DDRec
 
+    # check for file existence
+    if not os.path.isfile(slcio_file_path):
+        msg = f"File {slcio_file_path} does not exist"
+        logger.error(msg)
+        raise FileNotFoundError(msg)
+
     # open the SLCIO file
+    logger.info(f"Processing file {slcio_file_path} ...")
     reader = pyLCIO.IOIMPL.LCFactory.getInstance().createLCReader()
     reader.open(slcio_file_path)
 
