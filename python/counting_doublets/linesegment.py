@@ -4,7 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from constants import MD_DZ_CUT, MD_DR_CUT
-from constants import LS_DDZ_CUT, LS_DQOVERPT_CUT, LS_DZ_CUT, LS_DR_CUT
+from constants import LS_DZ_CUT, LS_DR_CUT
 from constants import LS_DTHETA_RZ_CUT, LS_DTHETA_XY_CUT, LS_CHI2_XY_CUT
 from constants import BYTE_TO_MB, NO_MCP
 from constants import N_PHI_SLICES, N_ETA_SLICES, DETECTOR_MAX_ETA, DETECTOR_MAX_PHI
@@ -17,14 +17,19 @@ class LineSegment:
     #  Layers 12, 34, ... grouped by doublet_doublelayer_plus_1_mod_2
     #
 
-    def __init__(self, doublets: pd.DataFrame, signal: bool, cut_line_segments: bool):
+    def __init__(self, geometry_version: str, doublets: pd.DataFrame, signal: bool, cut_line_segments: bool):
         self.df = None
+        self.geometry_version = geometry_version
         self.signal = signal
         self.cut_line_segments = cut_line_segments
         self.lower_suffix = "lower"
         self.upper_suffix = "upper"
         memory = doublets.memory_usage(deep=True).sum() * BYTE_TO_MB
         logger.info(f"Making linesegments with doublets memory {memory:.1f} MB ...")
+
+        self.MD_DZ_CUT = MD_DZ_CUT[self.geometry_version]
+        self.MD_DR_CUT = MD_DR_CUT[self.geometry_version]
+
         self.doublets = doublets.copy()
         self.prep_doublets()
         self.filter_doublets()
@@ -50,8 +55,8 @@ class LineSegment:
         logger.info("Filtering doublets for line segments ...")
         doublelayer = self.doublets["doublet_doublelayer"]
         self.doublets = self.doublets[
-            (np.abs(self.doublets["doublet_dz"]) < MD_DZ_CUT[doublelayer]) &
-            (np.abs(self.doublets["doublet_dr"]) < MD_DR_CUT[doublelayer])
+            (np.abs(self.doublets["doublet_dz"]) < self.MD_DZ_CUT[doublelayer]) &
+            (np.abs(self.doublets["doublet_dr"]) < self.MD_DR_CUT[doublelayer])
         ]
         memory = self.doublets.memory_usage(deep=True).sum() * BYTE_TO_MB
         logger.info(f"Memory usage after filtering doublets: {memory:.1f} MB")

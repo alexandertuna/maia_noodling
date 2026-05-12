@@ -15,7 +15,7 @@ from plot import Plotter
 from modulemap import ModuleMap
 from linesegment import LineSegment
 from quaddoublet import QuadDoublet
-from constants import SIGNAL, MCP_PKL, SIMHIT_PKL, DOUBLET_PKL
+from constants import SIGNAL
 
 FNAMES_BACKGROUND_100 = [
     # neutrinoGun 100%, (-5, 15)
@@ -29,16 +29,19 @@ FNAMES_BACKGROUND_10 = [
 
 FNAMES_SIGNAL = [
     # muonGun, 2 GeV
+    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_100.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_101.slcio",
+
     "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_300.slcio",
     "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_301.slcio",
-    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_302.slcio",
-    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_303.slcio",
-    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_304.slcio",
-    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_305.slcio",
-    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_306.slcio",
-    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_307.slcio",
-    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_308.slcio",
-    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_309.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_302.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_303.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_304.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_305.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_306.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_307.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_308.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_309.slcio",
 ]
 
 FNAMES = [
@@ -82,6 +85,8 @@ def main():
     fnames = FNAMES_SIGNAL if ops.signal else (FNAMES_BACKGROUND_10 if ops.background10 else (FNAMES_BACKGROUND_100 if ops.background100 else get_filenames(ops.i)))
     if not fnames:
         raise ValueError("No input files found")
+    if ops.geo not in ["v01", "v04"]:
+        raise ValueError("Invalid geometry version specified, must be one of ['v01', 'v04']")
     geometry = ops.geometry
     signal = any(SIGNAL in os.path.basename(fname) for fname in fnames) or ops.signal
     cut_mds = ops.cut_doublets or not signal
@@ -95,6 +100,7 @@ def main():
     logger.info(f"Layers to consider: {ops.layers}")
     logger.info(f"Cut MDs: {cut_mds}")
     logger.info(f"Cut T2s: {cut_t2s}")
+    logger.info(f"Geometry version: {ops.geo}")
 
     # reading simhits and mcparticles
     if ops.read_mcps and ops.read_simhits:
@@ -132,6 +138,7 @@ def main():
     else:
         # make mini-doublets from hits
         doublets = DoubletMaker(
+            geometry_version=ops.geo,
             signal=signal,
             cut_doublets=cut_mds,
             simhits=simhits,
@@ -149,6 +156,7 @@ def main():
     else:
         # make T2s (line segments) from mini-doublets
         t2s = LineSegment(
+            geometry_version=ops.geo,
             signal=signal,
             cut_line_segments=cut_t2s,
             doublets=doublets,
@@ -161,6 +169,7 @@ def main():
 
     # make quad doublets
     # quaddoublets = QuadDoublet(
+    #     geometry_version=ops.geo,
     #     signal=signal,
     #     cut_quad_doublets=ops.cut_quad_doublets,
     #     linesegments=t2s,
@@ -170,6 +179,7 @@ def main():
     if ops.plot:
         logger.info("Creating plots ...")
         plotter = Plotter(
+            geometry_version=ops.geo,
             signal=signal,
             mcps=mcps,
             simhits=simhits,
@@ -205,6 +215,7 @@ def options():
     parser.add_argument("--write-mds", type=str, help="Write mini-doublets to pickle file")
     parser.add_argument("--read-t2s", type=str, help="Read T2s (line segments) from pickle file")
     parser.add_argument("--write-t2s", type=str, help="Write T2s (line segments) to pickle file")
+    parser.add_argument("--geo", type=str, help="Version of geometry to use for cuts (e.g. v01, v04)", required=True)
     parser.add_argument("--signal", action="store_true", help="Use signal files in the analysis")
     parser.add_argument("--background10", action="store_true", help="Use background files (10 percent) in the analysis")
     parser.add_argument("--background100", action="store_true", help="Use background files (100 percent) in the analysis")

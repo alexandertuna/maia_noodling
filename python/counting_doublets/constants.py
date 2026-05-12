@@ -84,29 +84,35 @@ OUTER_TRACKER_BARREL = 5
 #     1,
 # ]
 
-MD_DZ_CUT = np.array([
-    22, # mm # doublelayer 0
-    29, # mm # doublelayer 1
-    112, # mm # doublelayer 2
-    137, # mm # doublelayer 3
-])
-MD_DR_CUT = np.array([
-    260, # mm # doublelayer 0
-    313, # mm # doublelayer 1
-    720, # mm # doublelayer 2
-    807, # mm # doublelayer 3
-])
+MD_DZ_CUT = {
+    "v01": np.array([
+        22, # mm # doublelayer 0
+        29, # mm # doublelayer 1
+        112, # mm # doublelayer 2
+        137, # mm # doublelayer 3
+    ]),
+    "v04": np.array([
+        22, # mm # doublelayer 0
+        29, # mm # doublelayer 1
+        112, # mm # doublelayer 2
+        137, # mm # doublelayer 3
+    ]),
+}
+MD_DR_CUT = {
+    "v01": np.array([
+        260, # mm # doublelayer 0
+        313, # mm # doublelayer 1
+        720, # mm # doublelayer 2
+        807, # mm # doublelayer 3
+    ]),
+    "v04": np.array([
+        260, # mm # doublelayer 0
+        313, # mm # doublelayer 1
+        720, # mm # doublelayer 2
+        807, # mm # doublelayer 3
+    ]),
+}
 
-LS_DDZ_CUT = np.array([
-    0.0, # doublelayer 0
-    0.0, # doublelayer 1
-    0.0, # doublelayer 2
-])
-LS_DQOVERPT_CUT = np.array([
-    0.0, # doublelayer 0
-    0.0, # doublelayer 1
-    0.0, # doublelayer 2
-])
 LS_DZ_CUT = np.array([
     24, # mm # doublelayer 0
     0.0, # 55, # mm # doublelayer 1

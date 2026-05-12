@@ -12,9 +12,12 @@ from constants import N_PHI_SLICES, N_ETA_SLICES, DETECTOR_MAX_ETA, DETECTOR_MAX
 class DoubletMaker:
 
 
-    def __init__(self, signal: bool, cut_doublets: bool, simhits: pd.DataFrame):
+    def __init__(self, geometry_version: str, signal: bool, cut_doublets: bool, simhits: pd.DataFrame):
+        self.geometry_version = geometry_version
         self.signal = signal
         self.cut_doublets = cut_doublets
+        self.MD_DZ_CUT = MD_DZ_CUT[self.geometry_version]
+        self.MD_DR_CUT = MD_DR_CUT[self.geometry_version]
         self.df = self.make_doublets(simhits)
 
 
@@ -74,8 +77,8 @@ class DoubletMaker:
             # cut some doublets?
             if self.cut_doublets:
                 doublelayer = doublets["simhit_layer_div_2"]
-                mask_dr = np.abs(doublets["doublet_dr"]) < MD_DR_CUT[doublelayer]
-                mask_dz = np.abs(doublets["doublet_dz"]) < MD_DZ_CUT[doublelayer]
+                mask_dr = np.abs(doublets["doublet_dr"]) < self.MD_DR_CUT[doublelayer]
+                mask_dz = np.abs(doublets["doublet_dz"]) < self.MD_DZ_CUT[doublelayer]
                 cutflow["dr"] = mask_dr.sum()
                 cutflow["dz"] = mask_dz.sum()
                 cutflow["drdz"] = (mask_dr & mask_dz).sum()

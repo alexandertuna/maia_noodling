@@ -49,6 +49,7 @@ class Plotter:
 
     def __init__(
         self,
+        geometry_version: str,
         signal: bool,
         mcps: pd.DataFrame,
         simhits: pd.DataFrame,
@@ -56,12 +57,17 @@ class Plotter:
         linesegments: pd.DataFrame,
         pdf: str,
     ):
+        self.geometry_version = geometry_version
         self.signal = signal
         self.mcps = mcps
         self.simhits = simhits
         self.doublets = doublets
         self.linesegments = linesegments
         self.pdf = pdf
+
+        # shorthands for cuts
+        self.MD_DZ_CUT = MD_DZ_CUT[self.geometry_version]
+        self.MD_DR_CUT = MD_DR_CUT[self.geometry_version]
 
 
     def plot(self):
@@ -70,18 +76,18 @@ class Plotter:
             self.plot_numbers_for_comparison(pdf)
             self.write_date(pdf)
             self.plot_time(pdf)
-            # self.plot_layer_occupancy_1d(pdf)
-            # self.plot_layer_occupancy_2d(pdf)
-            # self.plot_radius_vs_layer(pdf)
-            # self.plot_doublet_occupancy(pdf)
+            self.plot_layer_occupancy_1d(pdf)
+            self.plot_layer_occupancy_2d(pdf)
+            self.plot_radius_vs_layer(pdf)
+            self.plot_doublet_occupancy(pdf)
             self.plot_doublet_features(pdf)
             self.plot_linesegment_features(pdf)
             if self.signal:
                 self.write_denominator_info(pdf)
-                # self.plot_doublet_efficiency_vs_kinematics(pdf)
-                # self.write_doublet_denominator_info(pdf)
+                self.plot_doublet_efficiency_vs_kinematics(pdf)
+                self.write_doublet_denominator_info(pdf)
                 # self.plot_doublet_quality_efficiency(pdf)
-                # self.plot_segment_efficiency_vs_kinematics(pdf)
+                self.plot_segment_efficiency_vs_kinematics(pdf)
                 # self.plot_segment_quality_efficiency(pdf)
 
 
@@ -154,8 +160,8 @@ class Plotter:
             (self.doublets["doublet_first_exit"])
         )
         quality_cuts = (
-            (np.abs(self.doublets["doublet_dz"]) < MD_DZ_CUT[doublelayer]) &
-            (np.abs(self.doublets["doublet_dr"]) < MD_DR_CUT[doublelayer]) &
+            (np.abs(self.doublets["doublet_dz"]) < self.MD_DZ_CUT[doublelayer]) &
+            (np.abs(self.doublets["doublet_dr"]) < self.MD_DR_CUT[doublelayer]) &
             baseline_cuts
         )
         doublets_0 = self.doublets[baseline_cuts & dl_0]
@@ -225,8 +231,8 @@ class Plotter:
             [self.doublets["doublet_doublelayer"] == the_doublelayer, f"Doublets in layers {layers}"],
             # [self.doublets["doublet_sensor"] == 20, "z-sensor 20"],
             # [self.doublets["doublet_module"] == 0, "phi-module 0"],
-            [np.abs(self.doublets["doublet_dz"]) < MD_DZ_CUT[the_doublelayer], f"Doublets with |dz| < {MD_DZ_CUT[the_doublelayer]}mm"],
-            [np.abs(self.doublets["doublet_dr"]) < MD_DR_CUT[the_doublelayer], f"Doublets with |dr| < {MD_DR_CUT[the_doublelayer]}mm"],
+            [np.abs(self.doublets["doublet_dz"]) < self.MD_DZ_CUT[the_doublelayer], f"Doublets with |dz| < {self.MD_DZ_CUT[the_doublelayer]}mm"],
+            [np.abs(self.doublets["doublet_dr"]) < self.MD_DR_CUT[the_doublelayer], f"Doublets with |dr| < {self.MD_DR_CUT[the_doublelayer]}mm"],
         ]:
             mask &= req
             logger.info(f"* {label:<30} :: {mask.sum():>10}")
@@ -374,16 +380,16 @@ class Plotter:
             text = "No requirement"
             mask = np.ones(len(doublets), dtype=bool)
         elif req == REQ_XY:
-            text = f"|dr| < {MD_DR_CUT[doublelayer]}mm"
-            mask = np.abs(doublets["doublet_dr"]) < MD_DR_CUT[doublelayer]
+            text = f"|dr| < {self.MD_DR_CUT[doublelayer]}mm"
+            mask = np.abs(doublets["doublet_dr"]) < self.MD_DR_CUT[doublelayer]
         elif req == REQ_RZ:
-            text = f"|dz| < {MD_DZ_CUT[doublelayer]}mm"
-            mask = np.abs(doublets["doublet_dz"]) < MD_DZ_CUT[doublelayer]
+            text = f"|dz| < {self.MD_DZ_CUT[doublelayer]}mm"
+            mask = np.abs(doublets["doublet_dz"]) < self.MD_DZ_CUT[doublelayer]
         elif req == REQ_RZ_XY:
-            text = f"|dr| < {MD_DR_CUT[doublelayer]}mm, |dz| < {MD_DZ_CUT[doublelayer]}mm"
+            text = f"|dr| < {self.MD_DR_CUT[doublelayer]}mm, |dz| < {self.MD_DZ_CUT[doublelayer]}mm"
             mask = (
-                (np.abs(doublets["doublet_dz"]) < MD_DZ_CUT[doublelayer]) &
-                (np.abs(doublets["doublet_dr"]) < MD_DR_CUT[doublelayer])
+                (np.abs(doublets["doublet_dz"]) < self.MD_DZ_CUT[doublelayer]) &
+                (np.abs(doublets["doublet_dr"]) < self.MD_DR_CUT[doublelayer])
             )
         else:
             raise ValueError(f"Unknown requirement: {req}")
@@ -746,10 +752,10 @@ class Plotter:
             (np.abs(self.linesegments["mcp_eta"]) < BARREL_TRACKER_MAX_ETA) &
             (self.linesegments["mcp_vertex_r"] < ZERO_POINT_ZERO_ONE_MM) &
             (np.abs(self.linesegments["mcp_vertex_z"]) < ZERO_POINT_ZERO_ONE_MM) &
-            (np.abs(self.linesegments["ls_dr_lower"]) < MD_DR_CUT[dl_lower]) &
-            (np.abs(self.linesegments["ls_dr_upper"]) < MD_DR_CUT[dl_upper]) &
-            (np.abs(self.linesegments["ls_dz_lower"]) < MD_DZ_CUT[dl_lower]) &
-            (np.abs(self.linesegments["ls_dz_upper"]) < MD_DZ_CUT[dl_upper]) &
+            (np.abs(self.linesegments["ls_dr_lower"]) < self.MD_DR_CUT[dl_lower]) &
+            (np.abs(self.linesegments["ls_dr_upper"]) < self.MD_DR_CUT[dl_upper]) &
+            (np.abs(self.linesegments["ls_dz_lower"]) < self.MD_DZ_CUT[dl_lower]) &
+            (np.abs(self.linesegments["ls_dz_upper"]) < self.MD_DZ_CUT[dl_upper]) &
             np.ones(len(self.linesegments), dtype=bool)
         )
 

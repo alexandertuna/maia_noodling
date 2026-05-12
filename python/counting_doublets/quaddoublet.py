@@ -15,8 +15,9 @@ from constants import BYTE_TO_MB, NO_MCP
 
 class QuadDoublet:
 
-    def __init__(self, linesegments: pd.DataFrame, signal: bool, cut_quad_doublets: bool):
+    def __init__(self, geometry_version: str, linesegments: pd.DataFrame, signal: bool, cut_quad_doublets: bool):
         self.df = None
+        self.geometry_version = geometry_version
         self.signal = signal
         self.cut_quad_doublets = cut_quad_doublets
         self.linesegments = linesegments.copy()
