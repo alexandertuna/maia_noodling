@@ -175,4 +175,13 @@ NICKNAMES = {
     OUTER_TRACKER_BARREL: "OTB",
 }
 
-N_PHI_SLICES = 4096
+# Do not change this easily
+# Its measured for 2 GeV muons
+# We multiply by 2 to speed up the processing (fewer slices)
+MAX_LS_DPHI = 0.05 * 2
+MAX_LS_DETA = 0.02 * 2
+DETECTOR_MAX_PHI = np.pi
+DETECTOR_MAX_ETA = 2.5 # Must include all background hits
+N_PHI_SLICES = int(2 * DETECTOR_MAX_PHI / MAX_LS_DPHI)
+N_ETA_SLICES = int(2 * DETECTOR_MAX_ETA / MAX_LS_DETA)
+

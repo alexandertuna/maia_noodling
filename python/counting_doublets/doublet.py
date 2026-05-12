@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 from constants import MD_DZ_CUT, MD_DR_CUT
 from constants import MAGNETIC_FIELD, SPEED_OF_LIGHT
 from constants import BYTE_TO_MB, MEV_TO_GEV, NO_MCP
-from constants import N_PHI_SLICES
+from constants import N_PHI_SLICES, N_ETA_SLICES, DETECTOR_MAX_ETA, DETECTOR_MAX_PHI
 
 class DoubletMaker:
 
@@ -107,7 +107,8 @@ class DoubletMaker:
             doublets["doublet_phi"] = np.arctan2(doublets["doublet_y"], doublets["doublet_x"])
             doublets["doublet_theta"] = np.arctan2(doublets["doublet_r"], doublets["doublet_z"])
             doublets["doublet_eta"] = -np.log(np.tan(doublets["doublet_theta"] / 2))
-            doublets["doublet_phi_slice"] = np.floor((doublets["doublet_phi"] + np.pi) / (2 * np.pi) * N_PHI_SLICES).astype(np.int16)
+            doublets["doublet_phi_slice"] = np.floor((doublets["doublet_phi"] + DETECTOR_MAX_PHI) / (2 * DETECTOR_MAX_PHI) * N_PHI_SLICES).astype(np.int16)
+            doublets["doublet_eta_slice"] = np.floor((doublets["doublet_eta"] + DETECTOR_MAX_ETA) / (2 * DETECTOR_MAX_ETA) * N_ETA_SLICES).astype(np.int16)
 
             # guess charge from dphi:
             # positively charged particles have negative dphi, and vice versa
