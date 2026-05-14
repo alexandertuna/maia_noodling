@@ -41,6 +41,7 @@ SPACING_V1 = 4.0
 # Units: mm
 NPHIS = [
     15*2 // 2, 20*2 // 2, 58*2 // 2, 62*2 // 2,
+    15*2 // 2, 30*2 // 2, 46*2 // 2, 62*2 // 2, # Equally spaced layers
     46*4 // 2, 54*4 // 2, 78*4 // 2, 82*4 // 2,
     48*2 // 2, 52*2 // 2, 80*2 // 2, 84*2 // 2,
     48*2 // 2, 60*2 // 2, 72*2 // 2, 84*2 // 2, # Equally spaced layers
@@ -48,6 +49,7 @@ NPHIS = [
 ]
 INNER_RADII = [
     127.0, 167.0, 510.0, 550.0,
+    127.0, 268.0, 409.0, 550.0,
     819.0, 899.0, 1366.0, 1446.0,
     819.0, 899.0, 1366.0, 1446.0,
     819.0, 1028.0, 1237.0, 1446.0,
@@ -55,6 +57,7 @@ INNER_RADII = [
 ]
 OUTER_RADII = [
     127.0 + SPACING_V1, 167.0 + SPACING_V1, 510.0 + SPACING_V1, 550.0 + SPACING_V1,
+    127.0 + SPACING_V1, 268.0 + SPACING_V1, 409.0 + SPACING_V1, 550.0 + SPACING_V1,
     819.0 + SPACING_V0, 899.0 + SPACING_V0, 1366.0 + SPACING_V0, 1446.0 + SPACING_V0,
     819.0 + SPACING_V1, 899.0 + SPACING_V1, 1366.0 + SPACING_V1, 1446.0 + SPACING_V1,
     819.0 + SPACING_V1, 1028.0 + SPACING_V1, 1237.0 + SPACING_V1, 1446.0 + SPACING_V1,
@@ -63,11 +66,13 @@ OUTER_RADII = [
 MODULE_WIDTHS = [
     30.1, 30.1, 30.1, 30.1,
     30.1, 30.1, 30.1, 30.1,
+    30.1, 30.1, 30.1, 30.1,
     60.2, 60.2, 60.2, 60.2,
     60.2, 60.2, 60.2, 60.2,
     60.2, 60.2,
 ]
 TEXTS = [
+    "IT L0", "IT L2", "IT L4", "IT L6",
     "IT L0", "IT L2", "IT L4", "IT L6",
     "OT L0", "OT L2", "OT L4", "OT L6",
     "OT L0", "OT L2", "OT L4", "OT L6",
