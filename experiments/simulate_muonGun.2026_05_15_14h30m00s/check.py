@@ -26,7 +26,18 @@ rcParams.update({
 })
 
 
-SIM_NAME = "muonGun_pT_2p0_2p1_sim_300.slcio"
+SIM_NAMES = [
+    "muonGun_pT_2p0_2p1_sim_300.slcio",
+    "muonGun_pT_2p0_2p1_sim_301.slcio",
+    "muonGun_pT_2p0_2p1_sim_302.slcio",
+    "muonGun_pT_2p0_2p1_sim_303.slcio",
+    "muonGun_pT_2p0_2p1_sim_304.slcio",
+    "muonGun_pT_2p0_2p1_sim_305.slcio",
+    "muonGun_pT_2p0_2p1_sim_306.slcio",
+    "muonGun_pT_2p0_2p1_sim_307.slcio",
+    "muonGun_pT_2p0_2p1_sim_308.slcio",
+    "muonGun_pT_2p0_2p1_sim_309.slcio",
+]
 DIGI_NAMES = [
     "muonGun_pT_2p0_2p1_digi_300.slcio",
     "muonGun_pT_2p0_2p1_digi_301.slcio",
@@ -39,7 +50,11 @@ DIGI_NAMES = [
     "muonGun_pT_2p0_2p1_digi_308.slcio",
     "muonGun_pT_2p0_2p1_digi_309.slcio",    
 ]
-COLS = [
+SIM_COLS = [
+    "InnerTrackerBarrelCollection",
+    "OuterTrackerBarrelCollection",
+]
+DIGI_COLS = [
     "IBTrackerHits",
     "OBTrackerHits",
 ]
@@ -52,19 +67,40 @@ MM_TO_UM = 1000.0
 
 
 def main():
+    count_sim_hits(SIM_NAMES)
     df = get_df(DIGI_NAMES)
     print(df)
     with PdfPages("check.pdf") as pdf:
         plot(df, pdf)
 
 
-def get_df(fnames):
-    hits = []
+def count_sim_hits(fnames):
+    n_sim = {col: 0 for col in SIM_COLS}
     for fname in fnames:
         print(f"Processing file {fname} ...")
         reader = pyLCIO.IOIMPL.LCFactory.getInstance().createLCReader()
         reader.open(fname)
         for i_event, event in enumerate(reader):
+            for col in SIM_COLS:
+                n_sim[col] += len(event.getCollection(col))
+
+    for col in SIM_COLS:
+        print(f"Total sim hits in {col}: {n_sim[col]}")
+
+
+def get_df(fnames):
+    hits = []
+    n_sim = {col: 0 for col in SIM_COLS}
+    n_digi = {col: 0 for col in DIGI_COLS}
+    for fname in fnames:
+        print(f"Processing file {fname} ...")
+        reader = pyLCIO.IOIMPL.LCFactory.getInstance().createLCReader()
+        reader.open(fname)
+        for i_event, event in enumerate(reader):
+            for col in SIM_COLS:
+                n_sim[col] += len(event.getCollection(col))
+            for col in DIGI_COLS:
+                n_digi[col] += len(event.getCollection(col))
             for i_rel, relname in enumerate(RELS):
                 rels = event.getCollection(relname)
                 for rel in rels:
@@ -81,6 +117,10 @@ def get_df(fnames):
                         "hit_z": hit.getPosition()[2],
                         "hit_t": hit.getTime()
                     })
+
+    # announce
+    for sim_col, digi_col in zip(SIM_COLS, DIGI_COLS):
+        print(f"Total sim hits in {sim_col}: {n_sim[sim_col]}, total digi hits in {digi_col}: {n_digi[digi_col]}, ratio = {n_digi[digi_col] / n_sim[sim_col]:.3f}")
 
     # merge
     df = pd.DataFrame(hits)
