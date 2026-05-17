@@ -91,9 +91,9 @@ class Plotter:
                 self.write_denominator_info(pdf)
                 self.plot_doublet_efficiency_vs_kinematics(pdf)
                 self.write_doublet_denominator_info(pdf)
-                # self.plot_doublet_quality_efficiency(pdf)
+                self.plot_doublet_quality_efficiency(pdf)
                 self.plot_segment_efficiency_vs_kinematics(pdf)
-                # self.plot_segment_quality_efficiency(pdf)
+                self.plot_segment_quality_efficiency(pdf)
 
 
     def plot_numbers_for_comparison(self, pdf: PdfPages):
@@ -770,8 +770,8 @@ class Plotter:
         baseline = self.baseline_linesegment_mask() if self.signal else np.ones(len(self.linesegments), dtype=bool)
 
         bins = {
-            "ls_deta": np.linspace(-3.2, 3.2, 641) if not self.signal else np.linspace(-0.011, 0.011, 221),
-            "ls_dphi": np.linspace(-3.2, 3.2, 321) if not self.signal else np.linspace(-0.08, 0.08, 201),
+            "ls_deta": np.linspace(-3.2, 3.2, 641) if not self.signal else np.linspace(-0.012, 0.012, 241),
+            "ls_dphi": np.linspace(-3.2, 3.2, 321) if not self.signal else np.linspace(-0.12, 0.12, 241),
             "ls_dr": np.linspace(0, 1500, 501) if not self.signal else np.linspace(0, 1000, 401),
             "ls_dz": np.linspace(-30000, 30000, 201) if not self.signal else np.linspace(-200, 200, 201),
             "ls_ddr": np.linspace(-300, 300, 601),
@@ -1025,7 +1025,7 @@ class Plotter:
             text = "No requirement"
             mask = np.ones(len(df), dtype=bool)
         elif req == LS_REQ_DR_POS:
-            text = f"|dr| < {LS_DR_CUT[doublelayer]}mm"
+            text = f"|dr| < {self.LS_DR_CUT[doublelayer]}mm"
             mask = np.abs(df["ls_dr"]) < self.LS_DR_CUT[doublelayer]
         elif req == LS_REQ_DZ_POS:
             text = f"|dz| < {self.LS_DZ_CUT[doublelayer]}mm"
