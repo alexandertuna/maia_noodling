@@ -11,7 +11,8 @@ from constants import OUTSIDE_BOUNDS, INSIDE_BOUNDS, UNDEFINED_BOUNDS, BOUNDS
 from constants import EPSILON, MCPARTICLE, PARTICLES_OF_INTEREST, SPEED_OF_LIGHT
 from constants import MM_TO_CM, CM_TO_MM
 from constants import XML
-from constants import INNER_TRACKER_BARREL_COLLECTION, OUTER_TRACKER_BARREL_COLLECTION, COLLECTIONS
+from constants import INNER_TRACKER_BARREL_COLLECTION, OUTER_TRACKER_BARREL_COLLECTION
+from constants import INNER_TRACKER_BARREL_RELATIONS, OUTER_TRACKER_BARREL_RELATIONS
 from constants import BYTE_TO_MB, NO_MCP
 from constants import MIN_COSTHETA, MIN_SIMHIT_PT_FRACTION, MAX_TIME
 
@@ -26,6 +27,7 @@ class HitMaker:
             slcio_file_paths: list[str],
             load_geometry: bool,
             signal: bool,
+            sim: bool,
             inner: bool,
             outer: bool,
             layers: list[int],
@@ -33,6 +35,7 @@ class HitMaker:
         self.slcio_file_paths = slcio_file_paths
         self.load_geometry = load_geometry
         self.signal = signal
+        self.sim = sim
         self.inner = inner
         self.outer = outer
         self.layers = layers
@@ -64,6 +67,7 @@ class HitMaker:
             file_numbers = list(range(n_map))
             load_geometry = [self.load_geometry]*n_map
             signal = [self.signal]*n_map
+            sim = [self.sim]*n_map
             inner = [self.inner]*n_map
             outer = [self.outer]*n_map
             layers = [self.layers]*n_map
@@ -73,6 +77,7 @@ class HitMaker:
                     file_numbers,
                     load_geometry,
                     signal,
+                    sim,
                     inner,
                     outer,
                     layers,
@@ -111,6 +116,7 @@ def convert_one_file(
         file_number: int,
         load_geometry: bool,
         signal: bool,
+        use_sim: bool,
         inner: bool,
         outer: bool,
         layers: list[int],
@@ -181,26 +187,36 @@ def convert_one_file(
         # choose trackers
         collections = []
         if inner:
-            collections.append(INNER_TRACKER_BARREL_COLLECTION)
+            if use_sim:
+                collections.append(INNER_TRACKER_BARREL_COLLECTION)
+            else:
+                collections.append(INNER_TRACKER_BARREL_RELATIONS)
         if outer:
-            collections.append(OUTER_TRACKER_BARREL_COLLECTION)
-
+            if use_sim:
+                collections.append(OUTER_TRACKER_BARREL_COLLECTION)
+            else:
+                collections.append(OUTER_TRACKER_BARREL_RELATIONS)
 
         # inspect tracking detectors
         for collection in collections:
 
             col = event.getCollection(collection)
-            n_hit = len(col)
+            n_obj = len(col)
 
-            for i_hit, hit in enumerate(col):
+            for i_obj, obj in enumerate(col):
 
-                if i_hit > 0 and i_hit % 1000000 == 0:
+                if use_sim:
+                    simhit, hit = obj, None
+                else:
+                    simhit, hit = obj.getTo(), obj.getFrom()
+
+                if i_obj > 0 and i_obj % 1000000 == 0:
                     logger.info(f"Processing file {os.path.basename(slcio_file_path)} "
                                 f"event {i_event} collection {collection} "
-                                f"hit {i_hit}/{n_hit} ...")
+                                f"hit {i_obj}/{n_obj} ...")
 
                 # consider a particular set of layers
-                layer = np.right_shift(hit.getCellID0(), 7) & 0b11_1111
+                layer = np.right_shift(simhit.getCellID0(), 7) & 0b11_1111
                 if layer not in layers:
                     continue
                 # module 0 only, sensor 20 only?
@@ -211,15 +227,18 @@ def convert_one_file(
 
 
                 # associated MCParticle
-                mcp = hit.getMCParticle()
+                mcp = simhit.getMCParticle()
                 i_mcp = mcparticles.index(mcp) if mcp in mcparticles else NO_MCP
+
+                # choice of position
+                position = simhit.getPosition() if use_sim else hit.getPosition()
 
                 # hit/surface relations
                 if load_geometry:
-                    surf = _maps[collection].find(hit.getCellID0()).second
-                    pos = dd4hep.rec.Vector3D(hit.getPosition()[0] * MM_TO_CM,
-                                              hit.getPosition()[1] * MM_TO_CM,
-                                              hit.getPosition()[2] * MM_TO_CM)
+                    surf = _maps[collection].find(simhit.getCellID0()).second
+                    pos = dd4hep.rec.Vector3D(position[0] * MM_TO_CM,
+                                              position[1] * MM_TO_CM,
+                                              position[2] * MM_TO_CM)
                     inside_bounds = INSIDE_BOUNDS if surf.insideBounds(pos) else OUTSIDE_BOUNDS
                     distance = surf.distance(pos) * CM_TO_MM
                 else:
@@ -235,25 +254,25 @@ def convert_one_file(
                     'file': file_number,
                     'i_event': i_event,
                     'i_mcp': i_mcp,
-                    'simhit_x': hit.getPosition()[0],
-                    'simhit_y': hit.getPosition()[1],
-                    'simhit_z': hit.getPosition()[2],
-                    'simhit_cellid0': hit.getCellID0(),
+                    'simhit_x': position[0],
+                    'simhit_y': position[1],
+                    'simhit_z': position[2],
+                    'simhit_cellid0': simhit.getCellID0(),
                     'simhit_inside_bounds': inside_bounds,
-                    'simhit_t_corrected': hit.getTime() - (np.sqrt(hit.getPosition()[0]**2 + \
-                                                                   hit.getPosition()[1]**2 + \
-                                                                   hit.getPosition()[2]**2) / SPEED_OF_LIGHT),
+                    'simhit_t_corrected': simhit.getTime() - (np.sqrt(position[0]**2 + \
+                                                                      position[1]**2 + \
+                                                                      position[2]**2) / SPEED_OF_LIGHT),
                 })
                 if signal:
                     mcp_ok = i_mcp != NO_MCP
                     simhits[-1].update({
-                        'simhit_px': hit.getMomentum()[0],
-                        'simhit_py': hit.getMomentum()[1],
-                        'simhit_pz': hit.getMomentum()[2],
-                        'simhit_pathlength': hit.getPathLength(),
+                        'simhit_px': simhit.getMomentum()[0],
+                        'simhit_py': simhit.getMomentum()[1],
+                        'simhit_pz': simhit.getMomentum()[2],
+                        'simhit_pathlength': simhit.getPathLength(),
                         'simhit_distance': distance,
-                        'simhit_t': hit.getTime(),
-                        'simhit_e': hit.getEDep(),
+                        'simhit_t': simhit.getTime(),
+                        'simhit_e': simhit.getEDep(),
                         'mcp_px': mcp_px[i_mcp] if mcp_ok else 0,
                         'mcp_py': mcp_py[i_mcp] if mcp_ok else 0,
                         'mcp_pz': mcp_pz[i_mcp] if mcp_ok else 0,
