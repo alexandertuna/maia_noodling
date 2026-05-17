@@ -17,9 +17,14 @@ from linesegment import LineSegment
 from quaddoublet import QuadDoublet
 from constants import SIGNAL
 
-FNAMES_BACKGROUND_100 = [
+FNAMES_BACKGROUND_100_V01 = [
     # neutrinoGun 100%, (-5, 15)
     "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_n5_p15/neutrinoGun_digi_3.slcio",
+]
+
+FNAMES_BACKGROUND_100_V04 = [
+    # neutrinoGun 100%, (-5, 15)
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/neutrinoGun_n5_p15/neutrinoGun_digi_3.slcio",
 ]
 
 FNAMES_BACKGROUND_10 = [
@@ -108,7 +113,12 @@ def main():
     elif ops.background10:
         fnames = FNAMES_BACKGROUND_10
     elif ops.background100:
-        fnames = FNAMES_BACKGROUND_100
+        if ops.geo == "v01":
+            fnames = FNAMES_BACKGROUND_100_V01
+        elif ops.geo == "v04":
+            fnames = FNAMES_BACKGROUND_100_V04
+        else:
+            raise ValueError(f"Invalid geometry version specified, must be one of {valid_geos}")
     else:
         fnames = get_filenames(ops.i)
     if not fnames:
@@ -119,6 +129,10 @@ def main():
     cut_t2s = ops.cut_line_segments or not signal
     if not ops.inner and not ops.outer:
         raise ValueError("At least one of --inner or --outer must be specified")
+    if not ops.sim and not ops.digi:
+        raise ValueError("At least one of --sim or --digi must be specified")
+    if ops.sim and ops.digi:
+        raise ValueError("Only one of --sim or --digi can be specified, not both")
 
     # log some info
     logger.info(f"Detected {'signal' if signal else 'background'} files")
@@ -129,6 +143,8 @@ def main():
     logger.info(f"Cut MDs: {cut_mds}")
     logger.info(f"Cut T2s: {cut_t2s}")
     logger.info(f"Geometry version: {ops.geo}")
+    logger.info(f"Using sim hits: {ops.sim}")
+    logger.info(f"Using digi hits: {ops.digi}")
 
     # reading simhits and mcparticles
     if ops.read_mcps and ops.read_simhits:
@@ -143,12 +159,13 @@ def main():
     else:
         # convert slcio to hits dataframe
         converter = HitMaker(slcio_file_paths=fnames,
-                            load_geometry=geometry,
-                            signal=signal,
-                            inner=ops.inner,
-                            outer=ops.outer,
-                            layers=ops.layers,
-                            )
+                             load_geometry=geometry,
+                             signal=signal,
+                             sim=ops.sim,
+                             inner=ops.inner,
+                             outer=ops.outer,
+                             layers=ops.layers,
+                             )
         mcps, simhits = converter.convert()
 
     # writing simhits and mcparticles to pickle files
@@ -230,6 +247,8 @@ def options():
     parser.add_argument("--timelapse", action="store_true", help="Create timelapse gif")
     parser.add_argument("--inner", action="store_true", help="Include inner tracker hits in the analysis")
     parser.add_argument("--outer", action="store_true", help="Include outer tracker hits in the analysis")
+    parser.add_argument("--sim", action="store_true", help="Use sim hits in the analysis")
+    parser.add_argument("--digi", action="store_true", help="Use digi hits in the analysis")
     parser.add_argument("--plot", action="store_true", help="Include plots in the analysis")
     parser.add_argument("--modulemap", action="store_true", help="Make module map in the analysis")
     parser.add_argument("--cut-doublets", action="store_true", help="Cut doublets based on MD_DZ_CUT and MD_DR_CUT")
