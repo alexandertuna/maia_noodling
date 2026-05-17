@@ -5,7 +5,7 @@ SIM_DIR=${CODE}/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/
 TYPEEVENT=muonGun_pT_2p0_2p1
 # export MARLIN_DLL=$(readlink -e ${CODE}/MyBIBUtils/build/lib/libMyBIBUtils.so):${MARLIN_DLL}
 
-for NUM in {300..309}; do
+for NUM in {300..349}; do
 
     # Process at most $MAX_JOBS in parallel
     while (( $(jobs -rp | wc -l) >= MAX_JOBS )); do

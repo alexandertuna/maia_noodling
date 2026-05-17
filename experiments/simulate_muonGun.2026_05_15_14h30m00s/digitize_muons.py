@@ -196,8 +196,10 @@ def write_local_digi_steer(local_filename: str):
     steer_text = steer_text.replace("_reco_", "_digi_")
     steer_text = steer_text.replace("detector-simulation/geometries", "k4geo/MuColl/MAIA/compact")
     steer_text = steer_text.replace('"ResolutionT": ["0.06"]', '"ResolutionT": ["0.0"]')
-    steer_text = steer_text.replace('"ResolutionU": ["0.007"]', '"ResolutionU": ["0.005"]')
-    steer_text = steer_text.replace('"ResolutionV": ["0.090"]', '"ResolutionV": ["0.005"]')
+    # steer_text = steer_text.replace('"ResolutionU": ["0.007"]', '"ResolutionU": ["0.005"]')
+    # steer_text = steer_text.replace('"ResolutionV": ["0.090"]', '"ResolutionV": ["0.005"]')
+    steer_text = steer_text.replace('"ResolutionU": ["0.007"]', '"ResolutionU": ["0.010"]')
+    steer_text = steer_text.replace('"ResolutionV": ["0.090"]', '"ResolutionV": ["0.010"]')
     steer_text = steer_text.replace('"UseTimeWindow": ["true"]', '"UseTimeWindow": ["false"]')
     # steer_text = steer_text.replace("1666", "16")
 
