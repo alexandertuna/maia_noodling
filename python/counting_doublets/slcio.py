@@ -253,8 +253,9 @@ def convert_one_file(
                 position = simhit.getPosition() if use_sim else hit.getPosition()
                 time = simhit.getTime() if use_sim else hit.getTime()
                 energy = simhit.getEDep() if use_sim else hit.getEDep()
-                momentum = simhit.getMomentum() if use_sim else [0, 0, 0]
-                pathlength = simhit.getPathLength() if use_sim else 0
+                momentum = simhit.getMomentum() if (use_sim or signal) else [0, 0, 0]
+                pathlength = simhit.getPathLength() if (use_sim or signal) else 0
+                correction = (np.sqrt(position[0]**2 + position[1]**2 + position[2]**2) / SPEED_OF_LIGHT) if use_sim else 0.0
 
                 # hit/surface relations
                 if load_geometry:
@@ -282,9 +283,7 @@ def convert_one_file(
                     'simhit_z': position[2],
                     'simhit_cellid0': cellid0,
                     'simhit_inside_bounds': inside_bounds,
-                    'simhit_t_corrected': time - (np.sqrt(position[0]**2 + \
-                                                          position[1]**2 + \
-                                                          position[2]**2) / SPEED_OF_LIGHT),
+                    'simhit_t_corrected': time - correction,
                 })
                 if signal:
                     mcp_ok = i_mcp != NO_MCP
