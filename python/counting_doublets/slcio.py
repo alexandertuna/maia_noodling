@@ -12,6 +12,7 @@ from constants import EPSILON, MCPARTICLE, PARTICLES_OF_INTEREST, SPEED_OF_LIGHT
 from constants import MM_TO_CM, CM_TO_MM
 from constants import XML
 from constants import INNER_TRACKER_BARREL_COLLECTION, OUTER_TRACKER_BARREL_COLLECTION
+from constants import INNER_TRACKER_BARREL_HITS, OUTER_TRACKER_BARREL_HITS
 from constants import INNER_TRACKER_BARREL_RELATIONS, OUTER_TRACKER_BARREL_RELATIONS
 from constants import BYTE_TO_MB, NO_MCP
 from constants import MIN_COSTHETA, MIN_SIMHIT_PT_FRACTION, MAX_TIME
@@ -190,12 +191,22 @@ def convert_one_file(
             if use_sim:
                 collections.append(INNER_TRACKER_BARREL_COLLECTION)
             else:
-                collections.append(INNER_TRACKER_BARREL_RELATIONS)
+                if signal:
+                    collections.append(INNER_TRACKER_BARREL_RELATIONS)
+                else:
+                    collections.append(INNER_TRACKER_BARREL_HITS)
         if outer:
             if use_sim:
                 collections.append(OUTER_TRACKER_BARREL_COLLECTION)
             else:
-                collections.append(OUTER_TRACKER_BARREL_RELATIONS)
+                if signal:
+                    collections.append(OUTER_TRACKER_BARREL_RELATIONS)
+                else:
+                    collections.append(OUTER_TRACKER_BARREL_HITS)
+        if len(collections) == 0:
+            msg = f"No tracker collections selected for file {os.path.basename(slcio_file_path)}"
+            logger.error(msg)
+            raise ValueError(msg)
 
         # inspect tracking detectors
         for collection in collections:
@@ -205,10 +216,15 @@ def convert_one_file(
 
             for i_obj, obj in enumerate(col):
 
+                # define which objects are available
+                # be careful
                 if use_sim:
                     simhit, hit = obj, None
                 else:
-                    simhit, hit = obj.getTo(), obj.getFrom()
+                    if signal:
+                        simhit, hit = obj.getTo(), obj.getFrom()
+                    else:
+                        simhit, hit = None, obj
 
                 if i_obj > 0 and i_obj % 1000000 == 0:
                     logger.info(f"Processing file {os.path.basename(slcio_file_path)} "
@@ -216,7 +232,8 @@ def convert_one_file(
                                 f"hit {i_obj}/{n_obj} ...")
 
                 # consider a particular set of layers
-                layer = np.right_shift(simhit.getCellID0(), 7) & 0b11_1111
+                cellid0 = simhit.getCellID0() if use_sim else hit.getCellID0()
+                layer = np.right_shift(cellid0, 7) & 0b11_1111
                 if layer not in layers:
                     continue
                 # module 0 only, sensor 20 only?
@@ -225,13 +242,19 @@ def convert_one_file(
                 # if (np.right_shift(hit.getCellID0(), 24) & 0b1111_1111) != 20:
                 #     continue
 
-
                 # associated MCParticle
-                mcp = simhit.getMCParticle()
-                i_mcp = mcparticles.index(mcp) if mcp in mcparticles else NO_MCP
+                if signal or use_sim:
+                    mcp = simhit.getMCParticle()
+                    i_mcp = mcparticles.index(mcp) if mcp in mcparticles else NO_MCP
+                else:
+                    i_mcp = NO_MCP
 
-                # choice of position
+                # more simhit or hit attributes
                 position = simhit.getPosition() if use_sim else hit.getPosition()
+                time = simhit.getTime() if use_sim else hit.getTime()
+                energy = simhit.getEDep() if use_sim else hit.getEDep()
+                momentum = simhit.getMomentum() if use_sim else [0, 0, 0]
+                pathlength = simhit.getPathLength() if use_sim else 0
 
                 # hit/surface relations
                 if load_geometry:
@@ -257,22 +280,22 @@ def convert_one_file(
                     'simhit_x': position[0],
                     'simhit_y': position[1],
                     'simhit_z': position[2],
-                    'simhit_cellid0': simhit.getCellID0(),
+                    'simhit_cellid0': cellid0,
                     'simhit_inside_bounds': inside_bounds,
-                    'simhit_t_corrected': simhit.getTime() - (np.sqrt(position[0]**2 + \
-                                                                      position[1]**2 + \
-                                                                      position[2]**2) / SPEED_OF_LIGHT),
+                    'simhit_t_corrected': time - (np.sqrt(position[0]**2 + \
+                                                          position[1]**2 + \
+                                                          position[2]**2) / SPEED_OF_LIGHT),
                 })
                 if signal:
                     mcp_ok = i_mcp != NO_MCP
                     simhits[-1].update({
-                        'simhit_px': simhit.getMomentum()[0],
-                        'simhit_py': simhit.getMomentum()[1],
-                        'simhit_pz': simhit.getMomentum()[2],
-                        'simhit_pathlength': simhit.getPathLength(),
+                        'simhit_px': momentum[0],
+                        'simhit_py': momentum[1],
+                        'simhit_pz': momentum[2],
+                        'simhit_pathlength': pathlength,
                         'simhit_distance': distance,
-                        'simhit_t': simhit.getTime(),
-                        'simhit_e': simhit.getEDep(),
+                        'simhit_t': time,
+                        'simhit_e': energy,
                         'mcp_px': mcp_px[i_mcp] if mcp_ok else 0,
                         'mcp_py': mcp_py[i_mcp] if mcp_ok else 0,
                         'mcp_pz': mcp_pz[i_mcp] if mcp_ok else 0,
