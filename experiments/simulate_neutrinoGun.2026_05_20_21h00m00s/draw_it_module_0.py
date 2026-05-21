@@ -198,7 +198,7 @@ def plot(df: pd.DataFrame, pdf: PdfPages):
 
 def plot_forced(df_all: pd.DataFrame, pdf: PdfPages):
 
-    max_rows = 25
+    max_rows = 30
     ref_x = 126.9685 * MM_TO_UM # np.median(np.sort(df[df["hit_collection"] == 1]["hit_x"]))
     ref_y = 0 # np.median(np.sort(df["hit_y"]))
     print(f"Reference x: {ref_x:.4f} um")
@@ -241,13 +241,16 @@ def plot_forced(df_all: pd.DataFrame, pdf: PdfPages):
                    s=20,
                    color="black",
                    )
-        ax.text(0.05, 0.80, f"Digi hit", transform=ax.transAxes, fontsize=20, color="blue")
-        ax.text(0.05, 0.74, f"Sim hit", transform=ax.transAxes, fontsize=20, color="black")
+        ax.text(0.05, 0.93, f"Inner Tracker", transform=ax.transAxes, fontsize=20, color="black")
+        ax.text(0.05, 0.87, f"Sim hit", transform=ax.transAxes, fontsize=20, color="black")
+        ax.text(0.05, 0.81, f"Digi hit", transform=ax.transAxes, fontsize=20, color="blue")
 
     ax.set_xlim(-60, 60)
-    ax.set_xlabel("Local x (um)")
-    ax.set_ylabel("Local y (um)")
-    ax.set_title(f"Effect of ForceHitsOntoSurface=True, first {max_rows} hits")
+    info_x = "Sensor depth = 100um"
+    info_y = "Sensor width = 3cm"
+    ax.set_xlabel(f"Local x (um). {info_x}")
+    ax.set_ylabel(f"Local y (um). {info_y}")
+    ax.set_title(f"ForceHitsOntoSurface for {max_rows} out-of-bounds hits")
     pdf.savefig()
     plt.close()
 
