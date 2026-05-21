@@ -18,7 +18,7 @@ rcParams.update({
     "grid.linewidth": 0.5,
     "grid.alpha": 0.1,
     "grid.color": "gray",
-    "figure.subplot.left": 0.15,
+    "figure.subplot.left": 0.16,
     "figure.subplot.bottom": 0.09,
     "figure.subplot.right": 0.97,
     "figure.subplot.top": 0.95,
@@ -35,7 +35,7 @@ COLLECTIONS = [
 RELATIONS = [
     "IBTrackerHitsRelations",
 ]
-EPSILON = 1e-5
+EPSILON = 1e-3
 MM_TO_UM = 1e3
 LAYER_OF_INTEREST = 0
 MODULE_OF_INTEREST = 0
@@ -173,7 +173,7 @@ def plot(df: pd.DataFrame, pdf: PdfPages):
                    df_col["hit_y"] - ref_y,
                    s=10,
                    label=col_name)
-    ax.set_xlim(EPSILON/2, 1e-1)
+    ax.set_xlim(EPSILON/2, 100)
     ax.semilogx()
     ax.set_xlabel("Absolute local x (um)")
     ax.set_ylabel("Local y (um)")
@@ -198,7 +198,7 @@ def plot(df: pd.DataFrame, pdf: PdfPages):
 
 def plot_forced(df_all: pd.DataFrame, pdf: PdfPages):
 
-    max_rows = 20
+    max_rows = 25
     ref_x = 126.9685 * MM_TO_UM # np.median(np.sort(df[df["hit_collection"] == 1]["hit_x"]))
     ref_y = 0 # np.median(np.sort(df["hit_y"]))
     print(f"Reference x: {ref_x:.4f} um")
