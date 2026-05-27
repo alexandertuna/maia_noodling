@@ -157,7 +157,7 @@ def plot(df: pd.DataFrame, pdf: PdfPages):
                    s=10,
                    label=col_name)
     ax.set_xlim(-60, 60)
-    ax.set_xlabel("Local x (um)")
+    ax.set_xlabel("Local z (um)")
     ax.set_ylabel("Local y (um)")
     ax.set_title("Hits in layer 0, module 0")
     ax.legend()
@@ -189,7 +189,7 @@ def plot(df: pd.DataFrame, pdf: PdfPages):
         bins = np.linspace(-60, 60, 100)
         fig, ax = plt.subplots()
         ax.hist(df_col["hit_x"] - ref_x, bins=bins, weights=weights)
-        ax.set_xlabel("Local x (um)")
+        ax.set_xlabel("Local z (um)")
         ax.set_ylabel("Density")
         ax.set_title(f"{col_name}: {len(df_col)} hits")
         pdf.savefig()
@@ -248,7 +248,7 @@ def plot_forced(df_all: pd.DataFrame, pdf: PdfPages):
     ax.set_xlim(-60, 60)
     info_x = "Sensor depth = 100um"
     info_y = "Sensor width = 3cm"
-    ax.set_xlabel(f"Local x (um). {info_x}")
+    ax.set_xlabel(f"Local z (um). {info_x}")
     ax.set_ylabel(f"Local y (um). {info_y}")
     ax.set_title(f"ForceHitsOntoSurface for {max_rows} out-of-bounds hits")
     pdf.savefig()
