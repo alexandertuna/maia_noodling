@@ -39,7 +39,7 @@ from constants import NICKNAMES, OUTER_TRACKER_BARREL
 from constants import MD_DZ_CUT, MD_DR_CUT
 from constants import REQ_PASSTHROUGH, REQ_RZ, REQ_XY, REQ_RZ_XY
 from constants import DOUBLET_REQS, NO_MCP
-from constants import LS_REQS, LS_REQ_DR_POS, LS_REQ_DZ_POS, LS_REQ_XY_ANG, LS_REQ_RZ_ANG, LS_REQ_ALL
+from constants import LS_REQS, LS_REQ_DR_POS, LS_REQ_DZ_POS, LS_REQ_XY_CHI2, LS_REQ_RZ_ANG, LS_REQ_ALL
 from constants import LS_DZ_CUT, LS_DR_CUT, LS_DTHETA_RZ_CUT, LS_DTHETA_XY_CUT, LS_CHI2_XY_CUT
 from constants import MIN_COSTHETA, MIN_SIMHIT_PT_FRACTION, MAX_TIME
 from constants import N_PHI_SLICES
@@ -81,19 +81,20 @@ class Plotter:
             self.plot_numbers_for_comparison(pdf)
             self.write_date(pdf)
             self.plot_time(pdf)
-            self.plot_layer_occupancy_1d(pdf)
-            self.plot_layer_occupancy_2d(pdf)
+            # self.plot_layer_occupancy_1d(pdf)
+            # self.plot_layer_occupancy_2d(pdf)
             self.plot_radius_vs_layer(pdf)
-            self.plot_doublet_occupancy(pdf)
-            self.plot_doublet_features(pdf)
-            self.plot_linesegment_features(pdf)
+            # self.plot_doublet_occupancy(pdf)
+            # self.plot_doublet_features(pdf)
+            # self.plot_linesegment_features(pdf)
             if self.signal:
                 self.write_denominator_info(pdf)
-                self.plot_doublet_efficiency_vs_kinematics(pdf)
-                self.write_doublet_denominator_info(pdf)
-                self.plot_doublet_quality_efficiency(pdf)
+                # self.plot_doublet_efficiency_vs_kinematics(pdf)
+                # self.write_doublet_denominator_info(pdf)
+                # self.plot_doublet_quality_efficiency(pdf)
                 self.plot_segment_efficiency_vs_kinematics(pdf)
                 self.plot_segment_quality_efficiency(pdf)
+                # self.plot_t4_efficiency_vs_kinematics(pdf)
 
 
     def plot_numbers_for_comparison(self, pdf: PdfPages):
@@ -366,7 +367,7 @@ class Plotter:
                 cmap="gist_rainbow",
                 cmin=0.5,
             )
-            fig.colorbar(im, ax=ax, label="Number of sim. hits", pad=0.01)
+            fig.colorbar(im, ax=ax, label="Number of hits", pad=0.01)
             ax.set_xlabel("Layer")
             ax.set_ylabel("Radius")
             ax.set_title(f"{NICKNAMES[system]}")
@@ -779,7 +780,8 @@ class Plotter:
             "ls_dqoverpt": np.linspace(-0.2, 0.2, 201),
             "ls_dtheta_rz": np.linspace(-0.024, 0.024, 241),
             "ls_dtheta_xy": np.linspace(-0.12, 0.12, 241),
-            "ls_chi2_012": np.linspace(0, 2.0, 201),
+            # "ls_chi2_012": np.linspace(0, 2.0, 201),
+            "ls_chi2_012": np.linspace(0, 0.01, 201),
         }
         xlabel = {
             "ls_deta": r"upper doublet eta - lower doublet eta",
@@ -842,7 +844,7 @@ class Plotter:
                             linewidth=1.0,
                             alpha=0.9,
                         )
-                        if semilogy:
+                        if semilogy or feature in ["ls_chi2_012"]:
                             ax.semilogy()
                         num = len(group)
                         mean = np.mean(group[feature])
@@ -852,8 +854,9 @@ class Plotter:
                         ax.set_ylim(0.8 if semilogy else 0, None)
                         ax.set_xlabel(xlabel[feature])
                         ax.set_ylabel("Line Segments")
-                        ax.set_title(f"{NICKNAMES[system]}. DL={doublelayer}. N={num}, Mean={mean:{fmt}}, RMS={rms:{fmt}}")
-                        ax.text(0.05, 0.95, f"99.7% in {p997:{fmt}}", transform=ax.transAxes)
+                        # ax.set_title(f"{NICKNAMES[system]}. DL={doublelayer}. N={num}, Mean={mean:{fmt}}, RMS={rms:{fmt}}")
+                        ax.set_title(f"{NICKNAMES[system]}, doublelayer={doublelayer}")
+                        ax.text(0.30, 0.92, f"99.7% in {p997:{fmt}}", transform=ax.transAxes, fontsize=16)
                         pdf.savefig()
                         plt.close()
 
@@ -945,8 +948,8 @@ class Plotter:
                     color="dodgerblue",
                 )
                 ax.set_xlabel(xlabel[kin])
-                ax.set_ylabel("Segment finding efficiency")
-                ax.set_title(f"{NICKNAMES[system]}, layers {layers}")
+                ax.set_ylabel("T2 finding efficiency")
+                ax.set_title(f"{NICKNAMES[system]}, layers {list(layers)}")
                 ax.set_ylim(0.7, 1.03)
                 pdf.savefig()
                 plt.close()
@@ -1033,19 +1036,81 @@ class Plotter:
         elif req == LS_REQ_RZ_ANG:
             text = f"|dtheta(rz)| < {self.LS_DTHETA_RZ_CUT[doublelayer]}rad"
             mask = np.abs(df["ls_dtheta_rz"]) < self.LS_DTHETA_RZ_CUT[doublelayer]
-        elif req == LS_REQ_XY_ANG:
-            text = f"|dtheta(xy)| < {self.LS_DTHETA_XY_CUT[doublelayer]}rad"
-            mask = np.abs(df["ls_dtheta_xy"]) < self.LS_DTHETA_XY_CUT[doublelayer]
+        elif req == LS_REQ_XY_CHI2:
+            text = f"Chi2(xy,012) < {self.LS_CHI2_XY_CUT[doublelayer]}"
+            mask = np.abs(df["ls_chi2_012"]) < self.LS_CHI2_XY_CUT[doublelayer]
         elif req == LS_REQ_ALL:
             text = f"All LS requirements"
             mask = (
                 (np.abs(df["ls_dr"]) < self.LS_DR_CUT[doublelayer]) &
                 (np.abs(df["ls_dz"]) < self.LS_DZ_CUT[doublelayer]) &
                 (np.abs(df["ls_dtheta_rz"]) < self.LS_DTHETA_RZ_CUT[doublelayer]) &
-                (np.abs(df["ls_dtheta_xy"]) < self.LS_DTHETA_XY_CUT[doublelayer])
+                (np.abs(df["ls_chi2_012"]) < self.LS_CHI2_XY_CUT[doublelayer])
             )
         else:
             raise ValueError(f"Unknown segment requirement: {req}")
         return text, mask
 
 
+    def plot_t4_efficiency_vs_kinematics(self, pdf: PdfPages):
+
+        bins = {
+            "mcp_pt": np.linspace(0.0, 10.0, 201),
+            "mcp_eta": np.linspace(-0.7, 0.7, 281),
+            "mcp_phi": np.linspace(-3.2, 3.2, 321),
+        }
+        xlabel = {
+            "mcp_pt": r"Muon $p_T$ [GeV]",
+            "mcp_eta": r"Muon $\eta$",
+            "mcp_phi": r"Muon $\phi$ [rad]",
+        }
+
+        # denominator
+        dmask = self.get_denominator_mask()
+        denom = self.mcps[dmask][["file", "i_event", "i_mcp", "mcp_pt", "mcp_eta", "mcp_phi"]]
+        if denom.duplicated().any():
+            raise ValueError("Denominator has duplicated rows!")
+
+        # numerator
+        numer_cols = [
+            "file", # the file
+            "i_event", # the event
+            "i_mcp", # the parent mc particle
+            "qd_system", # the system (IT, OT)
+            "qd_doublelayer", # the first double layer
+        ]
+
+        # filter doublets to only those with same parent mcp
+        same_parent = self.t4s["i_mcp"] != NO_MCP
+        t4s = self.t4s[same_parent][numer_cols].drop_duplicates()
+
+        # check if t4s's [file, i_event, i_mcp] is in denominator
+        for kin in ["mcp_pt", "mcp_eta", "mcp_phi"]:
+            for ((system, doublelayer), group) in t4s.groupby(["qd_system",
+                                                               "qd_doublelayer",
+                                                               ]):
+                layer = doublelayer * 2
+                layers = range(layer, layer + 8)
+
+                keys = group[["file", "i_event", "i_mcp"]].drop_duplicates()
+                merged = denom.merge(keys, on=["file", "i_event", "i_mcp"], how="inner")
+
+                n_denom, edges = np.histogram(denom[kin], bins=bins[kin])
+                n_numer, edges = np.histogram(merged[kin], bins=bins[kin])
+                efficiency = np.divide(n_numer, n_denom, out=np.zeros_like(n_numer, dtype=float), where=n_denom!=0)
+                centers = 0.5 * (edges[1:] + edges[:-1])
+                fig, ax = plt.subplots()
+                ax.plot(
+                    centers,
+                    efficiency,
+                    marker="o",
+                    markersize=1,
+                    linestyle="-",
+                    color="dodgerblue",
+                )
+                ax.set_xlabel(xlabel[kin])
+                ax.set_ylabel("T4 finding efficiency")
+                ax.set_title(f"{NICKNAMES[system]}, layers {list(layers)}")
+                ax.set_ylim(0.7, 1.03)
+                pdf.savefig()
+                plt.close()
