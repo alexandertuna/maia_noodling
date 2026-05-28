@@ -76,6 +76,12 @@ MD_DZ_CUT = {
         80, # mm # doublelayer 2
         137, # mm # doublelayer 3
     ]),
+    "v05": np.array([
+        22, # mm # doublelayer 0
+        43, # mm # doublelayer 1
+        79, # mm # doublelayer 2
+        137, # mm # doublelayer 3
+    ]),
 }
 MD_DR_CUT = {
     "v01": np.array([
@@ -90,6 +96,12 @@ MD_DR_CUT = {
         590, # mm # doublelayer 2
         805, # mm # doublelayer 3
     ]),
+    "v05": np.array([
+        260, # mm # doublelayer 0
+        408, # mm # doublelayer 1
+        589, # mm # doublelayer 2
+        804, # mm # doublelayer 3
+    ]),
 }
 
 LS_DZ_CUT = {
@@ -103,6 +115,11 @@ LS_DZ_CUT = {
         0.0, # mm # doublelayer 1
         101, # mm # doublelayer 2
     ]),
+    "v05": np.array([
+        24, # mm # doublelayer 0
+        0.0, # mm # doublelayer 1
+        120, # mm # doublelayer 2
+    ]),
 }
 LS_DR_CUT = {
     "v01": np.array([
@@ -114,6 +131,11 @@ LS_DR_CUT = {
         322, # mm # doublelayer 0
         0.0, # mm # doublelayer 1
         682, # mm # doublelayer 2
+    ]),
+    "v05": np.array([
+        281, # mm # doublelayer 0
+        0.0, # mm # doublelayer 1
+        752, # mm # doublelayer 2
     ]),
 }
 LS_DTHETA_RZ_CUT = {
@@ -127,6 +149,11 @@ LS_DTHETA_RZ_CUT = {
         0.0000, # doublelayer 1
         0.0273, # doublelayer 2
     ]),
+    "v05": np.array([
+        0.0075, # doublelayer 0
+        0.0000, # doublelayer 1
+        0.0130, # doublelayer 2
+    ]),
 }
 LS_DTHETA_XY_CUT = {
     "v01": np.array([
@@ -139,6 +166,11 @@ LS_DTHETA_XY_CUT = {
         0.000, # doublelayer 1
         0.189, # doublelayer 2
     ]),
+    "v05": np.array([
+        0.000, # doublelayer 0
+        0.000, # doublelayer 1
+        0.000, # doublelayer 2
+    ]),
 }
 LS_CHI2_XY_CUT = {
     "v01": np.array([
@@ -147,6 +179,11 @@ LS_CHI2_XY_CUT = {
         0.040, # doublelayer 2
     ]),
     "v04": np.array([
+        0.040, # doublelayer 0
+        0.000, # doublelayer 1
+        0.040, # doublelayer 2
+    ]),
+    "v05": np.array([
         0.040, # doublelayer 0
         0.000, # doublelayer 1
         0.040, # doublelayer 2
@@ -179,13 +216,15 @@ DOUBLET_REQS = [
 LS_REQ_DR_POS = "dr req."
 LS_REQ_DZ_POS = "dz req."
 LS_REQ_XY_ANG = "dtheta xy req."
+LS_REQ_XY_CHI2 = "xy chi2 req."
 LS_REQ_RZ_ANG = "dtheta rz req."
 LS_REQ_ALL = "all reqs"
 LS_REQS = [
     REQ_PASSTHROUGH,
     LS_REQ_DR_POS,
     LS_REQ_DZ_POS,
-    LS_REQ_XY_ANG,
+    # LS_REQ_XY_ANG,
+    LS_REQ_XY_CHI2,
     LS_REQ_RZ_ANG,
     LS_REQ_ALL,
 ]
