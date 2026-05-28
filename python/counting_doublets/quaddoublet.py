@@ -84,6 +84,9 @@ class QuadDoublet:
                 )
                 logger.info(f"Lower: {len(lower)}, Upper: {len(upper)}, Combos: {len(qds)}")
 
+                # the doublelayer
+                qds["qd_doublelayer"] = qds["ls_doublelayer_lower"]
+
                 # rz projection
                 slope_rz = np.divide(qds["ls_z_upper"] - qds["ls_z_lower"],
                                      qds["ls_r_upper"] - qds["ls_r_lower"])
