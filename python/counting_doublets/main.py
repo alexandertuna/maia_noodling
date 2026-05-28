@@ -32,6 +32,20 @@ FNAMES_BACKGROUND_10 = [
     "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_n5_p15_0.10/neutrinoGun_digi_3.slcio",
 ]
 
+FNAMES_SIGNAL_V05 = [
+    # muonGun, 2 GeV
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v05/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_100.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v05/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_101.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v05/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_102.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v05/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_103.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v05/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_104.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v05/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_105.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v05/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_106.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v05/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_107.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v05/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_108.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/samples/v05/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_109.slcio",
+]
+
 FNAMES_SIGNAL_V04 = [
     # muonGun, 2 GeV
     "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_100.slcio",
@@ -100,7 +114,7 @@ def main():
 
     # parse options
     ops = options()
-    valid_geos = ["v01", "v04"]
+    valid_geos = ["v01", "v04", "v05"]
     if ops.geo not in valid_geos:
         raise ValueError(f"Invalid geometry version specified, must be one of {valid_geos}")
     if ops.signal:
@@ -108,6 +122,8 @@ def main():
             fnames = FNAMES_SIGNAL_V01
         elif ops.geo == "v04":
             fnames = FNAMES_SIGNAL_V04
+        elif ops.geo == "v05":
+            fnames = FNAMES_SIGNAL_V05
         else:
             raise ValueError(f"Invalid geometry version specified, must be one of {valid_geos}")
     elif ops.background10:
@@ -117,6 +133,8 @@ def main():
             fnames = FNAMES_BACKGROUND_100_V01
         elif ops.geo == "v04":
             fnames = FNAMES_BACKGROUND_100_V04
+        # elif ops.geo == "v05":
+        #     fnames = FNAMES_BACKGROUND_100_V05
         else:
             raise ValueError(f"Invalid geometry version specified, must be one of {valid_geos}")
     else:
