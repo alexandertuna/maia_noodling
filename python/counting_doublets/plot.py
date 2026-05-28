@@ -55,6 +55,7 @@ class Plotter:
         simhits: pd.DataFrame,
         doublets: pd.DataFrame,
         linesegments: pd.DataFrame,
+        t4s: pd.DataFrame,
         pdf: str,
     ):
         self.geometry_version = geometry_version
@@ -63,6 +64,7 @@ class Plotter:
         self.simhits = simhits
         self.doublets = doublets
         self.linesegments = linesegments
+        self.t4s = t4s
         self.pdf = pdf
 
         # shorthands for cuts
@@ -1076,8 +1078,8 @@ class Plotter:
             "file", # the file
             "i_event", # the event
             "i_mcp", # the parent mc particle
-            "qd_system", # the system (IT, OT)
-            "qd_doublelayer", # the first double layer
+            "t4_system", # the system (IT, OT)
+            "t4_doublelayer", # the first double layer
         ]
 
         # filter doublets to only those with same parent mcp
@@ -1086,8 +1088,8 @@ class Plotter:
 
         # check if t4s's [file, i_event, i_mcp] is in denominator
         for kin in ["mcp_pt", "mcp_eta", "mcp_phi"]:
-            for ((system, doublelayer), group) in t4s.groupby(["qd_system",
-                                                               "qd_doublelayer",
+            for ((system, doublelayer), group) in t4s.groupby(["t4_system",
+                                                               "t4_doublelayer",
                                                                ]):
                 layer = doublelayer * 2
                 layers = range(layer, layer + 8)

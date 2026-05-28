@@ -5,6 +5,7 @@ import argparse
 from glob import glob
 import os
 import pandas as pd
+import time
 import logging
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,7 @@ from doublet import DoubletMaker
 from plot import Plotter
 from modulemap import ModuleMap
 from linesegment import LineSegment
-from quaddoublet import QuadDoublet
+from quaddoublet import T4Maker
 from constants import SIGNAL
 
 FNAMES_BACKGROUND_100_V01 = [
@@ -165,26 +166,27 @@ def main():
     logger.info(f"Using digi hits: {ops.digi}")
 
     # reading simhits and mcparticles
-    if ops.read_mcps and ops.read_simhits:
-        logger.info(f"Reading simhits {ops.read_simhits} and mcps {ops.read_mcps} from pickle files ...")
-        mcps = pd.read_pickle(ops.read_mcps)
-        simhits = pd.read_pickle(ops.read_simhits)
-    elif any([
-        ops.read_mcps and not ops.read_simhits,
-        ops.read_simhits and not ops.read_mcps,
-    ]):
-        raise ValueError("Both --read-mcps and --read-simhits must be specified together")
-    else:
-        # convert slcio to hits dataframe
-        converter = HitMaker(slcio_file_paths=fnames,
-                             load_geometry=geometry,
-                             signal=signal,
-                             sim=ops.sim,
-                             inner=ops.inner,
-                             outer=ops.outer,
-                             layers=ops.layers,
-                             )
-        mcps, simhits = converter.convert()
+    with Timer() as hit_time:
+        if ops.read_mcps and ops.read_simhits:
+            logger.info(f"Reading simhits {ops.read_simhits} and mcps {ops.read_mcps} from pickle files ...")
+            mcps = pd.read_pickle(ops.read_mcps)
+            simhits = pd.read_pickle(ops.read_simhits)
+        elif any([
+            ops.read_mcps and not ops.read_simhits,
+            ops.read_simhits and not ops.read_mcps,
+        ]):
+            raise ValueError("Both --read-mcps and --read-simhits must be specified together")
+        else:
+            # convert slcio to hits dataframe
+            converter = HitMaker(slcio_file_paths=fnames,
+                                load_geometry=geometry,
+                                signal=signal,
+                                sim=ops.sim,
+                                inner=ops.inner,
+                                outer=ops.outer,
+                                layers=ops.layers,
+                                )
+            mcps, simhits = converter.convert()
 
     # writing simhits and mcparticles to pickle files
     if ops.write_mcps:
@@ -195,17 +197,18 @@ def main():
         simhits.to_pickle(ops.write_simhits)
 
     # reading / making mini-doublets
-    if ops.read_mds:
-        logger.info("Reading mini-doublets from pickle file ...")
-        doublets = pd.read_pickle(ops.read_mds)
-    else:
-        # make mini-doublets from hits
-        doublets = DoubletMaker(
-            geometry_version=ops.geo,
-            signal=signal,
-            cut_doublets=cut_mds,
-            simhits=simhits,
-        ).df
+    with Timer() as md_time:
+        if ops.read_mds:
+            logger.info("Reading mini-doublets from pickle file ...")
+            doublets = pd.read_pickle(ops.read_mds)
+        else:
+            # make mini-doublets from hits
+            doublets = DoubletMaker(
+                geometry_version=ops.geo,
+                signal=signal,
+                cut_doublets=cut_mds,
+                simhits=simhits,
+            ).df
 
     # writing mini-doublets to pickle file
     if ops.write_mds:
@@ -213,48 +216,60 @@ def main():
         doublets.to_pickle(ops.write_mds)
 
     # reading / making T2s (line segments)
-    if ops.read_t2s:
-        logger.info("Reading T2s (line segments) from pickle file ...")
-        t2s = pd.read_pickle(ops.read_t2s)
-    else:
-        # make T2s (line segments) from mini-doublets
-        t2s = LineSegment(
-            geometry_version=ops.geo,
-            signal=signal,
-            cut_line_segments=cut_t2s,
-            doublets=doublets,
-        ).df
+    with Timer() as t2_time:
+        if ops.read_t2s:
+            logger.info("Reading T2s (line segments) from pickle file ...")
+            t2s = pd.read_pickle(ops.read_t2s)
+        else:
+            # make T2s (line segments) from mini-doublets
+            t2s = LineSegment(
+                geometry_version=ops.geo,
+                signal=signal,
+                cut_line_segments=cut_t2s,
+                doublets=doublets,
+            ).df
 
     # writing T2s (line segments) to pickle file
     if ops.write_t2s:
         logger.info("Saving T2s (line segments) as pickle file ...")
         t2s.to_pickle(ops.write_t2s)
 
-    # make quad doublets
-    # quaddoublets = QuadDoublet(
-    #     geometry_version=ops.geo,
-    #     signal=signal,
-    #     cut_quad_doublets=ops.cut_quad_doublets,
-    #     linesegments=t2s,
-    # ).df
-
-    # plot stuff
-    if ops.plot:
-        logger.info("Creating plots ...")
-        plotter = Plotter(
+    # make t4s
+    with Timer() as t4_time:
+        t4s = T4Maker(
             geometry_version=ops.geo,
             signal=signal,
-            mcps=mcps,
-            simhits=simhits,
-            doublets=doublets,
-            linesegments=t2s,
-            pdf="doublets.pdf",
-        )
-        plotter.plot()
+            t2s=t2s,
+            cut_t4s=ops.cut_t4s,
+        ).df
+
+    # plot stuff
+    with Timer() as plot_time:
+        if ops.plot:
+            logger.info("Creating plots ...")
+            plotter = Plotter(
+                geometry_version=ops.geo,
+                signal=signal,
+                mcps=mcps,
+                simhits=simhits,
+                doublets=doublets,
+                linesegments=t2s,
+                t4s=t4s,
+                pdf="doublets.pdf",
+            )
+            plotter.plot()
 
     if ops.timelapse:
         logger.info("Creating timelapse gif ...")
         tl = Timelapse(df=simhits, event=0, gif="event.gif")
+
+    # log timing info
+    logger.info(f"Timing info (in seconds):")
+    logger.info(f"  Hit making: {hit_time.duration:.2f}")
+    logger.info(f"  MD making: {md_time.duration:.2f}")
+    logger.info(f"  T2 making: {t2_time.duration:.2f}")
+    logger.info(f"  T4 making: {t4_time.duration:.2f}")
+    logger.info(f"  Plotting: {plot_time.duration:.2f}")
 
 
 def options():
@@ -271,7 +286,7 @@ def options():
     parser.add_argument("--modulemap", action="store_true", help="Make module map in the analysis")
     parser.add_argument("--cut-doublets", action="store_true", help="Cut doublets based on MD_DZ_CUT and MD_DR_CUT")
     parser.add_argument("--cut-line-segments", action="store_true", help="Cut line segments based on [[ something ]]")
-    parser.add_argument("--cut-quad-doublets", action="store_true", help="Cut quad doublets based on [[ something ]]")
+    parser.add_argument("--cut-t4s", action="store_true", help="Cut T4s based on [[ something ]]")
     parser.add_argument("--read-mcps", type=str, help="Read mcps from pickle file")
     parser.add_argument("--write-mcps", type=str, help="Write mcps to pickle file")
     parser.add_argument("--read-simhits", type=str, help="Read simhits from pickle file")
@@ -294,6 +309,16 @@ def get_filenames(fnames):
     for fname in fnames:
         names.extend(glob(fname))
     return names
+
+
+class Timer:
+    def __enter__(self):
+        self.start = time.perf_counter()
+        return self
+
+    def __exit__(self, *args):
+        self.end = time.perf_counter()
+        self.duration = self.end - self.start
 
 
 if __name__ == "__main__":
