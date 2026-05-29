@@ -25,6 +25,7 @@ class T4Maker:
         key = (geometry_version, "sim") if sim else (geometry_version, "digi", smear)
         self.prep_t2s()
         self.filter_t2s()
+        self.sort_t2s()
         self.make_t4s()
 
 
@@ -42,6 +43,18 @@ class T4Maker:
         logger.info(f"Memory usage after filtering T2s: {memory:.1f} MB")
 
 
+    def sort_t2s(self):
+        # sort T2s intuitively
+        logger.info("Sorting T2s ...")
+        cols = [
+            "file",
+            "i_event",
+            "ls_system",
+            "ls_doublelayer",
+        ]
+        self.t2s = self.t2s.sort_values(by=cols).reset_index(drop=True)
+
+
     def make_t4s(self) -> None:
         logger.info("Making T4s ...")
 
@@ -50,19 +63,29 @@ class T4Maker:
         # equivalently, doublelayers 01 combined with 23 (doublelayer // 4 == 0)
 
         groupby_cols = [
-            "file",
             "ls_system",
             "ls_doublelayer_div_4",
-            "ls_doublelayer_even",
-        ]
-        n_group = len(self.t2s.groupby(groupby_cols))
-
-        subgroup_cols = [
-            "file",
         ] if self.signal else [
             "file",
-            "ls_module",
+            "i_event",
+            "ls_system",
+            "ls_doublelayer_div_4",
         ]
+
+        if self.cut_t4s:
+            subgroup_cols = [
+                "ls_eta_slice",
+                "ls_phi_slice",
+            ] if self.signal else [
+                "file",
+                "i_event",
+                "ls_eta_slice",
+                "ls_phi_slice",
+            ]
+        else:
+            subgroup_cols = [
+                "file",
+            ]
 
         merge_keys = [
             "file",
@@ -71,11 +94,9 @@ class T4Maker:
             "ls_doublelayer_div_4",
         ]
 
-        for i_group, (cols, df) in enumerate(self.t2s.groupby(groupby_cols)):
-            logger.info(f"Processing group {i_group} / {n_group} for T4s (n={len(df)}) ...")
-            if len(df) == 0:
-                continue
-            logger.info(cols)
+        def make_t4s_from_group(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
+
+            cutflow = {"all": len(df)}
 
             lower = df[df["ls_doublelayer_mod_4"] == 0]
             upper = df[df["ls_doublelayer_mod_4"] == 2]
@@ -185,13 +206,62 @@ class T4Maker:
                 dropcols.extend([col for col in t4s.columns if col.startswith("simhit_")])
                 dropcols.extend([col for col in t4s.columns if col.startswith("doublet_")])
                 dropcols.extend([col for col in t4s.columns if col.startswith("ls_")])
+                dropcols.extend([col for col in t4s.columns if col.startswith("t2_")])
                 dropcols.extend([col for col in t4s.columns if col.startswith("mcp_") and col.endswith("_lower")])
                 dropcols.extend([col for col in t4s.columns if col.startswith("mcp_") and col.endswith("_upper")])
                 t4s.drop(columns=dropcols, errors="ignore", inplace=True)
 
-                # tmp
-                file, system, dldiv2, dleven = cols
-                if self.signal and file == 1 and dldiv2 == 0:
-                    print(t4s.columns)
-                    print(t4s[ ["file", "i_event", "i_mcp", "t4_system", "t4_module_lower", "t4_module_upper", f"t4_chi2_{i0}{i1}{i2}"] ])
-                    print("*"*20)
+                # record some numbers
+                cutflow = {"all": len(t4s)}
+                mask = {}
+
+                # record some cut results
+                dl = t4s["t4_doublelayer"]
+                mask["and"] = np.ones(len(t4s), dtype=bool)
+                t4s["t4_ok"] = mask["and"].astype(bool)
+
+                # remove as desired
+                if self.cut_t4s:
+                    for cut in mask.keys():
+                        cutflow[cut] = np.sum(mask[cut])
+                    t4s = t4s[t4s["t4_ok"]]
+                    raise NotImplementedError("T4 cuts not implemented yet")
+
+            return t4s, cutflow
+
+        # groupby
+        groups = self.t2s.groupby(groupby_cols)
+        n_group = len(groups)
+        all_cutflows = []
+        all_t4s = []
+
+        # evaluate
+        for i_group, (cols, df) in enumerate(groups):
+            logger.info(f"Processing group {i_group+1} / {n_group} for T4s (n={len(df)}) ...")
+
+            t4s, cutflow = make_t4s_from_group(df)
+            all_t4s.append(t4s)
+            all_cutflows.append(cutflow)
+
+        # merge them
+        logger.info(f"Merging {len(all_t4s)} groups of T4s ...")
+        self.df = pd.concat(all_t4s, ignore_index=True)
+
+        # sort them
+        sortby = [
+            "file",
+            "i_event",
+            "i_mcp",
+            "t4_doublelayer",
+        ]
+        self.df = self.df.sort_values(by=sortby).reset_index(drop=True)
+
+        # announce memory
+        memory = self.df.memory_usage(deep=True).sum() * BYTE_TO_MB
+        logger.info(f"Memory usage of T4s: {memory:.1f} MB")
+
+        # cutflow
+        cutflow = pd.DataFrame(all_cutflows)
+        for col in cutflow.columns:
+            logger.info(f"T4s cutflow, {col}: {cutflow[col].sum()}")
+
