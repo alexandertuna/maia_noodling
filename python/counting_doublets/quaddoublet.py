@@ -24,17 +24,28 @@ class T4Maker:
         logger.info(f"Making T4s. T2 dataframe size: {memory:.2f} MB")
         key = (geometry_version, "sim") if sim else (geometry_version, "digi", smear)
         self.prep_t2s()
+        self.filter_t2s()
         self.make_t4s()
 
 
     def prep_t2s(self) -> None:
         logger.info("Preprocessing T2s for T4 making ...")
+        self.t2s["ls_doublelayer_div_4"] = self.t2s["ls_doublelayer"] // 4
+        self.t2s["ls_doublelayer_mod_4"] = self.t2s["ls_doublelayer"] % 4
+
+
+    def filter_t2s(self):
+        # only consider "good" t2s
+        logger.info("Filtering T2s for T4s ...")
+        self.t2s = self.t2s[ self.t2s["ls_ok"] ]
+        memory = self.t2s.memory_usage(deep=True).sum() * BYTE_TO_MB
+        logger.info(f"Memory usage after filtering T2s: {memory:.1f} MB")
 
 
     def make_t4s(self) -> None:
         logger.info("Making T4s ...")
 
-        # one loop for now:
+        # for each system,
         # layers 0123 combined with layers 4567
         # equivalently, doublelayers 01 combined with 23 (doublelayer // 4 == 0)
 

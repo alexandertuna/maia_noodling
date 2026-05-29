@@ -326,22 +326,24 @@ class LineSegment:
                     # record some numbers
                     cutflow = {"all": len(segments)}
 
-                    # cut some segments?
+                    # record some cut results
+                    dl = segments["ls_doublelayer"]
+                    mask["dtheta_rz"] = np.abs(segments["ls_dtheta_rz"]) < self.LS_DTHETA_RZ_CUT[dl]
+                    mask["dtheta_xy"] = np.abs(segments["ls_dtheta_xy"]) < self.LS_DTHETA_XY_CUT[dl]
+                    mask["dz"] = np.abs(segments["ls_dz"]) < self.LS_DZ_CUT[dl]
+                    mask["dr"] = np.abs(segments["ls_dr"]) < self.LS_DR_CUT[dl]
+                    mask["dphi"] = np.abs(segments["ls_dphi"]) < np.pi / 2.0
+                    mask["chi2_xy"] = np.abs(segments["ls_chi2_012"]) < self.LS_CHI2_XY_CUT[dl]
+                    mask["drdz"] = mask["dz"] & mask["dr"] & mask["dphi"]
+                    mask["drdzdthetarz"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dtheta_rz"]
+                    mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dtheta_rz"] & mask["chi2_xy"]
+                    segments["ls_ok"] = mask["and"].astype(bool)
+
+                    # remove as desired
                     if self.cut_line_segments:
-                        dl = segments["ls_doublelayer"]
-                        mask["dtheta_rz"] = np.abs(segments["ls_dtheta_rz"]) < self.LS_DTHETA_RZ_CUT[dl]
-                        mask["dtheta_xy"] = np.abs(segments["ls_dtheta_xy"]) < self.LS_DTHETA_XY_CUT[dl]
-                        mask["dz"] = np.abs(segments["ls_dz"]) < self.LS_DZ_CUT[dl]
-                        mask["dr"] = np.abs(segments["ls_dr"]) < self.LS_DR_CUT[dl]
-                        mask["dphi"] = np.abs(segments["ls_dphi"]) < np.pi / 2.0
-                        mask["chi2_xy"] = np.abs(segments["ls_chi2_012"]) < self.LS_CHI2_XY_CUT[dl]
-                        mask["drdz"] = mask["dz"] & mask["dr"] & mask["dphi"]
-                        mask["drdzdthetarz"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dtheta_rz"]
-                        # mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dtheta_rz"] & mask["dtheta_xy"]
-                        mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dtheta_rz"] & mask["chi2_xy"]
                         for cut in mask.keys():
                             cutflow[cut] = np.sum(mask[cut])
-                        segments = segments[mask["and"]]
+                        segments = segments[segments["ls_ok"]]
 
                     # progress bar and stats from this group
                     if i_subgroup > 0 and i_subgroup % 100 == 0:
