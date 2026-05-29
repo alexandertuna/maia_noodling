@@ -92,7 +92,6 @@ class LineSegment:
         # groupby scheme
         groupby_cols = {
             even: [
-                "file",
                 "doublet_system",
                 "doublet_doublelayer_div_2",
             ] if self.signal else [
@@ -102,7 +101,6 @@ class LineSegment:
                 "doublet_doublelayer_div_2",
             ],
             odd: [
-                "file",
                 "doublet_system",
                 "doublet_doublelayer_plus_1_div_2",
             ] if self.signal else [
@@ -116,7 +114,11 @@ class LineSegment:
         # sub-groupby scheme
         if self.cut_line_segments:
             subgroup_cols = [
+                "doublet_eta_slice",
+                "doublet_phi_slice",
+            ] if self.signal else [
                 "file",
+                "i_event",
                 "doublet_eta_slice",
                 "doublet_phi_slice",
             ]
@@ -125,7 +127,7 @@ class LineSegment:
                 "file",
             ]
 
-        # how to merge lower and upper doublets
+        # how to merge lower MD and upper MD
         keys = {
             even: [
                 "file",
@@ -178,7 +180,10 @@ class LineSegment:
 
                     # else, only consider upper in the same (or neighbor) eta/phi slice as lower
                     else:
-                        [_, eta_slice, phi_slice] = subcols
+                        if self.signal:
+                            [eta_slice, phi_slice] = subcols
+                        else:
+                            [_, _, eta_slice, phi_slice] = subcols
 
                         # get upper data for the same phi slice
                         eta_ok = np.array([eta_slice-1, eta_slice, eta_slice+1]).astype(np.int16)
