@@ -211,6 +211,7 @@ class LineSegment:
                     slope_rz = np.divide(segments["doublet_z_upper"] - segments["doublet_z_lower"],
                                          segments["doublet_r_upper"] - segments["doublet_r_lower"])
                     segments["ls_dz"] = segments["doublet_z_lower"] - segments["doublet_r_lower"] * slope_rz
+                    segments["ls_theta_rz"] = np.arctan(slope_rz)
 
                     # xy projection
                     slope_xy = np.divide(segments["doublet_y_upper"] - segments["doublet_y_lower"],
