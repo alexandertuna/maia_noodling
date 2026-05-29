@@ -45,8 +45,9 @@ def main():
         raise ValueError("No input files found")
     geometry = ops.geometry
     signal = any(SIGNAL in os.path.basename(fname) for fname in fnames) or ops.signal
-    cut_mds = ops.cut_doublets or not signal
-    cut_t2s = ops.cut_line_segments or not signal
+    cut_mds = ops.cut_mds or not signal
+    cut_t2s = ops.cut_t2s or not signal
+    cut_t4s = ops.cut_t4s or not signal
     if not ops.inner and not ops.outer:
         raise ValueError("At least one of --inner or --outer must be specified")
     if not ops.sim and not ops.digi:
@@ -62,6 +63,7 @@ def main():
     logger.info(f"Layers to consider: {ops.layers}")
     logger.info(f"Cut MDs: {cut_mds}")
     logger.info(f"Cut T2s: {cut_t2s}")
+    logger.info(f"Cut T4s: {cut_t4s}")
     logger.info(f"Geometry version: {ops.geo}")
     logger.info(f"Using sim hits: {ops.sim}")
     logger.info(f"Using digi hits: {ops.digi}")
@@ -150,7 +152,7 @@ def main():
         #     smear=ops.smear,
         #     signal=signal,
         #     t2s=t2s,
-        #     cut_t4s=ops.cut_t4s,
+        #     cut_t4s=cut_t4s,
         # ).df
 
     # plot stuff
@@ -196,8 +198,8 @@ def options():
     parser.add_argument("--digi", action="store_true", help="Use digi hits in the analysis")
     parser.add_argument("--plot", action="store_true", help="Include plots in the analysis")
     parser.add_argument("--modulemap", action="store_true", help="Make module map in the analysis")
-    parser.add_argument("--cut-doublets", action="store_true", help="Cut doublets based on MD_DZ_CUT and MD_DR_CUT")
-    parser.add_argument("--cut-line-segments", action="store_true", help="Cut line segments based on [[ something ]]")
+    parser.add_argument("--cut-mds", action="store_true", help="Cut MDs based on MD_DZ_CUT and MD_DR_CUT")
+    parser.add_argument("--cut-t2s", action="store_true", help="Cut T2s (line segments) based on [[ something ]]")
     parser.add_argument("--cut-t4s", action="store_true", help="Cut T4s based on [[ something ]]")
     parser.add_argument("--read-mcps", type=str, help="Read mcps from pickle file")
     parser.add_argument("--write-mcps", type=str, help="Write mcps to pickle file")
