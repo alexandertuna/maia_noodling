@@ -17,9 +17,8 @@ class LineSegment:
     #  Layers 12, 34, ... grouped by doublet_doublelayer_plus_1_mod_2
     #
 
-    def __init__(self, geometry_version: str, doublets: pd.DataFrame, signal: bool, cut_line_segments: bool):
+    def __init__(self, geometry_version: str, sim: bool, smear: str, doublets: pd.DataFrame, signal: bool, cut_line_segments: bool):
         self.df = None
-        self.geometry_version = geometry_version
         self.signal = signal
         self.cut_line_segments = cut_line_segments
         self.lower_suffix = "lower"
@@ -27,13 +26,14 @@ class LineSegment:
         memory = doublets.memory_usage(deep=True).sum() * BYTE_TO_MB
         logger.info(f"Making linesegments with doublets memory {memory:.1f} MB ...")
 
-        self.MD_DZ_CUT = MD_DZ_CUT[self.geometry_version]
-        self.MD_DR_CUT = MD_DR_CUT[self.geometry_version]
-        self.LS_DZ_CUT = LS_DZ_CUT[self.geometry_version]
-        self.LS_DR_CUT = LS_DR_CUT[self.geometry_version]
-        self.LS_DTHETA_RZ_CUT = LS_DTHETA_RZ_CUT[self.geometry_version]
-        self.LS_DTHETA_XY_CUT = LS_DTHETA_XY_CUT[self.geometry_version]
-        self.LS_CHI2_XY_CUT = LS_CHI2_XY_CUT[self.geometry_version]
+        key = (geometry_version, "sim") if sim else (geometry_version, "digi", smear)
+        self.MD_DZ_CUT = MD_DZ_CUT[key]
+        self.MD_DR_CUT = MD_DR_CUT[key]
+        self.LS_DZ_CUT = LS_DZ_CUT[key]
+        self.LS_DR_CUT = LS_DR_CUT[key]
+        self.LS_DTHETA_RZ_CUT = LS_DTHETA_RZ_CUT[key]
+        self.LS_DTHETA_XY_CUT = LS_DTHETA_XY_CUT[key]
+        self.LS_CHI2_XY_CUT = LS_CHI2_XY_CUT[key]
 
         self.doublets = doublets.copy()
         self.prep_doublets()

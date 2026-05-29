@@ -50,6 +50,8 @@ class Plotter:
     def __init__(
         self,
         geometry_version: str,
+        sim: bool,
+        smear: str,
         signal: bool,
         mcps: pd.DataFrame,
         simhits: pd.DataFrame,
@@ -58,7 +60,6 @@ class Plotter:
         t4s: pd.DataFrame,
         pdf: str,
     ):
-        self.geometry_version = geometry_version
         self.signal = signal
         self.mcps = mcps
         self.simhits = simhits
@@ -68,13 +69,14 @@ class Plotter:
         self.pdf = pdf
 
         # shorthands for cuts
-        self.MD_DZ_CUT = MD_DZ_CUT[self.geometry_version]
-        self.MD_DR_CUT = MD_DR_CUT[self.geometry_version]
-        self.LS_DZ_CUT = LS_DZ_CUT[self.geometry_version]
-        self.LS_DR_CUT = LS_DR_CUT[self.geometry_version]
-        self.LS_DTHETA_RZ_CUT = LS_DTHETA_RZ_CUT[self.geometry_version]
-        self.LS_DTHETA_XY_CUT = LS_DTHETA_XY_CUT[self.geometry_version]
-        self.LS_CHI2_XY_CUT = LS_CHI2_XY_CUT[self.geometry_version]
+        key = (geometry_version, "sim") if sim else (geometry_version, "digi", smear)
+        self.MD_DZ_CUT = MD_DZ_CUT[key]
+        self.MD_DR_CUT = MD_DR_CUT[key]
+        self.LS_DZ_CUT = LS_DZ_CUT[key]
+        self.LS_DR_CUT = LS_DR_CUT[key]
+        self.LS_DTHETA_RZ_CUT = LS_DTHETA_RZ_CUT[key]
+        self.LS_DTHETA_XY_CUT = LS_DTHETA_XY_CUT[key]
+        self.LS_CHI2_XY_CUT = LS_CHI2_XY_CUT[key]
 
 
     def plot(self):

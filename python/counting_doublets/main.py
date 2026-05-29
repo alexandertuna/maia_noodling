@@ -27,8 +27,11 @@ def main():
     # parse options
     ops = options()
     valid_geos = ["v01", "v04", "v05"]
+    valid_smears = ["00um", "10um"]
     if ops.geo not in valid_geos:
         raise ValueError(f"Invalid geometry version specified, must be one of {valid_geos}")
+    if ops.smear not in valid_smears:
+        raise ValueError(f"Invalid smear value specified, must be one of {valid_smears}")
     if ops.i:
         fnames = parse_filepaths(ops.i)
     else:
@@ -62,6 +65,8 @@ def main():
     logger.info(f"Geometry version: {ops.geo}")
     logger.info(f"Using sim hits: {ops.sim}")
     logger.info(f"Using digi hits: {ops.digi}")
+    if ops.digi:
+        logger.info(f"Smear value for digi hits: {ops.smear}")
 
     # reading simhits and mcparticles
     with Timer() as hit_time:
@@ -104,6 +109,8 @@ def main():
             doublets = DoubletMaker(
                 geometry_version=ops.geo,
                 signal=signal,
+                sim=ops.sim,
+                smear=ops.smear,
                 cut_doublets=cut_mds,
                 simhits=simhits,
             ).df
@@ -122,6 +129,8 @@ def main():
             # make T2s (line segments) from mini-doublets
             t2s = LineSegment(
                 geometry_version=ops.geo,
+                sim=ops.sim,
+                smear=ops.smear,
                 signal=signal,
                 cut_line_segments=cut_t2s,
                 doublets=doublets,
@@ -137,6 +146,8 @@ def main():
         t4s = None
         # t4s = T4Maker(
         #     geometry_version=ops.geo,
+        #     sim=ops.sim,
+        #     smear=ops.smear,
         #     signal=signal,
         #     t2s=t2s,
         #     cut_t4s=ops.cut_t4s,
@@ -148,6 +159,8 @@ def main():
             logger.info("Creating plots ...")
             plotter = Plotter(
                 geometry_version=ops.geo,
+                sim=ops.sim,
+                smear=ops.smear,
                 signal=signal,
                 mcps=mcps,
                 simhits=simhits,
@@ -195,6 +208,7 @@ def options():
     parser.add_argument("--read-t2s", type=str, help="Read T2s (line segments) from pickle file")
     parser.add_argument("--write-t2s", type=str, help="Write T2s (line segments) to pickle file")
     parser.add_argument("--geo", type=str, help="Version of geometry to use for cuts (e.g. v01, v04)", required=True)
+    parser.add_argument("--smear", type=str, default="00um", help="Smear value to use for digi hits (e.g. 10um)")
     parser.add_argument("--signal", action="store_true", help="Use signal files in the analysis")
     parser.add_argument("--background10", action="store_true", help="Use background files (10 percent) in the analysis")
     parser.add_argument("--background100", action="store_true", help="Use background files (100 percent) in the analysis")

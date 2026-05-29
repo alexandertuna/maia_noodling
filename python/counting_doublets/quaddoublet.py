@@ -15,14 +15,14 @@ from constants import BYTE_TO_MB, NO_MCP
 
 class T4Maker:
 
-    def __init__(self, geometry_version: str, t2s: pd.DataFrame, signal: bool, cut_t4s: bool):
+    def __init__(self, geometry_version: str, sim: bool, smear: str, t2s: pd.DataFrame, signal: bool, cut_t4s: bool):
         self.df = None
-        self.geometry_version = geometry_version
         self.signal = signal
         self.cut_t4s = cut_t4s
         self.t2s = t2s.copy()
         memory = self.t2s.memory_usage(deep=True).sum() * BYTE_TO_MB
         logger.info(f"Making T4s. T2 dataframe size: {memory:.2f} MB")
+        key = (geometry_version, "sim") if sim else (geometry_version, "digi", smear)
         self.prep_t2s()
         self.make_t4s()
 

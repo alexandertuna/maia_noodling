@@ -12,12 +12,12 @@ from constants import N_PHI_SLICES, N_ETA_SLICES, DETECTOR_MAX_ETA, DETECTOR_MAX
 class DoubletMaker:
 
 
-    def __init__(self, geometry_version: str, signal: bool, cut_doublets: bool, simhits: pd.DataFrame):
-        self.geometry_version = geometry_version
+    def __init__(self, geometry_version: str, sim: bool, smear: str, signal: bool, cut_doublets: bool, simhits: pd.DataFrame):
         self.signal = signal
         self.cut_doublets = cut_doublets
-        self.MD_DZ_CUT = MD_DZ_CUT[self.geometry_version]
-        self.MD_DR_CUT = MD_DR_CUT[self.geometry_version]
+        key = (geometry_version, "sim") if sim else (geometry_version, "digi", smear)
+        self.MD_DZ_CUT = MD_DZ_CUT[key]
+        self.MD_DR_CUT = MD_DR_CUT[key]
         self.df = self.make_doublets(simhits)
 
 
