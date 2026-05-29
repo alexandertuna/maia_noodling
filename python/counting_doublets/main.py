@@ -9,6 +9,7 @@ import time
 import logging
 logger = logging.getLogger(__name__)
 
+from datasets import get_filepaths, parse_filepaths
 from slcio import HitMaker
 from timelapse import Timelapse
 from doublet import DoubletMaker
@@ -17,96 +18,6 @@ from modulemap import ModuleMap
 from linesegment import LineSegment
 from quaddoublet import T4Maker
 from constants import SIGNAL
-
-FNAMES_BACKGROUND_100_V01 = [
-    # neutrinoGun 100%, (-5, 15)
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_n5_p15/neutrinoGun_digi_3.slcio",
-]
-
-FNAMES_BACKGROUND_100_V04 = [
-    # neutrinoGun 100%, (-5, 15)
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/neutrinoGun_n5_p15/neutrinoGun_digi_3.slcio",
-]
-
-FNAMES_BACKGROUND_10 = [
-    # neutrinoGun 10% (-5, 15)
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_n5_p15_0.10/neutrinoGun_digi_3.slcio",
-]
-
-FNAMES_SIGNAL_V05 = [
-    # muonGun, 2 GeV
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v05/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_100.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v05/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_101.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v05/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_102.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v05/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_103.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v05/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_104.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v05/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_105.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v05/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_106.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v05/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_107.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v05/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_108.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v05/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_109.slcio",
-]
-
-FNAMES_SIGNAL_V04 = [
-    # muonGun, 2 GeV
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_100.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_101.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_102.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_103.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_104.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_105.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_106.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_107.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_108.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v04/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_109.slcio",
-]
-
-FNAMES_SIGNAL_V01 = [
-    # muonGun, 2 GeV
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_300.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_301.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_302.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_303.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_304.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_305.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_306.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_307.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_308.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_309.slcio",
-]
-
-FNAMES = [
-    # # neutrinoGun 100%, (-5, 15)
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_n5_p15/neutrinoGun_digi_3.slcio",
-    # # neutrinoGun 10% (-5, 15)
-    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_n5_p15_0.10/neutrinoGun_digi_3.slcio",
-    # # neutrinoGun 100%
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun/neutrinoGun_digi_1.slcio",
-    # # neutrinoGun 10%
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_0.10/neutrinoGun_digi_1.slcio",
-    # # muonGun, 0-10 GeV
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_0_10/muonGun_pT_0_10_sim_300.slcio",
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_0_10/muonGun_pT_0_10_sim_301.slcio",
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_0_10/muonGun_pT_0_10_sim_302.slcio",
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_0_10/muonGun_pT_0_10_sim_303.slcio",
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_0_10/muonGun_pT_0_10_sim_304.slcio",
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_0_10/muonGun_pT_0_10_sim_305.slcio",
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_0_10/muonGun_pT_0_10_sim_306.slcio",
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_0_10/muonGun_pT_0_10_sim_307.slcio",
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_0_10/muonGun_pT_0_10_sim_308.slcio",
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_0_10/muonGun_pT_0_10_sim_309.slcio",
-    # # muonGun, 2 GeV
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_300.slcio",
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_301.slcio",
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_302.slcio",
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_303.slcio",
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_304.slcio",
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_305.slcio",
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_306.slcio",
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_307.slcio",
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_308.slcio",
-    # # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/muonGun_pT_2p0_2p1/muonGun_pT_2p0_2p1_sim_309.slcio",
-]
 
 
 def main():
@@ -118,28 +29,15 @@ def main():
     valid_geos = ["v01", "v04", "v05"]
     if ops.geo not in valid_geos:
         raise ValueError(f"Invalid geometry version specified, must be one of {valid_geos}")
-    if ops.signal:
-        if ops.geo == "v01":
-            fnames = FNAMES_SIGNAL_V01
-        elif ops.geo == "v04":
-            fnames = FNAMES_SIGNAL_V04
-        elif ops.geo == "v05":
-            fnames = FNAMES_SIGNAL_V05
-        else:
-            raise ValueError(f"Invalid geometry version specified, must be one of {valid_geos}")
-    elif ops.background10:
-        fnames = FNAMES_BACKGROUND_10
-    elif ops.background100:
-        if ops.geo == "v01":
-            fnames = FNAMES_BACKGROUND_100_V01
-        elif ops.geo == "v04":
-            fnames = FNAMES_BACKGROUND_100_V04
-        # elif ops.geo == "v05":
-        #     fnames = FNAMES_BACKGROUND_100_V05
-        else:
-            raise ValueError(f"Invalid geometry version specified, must be one of {valid_geos}")
+    if ops.i:
+        fnames = parse_filepaths(ops.i)
     else:
-        fnames = get_filenames(ops.i)
+        fnames = get_filepaths(
+            geometry_version=ops.geo,
+            signal=ops.signal,
+            background10=ops.background10,
+            background100=ops.background100,
+        )
     if not fnames:
         raise ValueError("No input files found")
     geometry = ops.geometry
@@ -236,12 +134,13 @@ def main():
 
     # make t4s
     with Timer() as t4_time:
-        t4s = T4Maker(
-            geometry_version=ops.geo,
-            signal=signal,
-            t2s=t2s,
-            cut_t4s=ops.cut_t4s,
-        ).df
+        t4s = None
+        # t4s = T4Maker(
+        #     geometry_version=ops.geo,
+        #     signal=signal,
+        #     t2s=t2s,
+        #     cut_t4s=ops.cut_t4s,
+        # ).df
 
     # plot stuff
     with Timer() as plot_time:
@@ -274,7 +173,7 @@ def main():
 
 def options():
     parser = argparse.ArgumentParser(usage=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-i", default=FNAMES, help="Input slcio file or glob pattern")
+    parser.add_argument("-i", default=[], help="Input slcio file or glob pattern")
     parser.add_argument("--layers", nargs="+", type=int, default=[0, 1, 2, 3, 4, 5, 6, 7], help="List of layers to consider")
     parser.add_argument("--geometry", action="store_true", help="Load compact geometry from xml")
     parser.add_argument("--timelapse", action="store_true", help="Create timelapse gif")
@@ -300,15 +199,6 @@ def options():
     parser.add_argument("--background10", action="store_true", help="Use background files (10 percent) in the analysis")
     parser.add_argument("--background100", action="store_true", help="Use background files (100 percent) in the analysis")
     return parser.parse_args()
-
-
-def get_filenames(fnames):
-    names = []
-    if isinstance(fnames, str):
-        fnames = [fnames]
-    for fname in fnames:
-        names.extend(glob(fname))
-    return names
 
 
 class Timer:
