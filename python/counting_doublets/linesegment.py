@@ -163,7 +163,7 @@ class LineSegment:
                 # progress bar
                 if (self.signal and i_group % 10 == 0) or (not self.signal):
                     n_group = len(self.doublets.groupby(groupby_cols[start]))
-                    logger.info(f"Processing group {i_group} / {n_group-1} for line segments (n={len(df)}) ...")
+                    logger.info(f"Processing group {i_group+1} / {n_group} for line segments (n={len(df)}) ...")
 
                 # get lower doublets and upper doublets
                 entire_lower = df[ df[lower_vs_upper[start]] == 0 ]
