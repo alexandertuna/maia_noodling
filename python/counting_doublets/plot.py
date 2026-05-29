@@ -1045,12 +1045,7 @@ class Plotter:
             mask = np.abs(df["ls_chi2_012"]) < self.LS_CHI2_XY_CUT[doublelayer]
         elif req == LS_REQ_ALL:
             text = f"All LS requirements"
-            mask = (
-                (np.abs(df["ls_dr"]) < self.LS_DR_CUT[doublelayer]) &
-                (np.abs(df["ls_dz"]) < self.LS_DZ_CUT[doublelayer]) &
-                (np.abs(df["ls_dtheta_rz"]) < self.LS_DTHETA_RZ_CUT[doublelayer]) &
-                (np.abs(df["ls_chi2_012"]) < self.LS_CHI2_XY_CUT[doublelayer])
-            )
+            mask = df["ls_ok"]
         else:
             raise ValueError(f"Unknown segment requirement: {req}")
         return text, mask
