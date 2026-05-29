@@ -122,7 +122,7 @@ class T4Maker:
                 # rz projection
                 slope_rz = np.divide(t4s["ls_z_upper"] - t4s["ls_z_lower"],
                                      t4s["ls_r_upper"] - t4s["ls_r_lower"])
-                t4s["ls_z"] = t4s["ls_z_lower"] - t4s["ls_r_lower"] * slope_rz
+                t4s["t4_dz"] = t4s["ls_z_lower"] - t4s["ls_r_lower"] * slope_rz
 
                 # xy projection
                 slope_xy = np.divide(t4s["ls_y_upper"] - t4s["ls_y_lower"],
@@ -157,6 +157,10 @@ class T4Maker:
                     t4s[f"t4_{coord}_5"] = t4s[f"ls_{coord}_1_upper"]
                     t4s[f"t4_{coord}_6"] = t4s[f"ls_{coord}_2_upper"]
                     t4s[f"t4_{coord}_7"] = t4s[f"ls_{coord}_3_upper"]
+
+                # angle differences (handle wraparound)
+                t4s["t4_dtheta_rz"] = t4s["ls_theta_rz_upper"] - t4s["ls_theta_rz_lower"]
+                t4s["t4_dtheta_rz"] = (t4s["t4_dtheta_rz"] + np.pi) % (2 * np.pi) - np.pi
 
                 # find the circle (radius, x_center, y_center) formed from the first three hits
                 BAD_CHI2 = 1e6
