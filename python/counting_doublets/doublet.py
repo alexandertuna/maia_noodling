@@ -73,16 +73,20 @@ class DoubletMaker:
 
             # record some numbers
             cutflow = {"all": len(doublets)}
+            mask = {}
 
-            # cut some doublets?
+            # record some cut results
+            dl = doublets["simhit_layer_div_2"]
+            mask["dr"] = np.abs(doublets["doublet_dr"]) < self.MD_DR_CUT[dl]
+            mask["dz"] = np.abs(doublets["doublet_dz"]) < self.MD_DZ_CUT[dl]
+            mask["and"] = mask["dr"] & mask["dz"]
+            doublets["doublet_ok"] = mask["and"].astype(bool)
+
+            # remove as desired
             if self.cut_doublets:
-                doublelayer = doublets["simhit_layer_div_2"]
-                mask_dr = np.abs(doublets["doublet_dr"]) < self.MD_DR_CUT[doublelayer]
-                mask_dz = np.abs(doublets["doublet_dz"]) < self.MD_DZ_CUT[doublelayer]
-                cutflow["dr"] = mask_dr.sum()
-                cutflow["dz"] = mask_dz.sum()
-                cutflow["drdz"] = (mask_dr & mask_dz).sum()
-                doublets = doublets[mask_dr & mask_dz]
+                for cut in mask.keys():
+                    cutflow[cut] = np.sum(mask[cut])
+                doublets = doublets[mask["and"]]
 
             # rename some columns
             rename = {
