@@ -249,6 +249,9 @@ class LineSegment:
                     segments["ls_z"] = (segments["doublet_z_lower"] + segments["doublet_z_upper"]) / 2
                     segments["ls_x"] = (segments["doublet_x_lower"] + segments["doublet_x_upper"]) / 2
                     segments["ls_y"] = (segments["doublet_y_lower"] + segments["doublet_y_upper"]) / 2
+                    segments["ls_phi"] = np.arctan2(segments["ls_y"], segments["ls_x"])
+                    segments["ls_theta"] = np.arctan2(segments["ls_r"], segments["ls_z"])
+                    segments["ls_eta"] = -np.log(np.tan(segments["ls_theta"] / 2))
 
                     # assign more features
                     segments["ls_ddr"] = segments["doublet_dr_upper"] - segments["doublet_dr_lower"]
