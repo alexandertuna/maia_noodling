@@ -91,15 +91,15 @@ class Plotter:
             # self.plot_doublet_occupancy(pdf)
             # self.plot_doublet_features(pdf)
             self.plot_linesegment_features(pdf)
-            self.plot_t4_features(pdf)
+            # self.plot_t4_features(pdf)
             if self.signal:
                 self.write_denominator_info(pdf)
                 # self.plot_doublet_efficiency_vs_kinematics(pdf)
                 # self.write_doublet_denominator_info(pdf)
                 # self.plot_doublet_quality_efficiency(pdf)
-                self.plot_segment_efficiency_vs_kinematics(pdf)
-                self.plot_segment_quality_efficiency(pdf)
-                self.plot_t4_efficiency_vs_kinematics(pdf)
+                # self.plot_segment_efficiency_vs_kinematics(pdf)
+                # self.plot_segment_quality_efficiency(pdf)
+                # self.plot_t4_efficiency_vs_kinematics(pdf)
 
 
     def plot_numbers_for_comparison(self, pdf: PdfPages):
@@ -170,11 +170,7 @@ class Plotter:
             (np.abs(self.doublets["mcp_vertex_z"]) < ZERO_POINT_ZERO_ONE_MM) &
             (self.doublets["doublet_first_exit"])
         )
-        quality_cuts = (
-            (np.abs(self.doublets["doublet_dz"]) < self.MD_DZ_CUT[doublelayer]) &
-            (np.abs(self.doublets["doublet_dr"]) < self.MD_DR_CUT[doublelayer]) &
-            baseline_cuts
-        )
+        quality_cuts = baseline_cuts & self.doublets["doublet_ok"]
         doublets_0 = self.doublets[baseline_cuts & dl_0]
         doublets_1 = self.doublets[baseline_cuts & dl_1]
         logger.info(f"* {'Doublets, baseline, L01':<30} :: {len(doublets_0):>10}")
@@ -586,7 +582,7 @@ class Plotter:
 
             for semilogy in [
                 False,
-                True,
+                # True,
             ]:
 
                 for ((system, doublelayer), group) in self.doublets[baseline].groupby(["doublet_system",
@@ -626,9 +622,9 @@ class Plotter:
 
         # 2d histograms
         for feature_x, feature_y in [
-            ("doublet_dphi", "doublet_dr"),
-            ("doublet_dphi", "mcp_qoverpt"),
-            ("doublet_qoverpt", "mcp_qoverpt"),
+            # ("doublet_dphi", "doublet_dr"),
+            # ("doublet_dphi", "mcp_qoverpt"),
+            # ("doublet_qoverpt", "mcp_qoverpt"),
         ]:
 
             if not self.signal and any(["mcp" in feat for feat in [feature_x, feature_y]]):
@@ -752,8 +748,6 @@ class Plotter:
 
 
     def baseline_linesegment_mask(self) -> pd.Series:
-        dl_lower = self.linesegments["ls_doublelayer_lower"]
-        dl_upper = self.linesegments["ls_doublelayer_upper"]
         return (
             (self.linesegments["i_mcp"] != NO_MCP) &
             (self.linesegments["ls_first_exit"]) &
@@ -763,10 +757,8 @@ class Plotter:
             (np.abs(self.linesegments["mcp_eta"]) < BARREL_TRACKER_MAX_ETA) &
             (self.linesegments["mcp_vertex_r"] < ZERO_POINT_ZERO_ONE_MM) &
             (np.abs(self.linesegments["mcp_vertex_z"]) < ZERO_POINT_ZERO_ONE_MM) &
-            (np.abs(self.linesegments["ls_dr_lower"]) < self.MD_DR_CUT[dl_lower]) &
-            (np.abs(self.linesegments["ls_dr_upper"]) < self.MD_DR_CUT[dl_upper]) &
-            (np.abs(self.linesegments["ls_dz_lower"]) < self.MD_DZ_CUT[dl_lower]) &
-            (np.abs(self.linesegments["ls_dz_upper"]) < self.MD_DZ_CUT[dl_upper]) &
+            (self.linesegments["ls_ok_lower"]) &
+            (self.linesegments["ls_ok_upper"]) &
             np.ones(len(self.linesegments), dtype=bool)
         )
 
