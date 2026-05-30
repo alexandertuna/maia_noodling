@@ -96,11 +96,8 @@ class T4Maker:
 
         def make_t4s_from_group(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
 
-            cutflow = {"all": len(df)}
-
+            group_t4s, group_cutflows = [], []
             lower = df[df["ls_doublelayer_mod_4"] == 0]
-            upper = df[df["ls_doublelayer_mod_4"] == 2]
-            logger.info(f"Lower: {len(lower)}, Upper: {len(upper)}")
 
             for i_subgroup, (subcols, subdf) in enumerate(df.groupby(subgroup_cols)):
 
@@ -111,7 +108,6 @@ class T4Maker:
                     upper,
                     on=merge_keys,
                     how="inner",
-                    validate="many_to_many",
                     suffixes=("_lower", "_upper"),
                 )
                 logger.info(f"Lower: {len(lower)}, Upper: {len(upper)}, Combos: {len(t4s)}")
@@ -157,6 +153,11 @@ class T4Maker:
                     t4s[f"t4_{coord}_5"] = t4s[f"ls_{coord}_1_upper"]
                     t4s[f"t4_{coord}_6"] = t4s[f"ls_{coord}_2_upper"]
                     t4s[f"t4_{coord}_7"] = t4s[f"ls_{coord}_3_upper"]
+
+                # more features
+                t4s["t4_deta"] = t4s["ls_eta_upper"] - t4s["ls_eta_lower"]
+                t4s["t4_dphi"] = t4s["ls_phi_upper"] - t4s["ls_phi_lower"]
+                t4s["t4_dphi"] = (t4s["t4_dphi"] + np.pi) % (2 * np.pi) - np.pi
 
                 # angle differences (handle wraparound)
                 t4s["t4_dtheta_rz"] = t4s["ls_theta_rz_upper"] - t4s["ls_theta_rz_lower"]
@@ -231,21 +232,24 @@ class T4Maker:
                     t4s = t4s[t4s["t4_ok"]]
                     raise NotImplementedError("T4 cuts not implemented yet")
 
-            return t4s, cutflow
+                # save
+                group_t4s.append(t4s)
+                group_cutflows.append(cutflow)
+
+            return group_t4s, group_cutflows
 
         # groupby
         groups = self.t2s.groupby(groupby_cols)
         n_group = len(groups)
-        all_cutflows = []
-        all_t4s = []
+        all_t4s, all_cutflows = [], []
 
         # evaluate
         for i_group, (cols, df) in enumerate(groups):
             logger.info(f"Processing group {i_group+1} / {n_group} for T4s (n={len(df)}) ...")
 
             t4s, cutflow = make_t4s_from_group(df)
-            all_t4s.append(t4s)
-            all_cutflows.append(cutflow)
+            all_t4s.extend(t4s)
+            all_cutflows.extend(cutflow)
 
         # merge them
         logger.info(f"Merging {len(all_t4s)} groups of T4s ...")
