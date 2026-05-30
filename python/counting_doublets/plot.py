@@ -90,7 +90,8 @@ class Plotter:
             self.plot_radius_vs_layer(pdf)
             # self.plot_doublet_occupancy(pdf)
             # self.plot_doublet_features(pdf)
-            # self.plot_linesegment_features(pdf)
+            self.plot_linesegment_features(pdf)
+            self.plot_t4_features(pdf)
             if self.signal:
                 self.write_denominator_info(pdf)
                 # self.plot_doublet_efficiency_vs_kinematics(pdf)
@@ -98,7 +99,7 @@ class Plotter:
                 # self.plot_doublet_quality_efficiency(pdf)
                 self.plot_segment_efficiency_vs_kinematics(pdf)
                 self.plot_segment_quality_efficiency(pdf)
-                # self.plot_t4_efficiency_vs_kinematics(pdf)
+                self.plot_t4_efficiency_vs_kinematics(pdf)
 
 
     def plot_numbers_for_comparison(self, pdf: PdfPages):
@@ -855,11 +856,11 @@ class Plotter:
                         rms = np.sqrt(np.mean((group[feature] - mean) ** 2))
                         p997 = np.percentile(np.abs(group[feature]), 99.7)
                         fmt = formatting[feature]
-                        ax.set_ylim(0.8 if semilogy else 0, None)
+                        ax.set_ylim(0.8 if ax.get_yscale() == "log" else 0, None)
                         ax.set_xlabel(xlabel[feature])
                         ax.set_ylabel("Line Segments")
-                        # ax.set_title(f"{NICKNAMES[system]}. DL={doublelayer}. N={num}, Mean={mean:{fmt}}, RMS={rms:{fmt}}")
-                        ax.set_title(f"{NICKNAMES[system]}, doublelayer={doublelayer}")
+                        ax.set_title(f"{NICKNAMES[system]}. DL={doublelayer}. N={num}, Mean={mean:{fmt}}, RMS={rms:{fmt}}")
+                        # ax.set_title(f"{NICKNAMES[system]}, doublelayer={doublelayer}")
                         ax.text(0.30, 0.92, f"99.7% in {p997:{fmt}}", transform=ax.transAxes, fontsize=16)
                         pdf.savefig()
                         plt.close()
@@ -1049,6 +1050,96 @@ class Plotter:
         else:
             raise ValueError(f"Unknown segment requirement: {req}")
         return text, mask
+
+
+    def baseline_t4_mask(self) -> pd.Series:
+        return (
+            (self.t4s["i_mcp"] != NO_MCP) &
+            (self.t4s["t4_first_exit"]) &
+            (np.abs(self.t4s["mcp_pdg"]) == MUON) &
+            (self.t4s["mcp_q"] != 0) &
+            (self.t4s["mcp_pt"] > ONE_POINT_FIVE_GEV) &
+            (np.abs(self.t4s["mcp_eta"]) < BARREL_TRACKER_MAX_ETA) &
+            (self.t4s["mcp_vertex_r"] < ZERO_POINT_ZERO_ONE_MM) &
+            (np.abs(self.t4s["mcp_vertex_z"]) < ZERO_POINT_ZERO_ONE_MM) &
+            np.ones(len(self.t4s), dtype=bool)
+        )
+
+
+    def plot_t4_features(self, pdf: PdfPages):
+        logger.info("Plotting signal t4 features ...")
+        baseline = self.baseline_t4_mask() if self.signal else np.ones(len(self.t4s), dtype=bool)
+
+        bins = {
+            "t4_deta": np.linspace(-3.2, 3.2, 641) if not self.signal else np.linspace(-0.032, 0.032, 321),
+            "t4_dphi": np.linspace(-3.2, 3.2, 321) if not self.signal else np.linspace(-0.32, 0.32, 321),
+            "t4_dr": np.linspace(0, 1500, 501) if not self.signal else np.linspace(0, 1000, 401),
+            "t4_dz": np.linspace(-30000, 30000, 201) if not self.signal else np.linspace(-200, 200, 201),
+            "t4_dtheta_rz": np.linspace(-0.08, 0.08, 241),
+            "t4_chi2_047": np.linspace(0, 0.5, 201),
+        }
+        xlabel = {
+            "t4_deta": "upper T2 eta - lower T2 eta",
+            "t4_dphi": "upper T2 phi - lower T2 phi [rad]",
+            "t4_dr": "T4 dr [mm]",
+            "t4_dz": "T4 dz [mm]",
+            "t4_dtheta_rz": "upper T2 theta_rz - lower T2 theta_rz",
+            "t4_chi2_047": "Diff^2 between circle(xy, 047) and 12356 [mm^2]",
+        }
+        formatting = {
+            "t4_deta": ".5f",
+            "t4_dphi": ".5f",
+            "t4_dr": ".1f",
+            "t4_dz": ".1f",
+            "t4_dtheta_rz": ".5f",
+            "t4_chi2_047": ".5f",
+        }
+        color = "cornflowerblue" if self.signal else "crimson"
+
+        # 1d histograms
+        for feature in [
+            "t4_deta",
+            "t4_dphi",
+            "t4_dr",
+            "t4_dz",
+            "t4_dtheta_rz",
+            "t4_chi2_047",
+        ]:
+
+            for semilogy in [
+                False,
+                # True,
+            ]:
+
+                groupby_cols = ["t4_system", "t4_doublelayer"]
+                for ((system, doublelayer), group) in self.t4s[baseline].groupby(groupby_cols):
+
+                        logger.info(f"Plotting signal linesegment feature {feature}, system {system}, doublelayer {doublelayer} ...")
+
+                        fig, ax = plt.subplots()
+                        ax.hist(
+                            group[feature],
+                            bins=bins[feature],
+                            histtype="stepfilled",
+                            color=color,
+                            edgecolor="black",
+                            linewidth=1.0,
+                            alpha=0.9,
+                        )
+                        if semilogy or feature in ["t4_chi2_047"]:
+                            ax.semilogy()
+                        num = len(group)
+                        mean = np.mean(group[feature])
+                        rms = np.sqrt(np.mean((group[feature] - mean) ** 2))
+                        p997 = np.percentile(np.abs(group[feature]), 99.7)
+                        fmt = formatting[feature]
+                        ax.set_ylim(0.8 if ax.get_yscale() == "log" else 0, None)
+                        ax.set_xlabel(xlabel[feature])
+                        ax.set_ylabel("T4s")
+                        ax.set_title(f"{NICKNAMES[system]}. DL={doublelayer}. N={num}, Mean={mean:{fmt}}, RMS={rms:{fmt}}")
+                        ax.text(0.30, 0.92, f"99.7% in {p997:{fmt}}", transform=ax.transAxes, fontsize=16)
+                        pdf.savefig()
+                        plt.close()
 
 
     def plot_t4_efficiency_vs_kinematics(self, pdf: PdfPages):
