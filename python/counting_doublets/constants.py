@@ -152,18 +152,38 @@ LS_CHI2_XY_CUT = {
         0.040, # doublelayer 2
     ]),
 }
-QD_DZ_CUT = np.array([
-    0.0, # doublelayer 0
-])
-QD_DR_CUT = np.array([
-    0.0, # doublelayer 0
-])
-QD_DTHETA_RZ_CUT = np.array([
-    0.0, # doublelayer 0
-])
-QD_CHI2_XY_CUT = np.array([
-    0.0, # doublelayer 0
-])
+T4_DZ_CUT = {
+    ("v01", "sim"): np.array([
+        54.0, # doublelayer 0
+    ]),
+    ("v05", "sim"): np.array([
+        0.0, # doublelayer 0
+    ]),
+}
+T4_DR_CUT = {
+    ("v01", "sim"): np.array([
+        459.0, # doublelayer 0
+    ]),
+    ("v05", "sim"): np.array([
+        0.0, # doublelayer 0
+    ]),
+}
+T4_DTHETA_RZ_CUT = {
+    ("v01", "sim"): np.array([
+        0.053, # doublelayer 0
+    ]),
+    ("v05", "sim"): np.array([
+        0.0, # doublelayer 0
+    ]),
+}
+T4_CHI2_XY_CUT = {
+    ("v01", "sim"): np.array([
+        0.352, # doublelayer 0
+    ]),
+    ("v05", "sim"): np.array([
+        0.0, # doublelayer 0
+    ]),
+}
 
 REQ_PASSTHROUGH = "no cuts"
 REQ_RZ = "rz req."
