@@ -16,7 +16,7 @@ from doublet import DoubletMaker
 from plot import Plotter
 from modulemap import ModuleMap
 from linesegment import LineSegment
-from quaddoublet import T4Maker
+from t4 import T4Maker
 from constants import SIGNAL
 
 
