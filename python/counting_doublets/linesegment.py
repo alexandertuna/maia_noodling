@@ -7,6 +7,8 @@ from constants import LS_DZ_CUT, LS_DR_CUT
 from constants import LS_DTHETA_RZ_CUT, LS_DTHETA_XY_CUT, LS_CHI2_XY_CUT
 from constants import BYTE_TO_MB, NO_MCP
 from constants import N_LS_PHI_SLICES
+from constants import DETECTOR_MAX_PHI, DETECTOR_MAX_ETA
+from constants import N_T4_PHI_SLICES, N_T4_ETA_SLICES
 
 class LineSegment:
 
@@ -244,6 +246,8 @@ class LineSegment:
                     segments["ls_phi"] = np.arctan2(segments["ls_y"], segments["ls_x"])
                     segments["ls_theta"] = np.arctan2(segments["ls_r"], segments["ls_z"])
                     segments["ls_eta"] = -np.log(np.tan(segments["ls_theta"] / 2))
+                    segments["ls_phi_slice"] = np.floor((segments["ls_phi"] + DETECTOR_MAX_PHI) / (2 * DETECTOR_MAX_PHI) * N_T4_PHI_SLICES).astype(np.int16)
+                    segments["ls_eta_slice"] = np.floor((segments["ls_eta"] + DETECTOR_MAX_ETA) / (2 * DETECTOR_MAX_ETA) * N_T4_ETA_SLICES).astype(np.int16)
 
                     # assign more features
                     segments["ls_ddr"] = segments["doublet_dr_upper"] - segments["doublet_dr_lower"]

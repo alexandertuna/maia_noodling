@@ -234,10 +234,15 @@ NICKNAMES = {
 # Do not change this easily
 # Its measured for 2 GeV muons
 # We multiply by 2 to speed up the processing (fewer slices)
-MAX_LS_DPHI = 0.10 * 2
-MAX_LS_DETA = 0.01 * 2
 DETECTOR_MAX_PHI = np.pi
 DETECTOR_MAX_ETA = 2.5 # Must include all background hits
+MAX_LS_DPHI = 0.10 * 2
+MAX_LS_DETA = 0.01 * 2
 N_LS_PHI_SLICES = int(2 * DETECTOR_MAX_PHI / MAX_LS_DPHI)
 N_LS_ETA_SLICES = int(2 * DETECTOR_MAX_ETA / MAX_LS_DETA)
-
+MAX_T4_DPHI = 0.25 * 2
+MAX_T4_DETA = 0.025 * 2
+N_T4_PHI_SLICES = int(2 * DETECTOR_MAX_PHI / MAX_T4_DPHI)
+N_T4_ETA_SLICES = int(2 * DETECTOR_MAX_ETA / MAX_T4_DETA)
+print("*"*80)
+print("*"*80)
