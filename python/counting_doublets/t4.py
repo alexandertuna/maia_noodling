@@ -213,11 +213,11 @@ class T4Maker:
                     logger.warning(f"Found {np.sum(~circle_ok)} invalid circles with circle_d = 0")
                 for ix in ixs:
                     circle_diff = np.sqrt((t4s[f"t4_x_{ix}"] - circle_x)**2 + (t4s[f"t4_y_{ix}"] - circle_y)**2) - circle_r
-                    t4s[f"t4_chi2_{i0}{i1}{i2}_vs_{ix}"] = np.where(circle_ok, np.abs(circle_diff), BAD_CHI2)
+                    t4s[f"t4_chi2_{i0}{i1}{i2}_vs_{ix}"] = np.where(circle_ok, circle_diff**2, BAD_CHI2)
 
                 # calculate the average diff
                 chi2cols = [f"t4_chi2_{i0}{i1}{i2}_vs_{ix}" for ix in ixs]
-                t4s[f"t4_chi2_{i0}{i1}{i2}"] = t4s[chi2cols].mean(axis=1)
+                t4s[f"t4_chi2_{i0}{i1}{i2}"] = t4s[chi2cols].sum(axis=1)
 
                 # rename some things
                 rename = {
