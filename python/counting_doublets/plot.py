@@ -42,7 +42,7 @@ from constants import DOUBLET_REQS, NO_MCP
 from constants import LS_REQS, LS_REQ_DR_POS, LS_REQ_DZ_POS, LS_REQ_XY_CHI2, LS_REQ_RZ_ANG, LS_REQ_ALL
 from constants import LS_DZ_CUT, LS_DR_CUT, LS_DTHETA_RZ_CUT, LS_DTHETA_XY_CUT, LS_CHI2_XY_CUT
 from constants import MIN_COSTHETA, MIN_SIMHIT_PT_FRACTION, MAX_TIME
-from constants import N_PHI_SLICES
+from constants import N_LS_PHI_SLICES
 
 
 class Plotter:
@@ -90,8 +90,8 @@ class Plotter:
             self.plot_radius_vs_layer(pdf)
             # self.plot_doublet_occupancy(pdf)
             # self.plot_doublet_features(pdf)
-            self.plot_linesegment_features(pdf)
-            # self.plot_t4_features(pdf)
+            # self.plot_linesegment_features(pdf)
+            self.plot_t4_features(pdf)
             if self.signal:
                 self.write_denominator_info(pdf)
                 # self.plot_doublet_efficiency_vs_kinematics(pdf)
@@ -547,7 +547,7 @@ class Plotter:
             "doublet_dphi": np.linspace(-1.0, 1.0, 201) if self.signal else np.linspace(-3.2, 3.2, 201),
             "doublet_pt": np.linspace(0, 10, 101),
             "doublet_qoverpt": np.linspace(-0.8, 0.8, 161),
-            "doublet_phi_slice": np.linspace(-1, N_PHI_SLICES+1, N_PHI_SLICES+3),
+            "doublet_phi_slice": np.linspace(-1, N_LS_PHI_SLICES+1, N_LS_PHI_SLICES+3),
             "mcp_qoverpt": np.linspace(-0.8, 0.8, 161),
             "mc_pt": np.linspace(0, 10, 101),
         }

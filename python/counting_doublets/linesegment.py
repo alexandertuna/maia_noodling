@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 from constants import LS_DZ_CUT, LS_DR_CUT
 from constants import LS_DTHETA_RZ_CUT, LS_DTHETA_XY_CUT, LS_CHI2_XY_CUT
 from constants import BYTE_TO_MB, NO_MCP
-from constants import N_PHI_SLICES, N_ETA_SLICES, DETECTOR_MAX_ETA, DETECTOR_MAX_PHI
+from constants import N_LS_PHI_SLICES
 
 class LineSegment:
 
@@ -181,7 +181,7 @@ class LineSegment:
                         # get upper data for the same phi slice
                         eta_ok = np.array([eta_slice-1, eta_slice, eta_slice+1]).astype(np.int16)
                         phi_ok = np.array([phi_slice-1, phi_slice, phi_slice+1]).astype(np.int16)
-                        phi_ok = phi_ok % N_PHI_SLICES
+                        phi_ok = phi_ok % N_LS_PHI_SLICES
                         ok = (
                             entire_upper["doublet_eta_slice"].isin(eta_ok) &
                             entire_upper["doublet_phi_slice"].isin(phi_ok)
