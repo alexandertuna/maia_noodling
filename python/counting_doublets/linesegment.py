@@ -213,12 +213,11 @@ class LineSegment:
                     segments["ls_dr"] = np.abs(intercept_xy) / np.sqrt(1 + slope_xy**2)
 
                     # cut some segments? do this early to save computations
-                    mask = {}
                     if self.cut_line_segments:
                         dl = segments["ls_doublelayer"]
-                        mask["dz"] = np.abs(segments["ls_dz"]) < self.LS_DZ_CUT[dl]
-                        mask["dr"] = np.abs(segments["ls_dr"]) < self.LS_DR_CUT[dl]
-                        segments = segments[mask["dz"] & mask["dr"]]
+                        segments["ls_ok_dz"] = np.abs(segments["ls_dz"]) < self.LS_DZ_CUT[dl]
+                        segments["ls_ok_dr"] = np.abs(segments["ls_dr"]) < self.LS_DR_CUT[dl]
+                        segments = segments[segments["ls_ok_dz"] & segments["ls_ok_dr"]]
 
                     # assign truth info
                     mcp_ok = segments["i_mcp_lower"] == segments["i_mcp_upper"]
@@ -327,21 +326,26 @@ class LineSegment:
 
                     # record some cut results
                     dl = segments["ls_doublelayer"]
-                    mask["dtheta_rz"] = np.abs(segments["ls_dtheta_rz"]) < self.LS_DTHETA_RZ_CUT[dl]
-                    mask["dtheta_xy"] = np.abs(segments["ls_dtheta_xy"]) < self.LS_DTHETA_XY_CUT[dl]
-                    mask["dz"] = np.abs(segments["ls_dz"]) < self.LS_DZ_CUT[dl]
-                    mask["dr"] = np.abs(segments["ls_dr"]) < self.LS_DR_CUT[dl]
-                    mask["dphi"] = np.abs(segments["ls_dphi"]) < np.pi / 2.0
-                    mask["chi2_xy"] = np.abs(segments["ls_chi2_012"]) < self.LS_CHI2_XY_CUT[dl]
-                    mask["drdz"] = mask["dz"] & mask["dr"] & mask["dphi"]
-                    mask["drdzdthetarz"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dtheta_rz"]
-                    mask["and"] = mask["dz"] & mask["dr"] & mask["dphi"] & mask["dtheta_rz"] & mask["chi2_xy"]
-                    segments["ls_ok"] = mask["and"].astype(bool)
+                    segments["ls_ok_dtheta_rz"] = np.abs(segments["ls_dtheta_rz"]) < self.LS_DTHETA_RZ_CUT[dl]
+                    segments["ls_ok_dtheta_xy"] = np.abs(segments["ls_dtheta_xy"]) < self.LS_DTHETA_XY_CUT[dl]
+                    segments["ls_ok_dz"] = np.abs(segments["ls_dz"]) < self.LS_DZ_CUT[dl]
+                    segments["ls_ok_dr"] = np.abs(segments["ls_dr"]) < self.LS_DR_CUT[dl]
+                    segments["ls_ok_dphi"] = np.abs(segments["ls_dphi"]) < np.pi / 2.0
+                    segments["ls_ok_chi2_xy"] = np.abs(segments["ls_chi2_012"]) < self.LS_CHI2_XY_CUT[dl]
+                    segments["ls_ok_drdz"] = segments["ls_ok_dz"] & segments["ls_ok_dr"] & segments["ls_ok_dphi"]
+                    segments["ls_ok_drdzdthetarz"] = segments["ls_ok_dz"] & segments["ls_ok_dr"] & segments["ls_ok_dphi"] & segments["ls_ok_dtheta_rz"]
+                    segments["ls_ok"] = (
+                        segments["ls_ok_dz"] &
+                        segments["ls_ok_dr"] &
+                        segments["ls_ok_dphi"] &
+                        segments["ls_ok_dtheta_rz"] &
+                        segments["ls_ok_chi2_xy"]
+                    )
 
                     # remove as desired
                     if self.cut_line_segments:
-                        for cut in mask.keys():
-                            cutflow[cut] = np.sum(mask[cut])
+                        for cut in [col for col in segments.columns if col.startswith("ls_ok")]:
+                            cutflow[cut] = np.sum(segments[cut])
                         segments = segments[segments["ls_ok"]]
 
                     # progress bar and stats from this group
