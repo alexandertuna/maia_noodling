@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 from constants import BYTE_TO_MB, NO_MCP
 from constants import T4_DZ_CUT, T4_DR_CUT, T4_DTHETA_RZ_CUT, T4_CHI2_XY_CUT
+from constants import N_T4_PHI_SLICES
 
 class T4Maker:
 
@@ -79,24 +80,22 @@ class T4Maker:
             "ls_doublelayer_div_4",
         ]
 
-        subgroup_cols = [
-            "file",
-        ]
-        # if self.cut_t4s:
-        #     subgroup_cols = [
-        #         "ls_eta_slice",
-        #         "ls_phi_slice",
-        #     ] if self.signal else [
-        #         "file",
-        #         "i_event",
-        #         "ls_eta_slice",
-        #         "ls_phi_slice",
-        #     ]
-        # else:
-        #     subgroup_cols = [
-        #         "file",
-        #     ]
+        if self.cut_t4s:
+            subgroup_cols = [
+                "ls_eta_slice",
+                "ls_phi_slice",
+            ] if self.signal else [
+                "file",
+                "i_event",
+                "ls_eta_slice",
+                "ls_phi_slice",
+            ]
+        else:
+            subgroup_cols = [
+                "file",
+            ]
 
+        # how to merge lower and upper T2s into T4s
         merge_keys = [
             "file",
             "i_event",
@@ -107,11 +106,31 @@ class T4Maker:
         def make_t4s_from_group(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
 
             group_t4s, group_cutflows = [], []
-            lower = df[df["ls_doublelayer_mod_4"] == 0]
 
-            for i_subgroup, (subcols, subdf) in enumerate(df.groupby(subgroup_cols)):
+            entire_lower = df[ df["ls_doublelayer_mod_4"] == 0 ]
+            entire_upper = df[ df["ls_doublelayer_mod_4"] != 0 ]
 
-                upper = subdf[ subdf["ls_doublelayer_mod_4"] > 0 ]
+            for i_subgroup, (subcols, lower) in enumerate(entire_lower.groupby(subgroup_cols)):
+
+                # if not cutting, then take all upper
+                # else, only consider upper in the same (or neighbor) eta/phi slice as lower
+                if not self.cut_t4s:
+                    ok = np.ones(len(entire_upper), dtype=bool)
+                else:
+                    if self.signal:
+                        [eta_slice, phi_slice] = subcols
+                    else:
+                        [_, _, eta_slice, phi_slice] = subcols
+
+                    # get upper data for the same phi slice
+                    eta_ok = np.array([eta_slice-1, eta_slice, eta_slice+1]).astype(np.int16)
+                    phi_ok = np.array([phi_slice-1, phi_slice, phi_slice+1]).astype(np.int16)
+                    phi_ok = phi_ok % N_T4_PHI_SLICES
+                    ok = (
+                        entire_upper["ls_eta_slice"].isin(eta_ok) &
+                        entire_upper["ls_phi_slice"].isin(phi_ok)
+                    )
+                upper = entire_upper[ok]
 
                 # get all combinations of lower and upper
                 t4s = lower.merge(
@@ -120,7 +139,7 @@ class T4Maker:
                     how="inner",
                     suffixes=("_lower", "_upper"),
                 )
-                logger.info(f"Lower: {len(lower)}, Upper: {len(upper)}, Combos: {len(t4s)}")
+                # logger.info(f"Lower: {len(lower)}, Upper: {len(upper)}, Combos: {len(t4s)}")
 
                 # the doublelayer
                 t4s["t4_doublelayer"] = t4s["ls_doublelayer_lower"]
@@ -231,11 +250,13 @@ class T4Maker:
 
                 # record some cut results
                 dl = t4s["t4_doublelayer"]
+                t4s["t4_ok_dphi"] = np.abs(t4s["t4_dphi"]) < np.pi / 2.0
                 t4s["t4_ok_dz"] = np.abs(t4s["t4_dz"]) < self.T4_DZ_CUT[dl]
                 t4s["t4_ok_dr"] = np.abs(t4s["t4_dr"]) < self.T4_DR_CUT[dl]
                 t4s["t4_ok_dthetarz"] = np.abs(t4s["t4_dtheta_rz"]) < self.T4_DTHETA_RZ_CUT[dl]
                 t4s["t4_ok_chi2xy"] = np.abs(t4s[f"t4_chi2_{i0}{i1}{i2}"]) < self.T4_CHI2_XY_CUT[dl]
                 t4s["t4_ok"] = (
+                    t4s["t4_ok_dphi"] &
                     t4s["t4_ok_dz"] &
                     t4s["t4_ok_dr"] &
                     t4s["t4_ok_dthetarz"] &
