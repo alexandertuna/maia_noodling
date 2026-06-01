@@ -212,6 +212,20 @@ LS_REQS = [
     LS_REQ_ALL,
 ]
 
+T4_REQ_DR_POS = "dr req."
+T4_REQ_DZ_POS = "dz req."
+T4_REQ_RZ_ANG = "dtheta rz req."
+T4_REQ_XY_CHI2 = "xy chi2 req."
+T4_REQ_ALL = "all reqs"
+T4_REQS = [
+    REQ_PASSTHROUGH,
+    T4_REQ_DR_POS,
+    T4_REQ_DZ_POS,
+    T4_REQ_RZ_ANG,
+    T4_REQ_XY_CHI2,
+    T4_REQ_ALL,
+]
+
 NICKNAMES = {
     INNER_TRACKER_BARREL: "ITB",
     OUTER_TRACKER_BARREL: "OTB",
