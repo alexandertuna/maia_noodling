@@ -12,6 +12,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from constants import BYTE_TO_MB, NO_MCP
+from constants import T4_DZ_CUT, T4_DR_CUT, T4_DTHETA_RZ_CUT, T4_CHI2_XY_CUT
 
 class T4Maker:
 
@@ -22,7 +23,13 @@ class T4Maker:
         self.t2s = t2s.copy()
         memory = self.t2s.memory_usage(deep=True).sum() * BYTE_TO_MB
         logger.info(f"Making T4s. T2 dataframe size: {memory:.2f} MB")
+
         key = (geometry_version, "sim") if sim else (geometry_version, "digi", smear)
+        self.T4_DZ_CUT = T4_DZ_CUT[key]
+        self.T4_DR_CUT = T4_DR_CUT[key]
+        self.T4_DTHETA_RZ_CUT = T4_DTHETA_RZ_CUT[key]
+        self.T4_CHI2_XY_CUT = T4_CHI2_XY_CUT[key]
+
         self.prep_t2s()
         self.filter_t2s()
         self.sort_t2s()
@@ -72,20 +79,23 @@ class T4Maker:
             "ls_doublelayer_div_4",
         ]
 
-        if self.cut_t4s:
-            subgroup_cols = [
-                "ls_eta_slice",
-                "ls_phi_slice",
-            ] if self.signal else [
-                "file",
-                "i_event",
-                "ls_eta_slice",
-                "ls_phi_slice",
-            ]
-        else:
-            subgroup_cols = [
-                "file",
-            ]
+        subgroup_cols = [
+            "file",
+        ]
+        # if self.cut_t4s:
+        #     subgroup_cols = [
+        #         "ls_eta_slice",
+        #         "ls_phi_slice",
+        #     ] if self.signal else [
+        #         "file",
+        #         "i_event",
+        #         "ls_eta_slice",
+        #         "ls_phi_slice",
+        #     ]
+        # else:
+        #     subgroup_cols = [
+        #         "file",
+        #     ]
 
         merge_keys = [
             "file",
@@ -218,19 +228,25 @@ class T4Maker:
 
                 # record some numbers
                 cutflow = {"all": len(t4s)}
-                mask = {}
 
                 # record some cut results
                 dl = t4s["t4_doublelayer"]
-                mask["and"] = np.ones(len(t4s), dtype=bool)
-                t4s["t4_ok"] = mask["and"].astype(bool)
+                t4s["t4_ok_dz"] = np.abs(t4s["t4_dz"]) < self.T4_DZ_CUT[dl]
+                t4s["t4_ok_dr"] = np.abs(t4s["t4_dr"]) < self.T4_DR_CUT[dl]
+                t4s["t4_ok_dthetarz"] = np.abs(t4s["t4_dtheta_rz"]) < self.T4_DTHETA_RZ_CUT[dl]
+                t4s["t4_ok_chi2xy"] = np.abs(t4s[f"t4_chi2_{i0}{i1}{i2}"]) < self.T4_CHI2_XY_CUT[dl]
+                t4s["t4_ok"] = (
+                    t4s["t4_ok_dz"] &
+                    t4s["t4_ok_dr"] &
+                    t4s["t4_ok_dthetarz"] &
+                    t4s["t4_ok_chi2xy"]
+                )
 
                 # remove as desired
                 if self.cut_t4s:
-                    for cut in mask.keys():
-                        cutflow[cut] = np.sum(mask[cut])
+                    for cut in [col for col in t4s.columns if col.startswith("t4_ok")]:
+                        cutflow[cut] = np.sum(t4s[cut])
                     t4s = t4s[t4s["t4_ok"]]
-                    raise NotImplementedError("T4 cuts not implemented yet")
 
                 # save
                 group_t4s.append(t4s)
