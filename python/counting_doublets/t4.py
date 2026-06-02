@@ -109,8 +109,10 @@ class T4Maker:
 
             entire_lower = df[ df["ls_doublelayer_mod_4"] == 0 ]
             entire_upper = df[ df["ls_doublelayer_mod_4"] != 0 ]
+            subgroups = entire_lower.groupby(subgroup_cols)
+            n_subgroup = len(subgroups)
 
-            for i_subgroup, (subcols, lower) in enumerate(entire_lower.groupby(subgroup_cols)):
+            for i_subgroup, (subcols, lower) in enumerate(subgroups):
 
                 # if not cutting, then take all upper
                 # else, only consider upper in the same (or neighbor) eta/phi slice as lower
@@ -139,7 +141,7 @@ class T4Maker:
                     how="inner",
                     suffixes=("_lower", "_upper"),
                 )
-                # logger.info(f"Lower: {len(lower)}, Upper: {len(upper)}, Combos: {len(t4s)}")
+                logger.info(f"{i_subgroup+1} / {n_subgroup}. Lower: {len(lower)}, Upper: {len(upper)}, Combos: {len(t4s)}")
 
                 # the doublelayer
                 t4s["t4_doublelayer"] = t4s["ls_doublelayer_lower"]
