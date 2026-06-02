@@ -308,8 +308,8 @@ class LineSegment:
                         "doublet_dr_upper": "ls_dr_upper",
                         "doublet_dz_lower": "ls_dz_lower",
                         "doublet_dz_upper": "ls_dz_upper",
-                        "doublet_ok_lower": "ls_ok_lower",
-                        "doublet_ok_upper": "ls_ok_upper",
+                        "doublet_ok_lower": "ls_md_ok_lower",
+                        "doublet_ok_upper": "ls_md_ok_upper",
                     }
                     segments = segments.rename(columns=rename)
 

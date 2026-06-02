@@ -90,15 +90,15 @@ class Plotter:
             self.plot_radius_vs_layer(pdf)
             # self.plot_doublet_occupancy(pdf)
             # self.plot_doublet_features(pdf)
-            # self.plot_linesegment_features(pdf)
+            self.plot_linesegment_features(pdf)
             self.plot_t4_features(pdf)
             if self.signal:
                 self.write_denominator_info(pdf)
                 # self.plot_doublet_efficiency_vs_kinematics(pdf)
                 # self.write_doublet_denominator_info(pdf)
                 # self.plot_doublet_quality_efficiency(pdf)
-                # self.plot_segment_efficiency_vs_kinematics(pdf)
-                # self.plot_segment_quality_efficiency(pdf)
+                self.plot_segment_efficiency_vs_kinematics(pdf)
+                self.plot_segment_quality_efficiency(pdf)
                 self.plot_t4_efficiency_vs_kinematics(pdf)
                 self.plot_t4_quality_efficiency(pdf)
 
@@ -758,8 +758,8 @@ class Plotter:
             (np.abs(self.linesegments["mcp_eta"]) < BARREL_TRACKER_MAX_ETA) &
             (self.linesegments["mcp_vertex_r"] < ZERO_POINT_ZERO_ONE_MM) &
             (np.abs(self.linesegments["mcp_vertex_z"]) < ZERO_POINT_ZERO_ONE_MM) &
-            (self.linesegments["ls_ok_lower"]) &
-            (self.linesegments["ls_ok_upper"]) &
+            (self.linesegments["ls_md_ok_lower"]) &
+            (self.linesegments["ls_md_ok_upper"]) &
             np.ones(len(self.linesegments), dtype=bool)
         )
 
