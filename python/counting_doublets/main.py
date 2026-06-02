@@ -17,7 +17,7 @@ from plot import Plotter
 from modulemap import ModuleMap
 from linesegment import LineSegment
 from t4 import T4Maker
-from constants import SIGNAL
+from constants import SIGNAL, NO_MCP
 
 
 def main():
@@ -185,6 +185,15 @@ def main():
     logger.info(f"  T4 making: {t4_time.duration:.2f}")
     logger.info(f"  Plotting: {plot_time.duration:.2f}")
 
+    # debug statements
+    if ops.debug:
+        debug_statements(
+            hits=simhits,
+            mds=doublets,
+            t2s=t2s,
+            t4s=t4s,
+        )
+
 
 def options():
     parser = argparse.ArgumentParser(usage=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -214,7 +223,61 @@ def options():
     parser.add_argument("--signal", action="store_true", help="Use signal files in the analysis")
     parser.add_argument("--background10", action="store_true", help="Use background files (10 percent) in the analysis")
     parser.add_argument("--background100", action="store_true", help="Use background files (100 percent) in the analysis")
+    parser.add_argument("--debug", action="store_true", help="Print some debug information")
     return parser.parse_args()
+
+
+def debug_statements(
+    hits: pd.DataFrame | None,
+    mds: pd.DataFrame | None,
+    t2s: pd.DataFrame | None,
+    t4s: pd.DataFrame | None,
+):
+    if hits is not None:
+        cols = [
+            "file",
+            "i_event",
+            "i_mcp",
+            "simhit_layer",
+            "simhit_x",
+            "simhit_y",
+        ]
+        mask = (hits["i_event"] == 5) & (hits["simhit_layer"].isin([0, 1]))
+        logger.info(hits[mask][cols].to_string(index=False))
+
+    if mds is not None:
+        pass
+
+    if t2s is not None:
+        cols = [
+            "file",
+            "i_event",
+            "i_mcp",
+            "ls_module_lower",
+            "ls_module_upper",
+            "ls_sensor_lower",
+            "ls_sensor_upper",
+            "ls_doublelayer",
+            "ls_x_0",
+            "ls_x_1",
+            "ls_x_2",
+            "ls_x_3",
+            "ls_y_0",
+            "ls_y_1",
+            "ls_y_2",
+            "ls_y_3",
+            "ls_dz",
+            "ls_dr",
+            "ls_dtheta_rz",
+            "ls_chi2_012",
+        ]
+        mask = (t2s["i_event"] == 5) & (t2s["ls_doublelayer"] == 0)
+        logger.info(t2s[mask][cols].to_string(index=False))
+
+    if t4s is not None:
+        cols = ["file", "i_event", "i_mcp", "t4_system", "t4_dr", "t4_dz", "t4_dtheta_rz", "t4_chi2_047"]
+        mask = (t4s["i_event"] == 5)
+        logger.info(t4s[mask][cols].to_string(index=False))
 
 
 class Timer:
