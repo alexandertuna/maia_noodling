@@ -43,6 +43,7 @@ from constants import LS_REQS, LS_REQ_DR_POS, LS_REQ_DZ_POS, LS_REQ_XY_CHI2, LS_
 from constants import LS_DZ_CUT, LS_DR_CUT, LS_DTHETA_RZ_CUT, LS_DTHETA_XY_CUT, LS_CHI2_XY_CUT
 from constants import MIN_COSTHETA, MIN_SIMHIT_PT_FRACTION, MAX_TIME
 from constants import N_LS_PHI_SLICES
+from constants import T4_DR_CUT, T4_DZ_CUT, T4_DTHETA_RZ_CUT, T4_CHI2_XY_CUT
 
 
 class Plotter:
@@ -77,6 +78,10 @@ class Plotter:
         self.LS_DTHETA_RZ_CUT = LS_DTHETA_RZ_CUT[key]
         self.LS_DTHETA_XY_CUT = LS_DTHETA_XY_CUT[key]
         self.LS_CHI2_XY_CUT = LS_CHI2_XY_CUT[key]
+        self.T4_DR_CUT = T4_DR_CUT[key]
+        self.T4_DZ_CUT = T4_DZ_CUT[key]
+        self.T4_DTHETA_RZ_CUT = T4_DTHETA_RZ_CUT[key]
+        self.T4_CHI2_XY_CUT = T4_CHI2_XY_CUT[key]
 
 
     def plot(self):
@@ -84,6 +89,7 @@ class Plotter:
         with PdfPages(self.pdf) as pdf:
             self.plot_numbers_for_comparison(pdf)
             self.write_date(pdf)
+            self.write_quality_cuts(pdf)
             self.plot_time(pdf)
             # self.plot_layer_occupancy_1d(pdf)
             # self.plot_layer_occupancy_2d(pdf)
@@ -270,6 +276,47 @@ class Plotter:
         fig, ax = plt.subplots(figsize=(8, 8))
         args = {"ha":"left", "va":"top", "fontfamily":"monospace"}
         ax.text(0.0, 0.7, text, **args, fontsize=16)
+        ax.axis("off")
+        pdf.savefig()
+        plt.close()
+
+
+    def write_quality_cuts(self, pdf: PdfPages):
+        logger.info(f"Writing quality cuts")
+        text = textwrap.dedent(f"""\
+            Quality cuts for MDs:
+            * |dr| < {self.MD_DR_CUT[0]} mm (DL0)
+            * |dr| < {self.MD_DR_CUT[1]} mm (DL1)
+            * |dr| < {self.MD_DR_CUT[2]} mm (DL2)
+            * |dr| < {self.MD_DR_CUT[3]} mm (DL3)
+            * |dz| < {self.MD_DZ_CUT[0]} mm (DL0)
+            * |dz| < {self.MD_DZ_CUT[1]} mm (DL1)
+            * |dz| < {self.MD_DZ_CUT[2]} mm (DL2)
+            * |dz| < {self.MD_DZ_CUT[3]} mm (DL3)
+
+            Quality cuts for T2s:
+            * |dr| < {self.LS_DR_CUT[0]} mm (DL0)
+            * |dr| < {self.LS_DR_CUT[1]} mm (DL1)
+            * |dr| < {self.LS_DR_CUT[2]} mm (DL2)
+            * |dz| < {self.LS_DZ_CUT[0]} mm (DL0)
+            * |dz| < {self.LS_DZ_CUT[1]} mm (DL1)
+            * |dz| < {self.LS_DZ_CUT[2]} mm (DL2)
+            * |dtheta_rz| < {self.LS_DTHETA_RZ_CUT[0]} (DL0)
+            * |dtheta_rz| < {self.LS_DTHETA_RZ_CUT[1]} (DL1)
+            * |dtheta_rz| < {self.LS_DTHETA_RZ_CUT[2]} (DL2)
+            * |chi2_xy| < {self.LS_CHI2_XY_CUT[0]} (DL0)
+            * |chi2_xy| < {self.LS_CHI2_XY_CUT[1]} (DL1)
+            * |chi2_xy| < {self.LS_CHI2_XY_CUT[2]} (DL2)
+
+            Quality cuts for T4s:
+            * |dr| < {self.T4_DR_CUT[0]} mm (DL0)
+            * |dz| < {self.T4_DZ_CUT[0]} mm (DL0)
+            * |dtheta_rz| < {self.T4_DTHETA_RZ_CUT[0]} (DL0)
+            * |chi2_xy| < {self.T4_CHI2_XY_CUT[0]} (DL0)
+        """)
+        fig, ax = plt.subplots(figsize=(8, 8))
+        args = {"ha":"left", "va":"top", "fontfamily":"monospace"}
+        ax.text(0.0, 0.9, text, **args, fontsize=12)
         ax.axis("off")
         pdf.savefig()
         plt.close()
