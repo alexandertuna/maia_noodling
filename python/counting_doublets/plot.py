@@ -99,7 +99,8 @@ class Plotter:
                 # self.plot_doublet_quality_efficiency(pdf)
                 # self.plot_segment_efficiency_vs_kinematics(pdf)
                 # self.plot_segment_quality_efficiency(pdf)
-                # self.plot_t4_efficiency_vs_kinematics(pdf)
+                self.plot_t4_efficiency_vs_kinematics(pdf)
+                self.plot_t4_quality_efficiency(pdf)
 
 
     def plot_numbers_for_comparison(self, pdf: PdfPages):
@@ -1054,6 +1055,8 @@ class Plotter:
             (np.abs(self.t4s["mcp_eta"]) < BARREL_TRACKER_MAX_ETA) &
             (self.t4s["mcp_vertex_r"] < ZERO_POINT_ZERO_ONE_MM) &
             (np.abs(self.t4s["mcp_vertex_z"]) < ZERO_POINT_ZERO_ONE_MM) &
+            (self.t4s["t4_ls_ok_lower"]) &
+            (self.t4s["t4_ls_ok_upper"]) &
             np.ones(len(self.t4s), dtype=bool)
         )
 
@@ -1196,3 +1199,68 @@ class Plotter:
                 ax.set_ylim(0.7, 1.03)
                 pdf.savefig()
                 plt.close()
+
+
+    def plot_t4_quality_efficiency(self, pdf: PdfPages):
+
+        bins = {
+            "mcp_pt": np.linspace(0.0, 10.0, 201),
+            "mcp_eta": np.linspace(-0.7, 0.7, 281),
+            "mcp_phi": np.linspace(-3.2, 3.2, 321),
+        }
+        xlabel = {
+            "mcp_pt": r"Muon $p_T$ [GeV]",
+            "mcp_eta": r"Muon $\eta$",
+            "mcp_phi": r"Muon $\phi$ [rad]",
+        }
+
+        # the cuts
+        reqs = [col for col in self.t4s.columns if col.startswith("t4_ok")]
+
+        # only consider truth-matched
+        baseline = self.baseline_t4_mask()
+        logger.info(f"T4 efficiency: total T4: {len(self.t4s)}")
+        logger.info(f"T4 efficiency: total T4 in baseline: {baseline.sum()}")
+
+        # consider efficiency vs kinematics
+        for i_kin, kin in enumerate([
+            "mcp_pt",
+            "mcp_eta",
+            "mcp_phi"
+        ]):
+
+            groupbys = ["t4_system", "t4_doublelayer"]
+            for ((system, doublelayer), group) in self.t4s[baseline].groupby(groupbys):
+
+                logger.info(f"Plotting T4 quality efficiency vs {kin}, system {system}, doublelayer {doublelayer} ...")
+                layer = doublelayer * 2
+                layers = range(layer, layer + 4)
+
+                for req in reqs:
+                    denom = group
+                    numer = group[ group[req] ]
+                    if i_kin == 0:
+                        logger.info(f"Denom for system {system} layers {layers} {req}: {len(denom)} doublets")
+                        logger.info(f"Numer for system {system} layers {layers} {req}: {len(numer)} doublets")
+
+                    n_denom, edges = np.histogram(denom[kin], bins=bins[kin])
+                    n_numer, edges = np.histogram(numer[kin], bins=bins[kin])
+                    efficiency = np.divide(n_numer, n_denom, out=np.zeros_like(n_numer, dtype=float), where=n_denom!=0)
+                    centers = 0.5 * (edges[1:] + edges[:-1])
+
+                    fig, ax = plt.subplots()
+                    ax.plot(
+                        centers,
+                        efficiency,
+                        marker="o",
+                        markersize=1,
+                        linestyle="-",
+                        color="dodgerblue",
+                    )
+                    ax.set_xlabel(xlabel[kin])
+                    ax.set_ylabel("T4 quality efficiency")
+                    ax.set_title(f"{NICKNAMES[system]} layers {layers}: {req}")
+                    ax.set_ylim(0.965, 1.004)
+                    pdf.savefig()
+                    plt.close()
+
