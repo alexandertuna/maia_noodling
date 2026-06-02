@@ -81,8 +81,8 @@ MD_DR_CUT = {
     ("v01", "sim"): np.array([
         260, # mm # doublelayer 0
         313, # mm # doublelayer 1
-        720, # mm # doublelayer 2
-        807, # mm # doublelayer 3
+        718, # mm # doublelayer 2
+        806, # mm # doublelayer 3
     ]),
     ("v05", "sim"): np.array([
         260, # mm # doublelayer 0
@@ -108,12 +108,12 @@ LS_DR_CUT = {
     ("v01", "sim"): np.array([
         281, # mm # doublelayer 0
         0.0, # mm # doublelayer 1
-        752, # mm # doublelayer 2
+        757, # mm # doublelayer 2
     ]),
     ("v05", "sim"): np.array([
         281, # mm # doublelayer 0
         0.0, # mm # doublelayer 1
-        752, # mm # doublelayer 2
+        757, # mm # doublelayer 2
     ]),
 }
 LS_DTHETA_RZ_CUT = {
