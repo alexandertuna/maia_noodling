@@ -343,7 +343,8 @@ class LineSegment:
                         segments["ls_ok_dr"] &
                         segments["ls_ok_dphi"] &
                         segments["ls_ok_dtheta_rz"] &
-                        segments["ls_ok_chi2_xy"]
+                        segments["ls_ok_chi2_xy"] &
+                        np.ones(len(segments), dtype=bool)
                     )
 
                     # remove as desired
