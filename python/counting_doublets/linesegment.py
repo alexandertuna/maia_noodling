@@ -363,10 +363,9 @@ class LineSegment:
                     all_linesegments.append(segments)
 
                 # group cutflow
-                if not self.signal:
-                    cutflow = pd.DataFrame(group_cutflows)
-                    for col in cutflow.columns:
-                        logger.info(f"Line segments cutflow (group), {col}: {cutflow[col].sum()}")
+                cutflow = pd.DataFrame(group_cutflows)
+                for col in cutflow.columns:
+                    logger.info(f"Line segments cutflow (group), {col}: {cutflow[col].sum()}")
 
 
         # merge them
