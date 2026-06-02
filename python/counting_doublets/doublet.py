@@ -175,7 +175,8 @@ class DoubletMaker:
             all_doublets.append(doublets)
             all_cutflows.append(cutflow)
 
-            if (self.signal and i_group % 100 == 0) or (not self.signal and i_group % 10 == 0):
+            # if (self.signal and i_group % 100 == 0) or (not self.signal and i_group % 10 == 0):
+            if (self.signal and i_group % 100 == 0) or (not self.signal):
                 length = len(doublets)
                 size = doublets.memory_usage(deep=True).sum() * BYTE_TO_MB
                 logger.info(f"Processed group {i_group}/{len(groups)}, doublet size = {size:.1f} MB, n(doublets) = {length} ...")
