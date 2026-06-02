@@ -212,20 +212,6 @@ LS_REQS = [
     LS_REQ_ALL,
 ]
 
-T4_REQ_DR_POS = "dr req."
-T4_REQ_DZ_POS = "dz req."
-T4_REQ_RZ_ANG = "dtheta rz req."
-T4_REQ_XY_CHI2 = "xy chi2 req."
-T4_REQ_ALL = "all reqs"
-T4_REQS = [
-    REQ_PASSTHROUGH,
-    T4_REQ_DR_POS,
-    T4_REQ_DZ_POS,
-    T4_REQ_RZ_ANG,
-    T4_REQ_XY_CHI2,
-    T4_REQ_ALL,
-]
-
 NICKNAMES = {
     INNER_TRACKER_BARREL: "ITB",
     OUTER_TRACKER_BARREL: "OTB",
@@ -244,5 +230,3 @@ MAX_T4_DPHI = 0.25 * 2
 MAX_T4_DETA = 0.025 * 2
 N_T4_PHI_SLICES = int(2 * DETECTOR_MAX_PHI / MAX_T4_DPHI)
 N_T4_ETA_SLICES = int(2 * DETECTOR_MAX_ETA / MAX_T4_DETA)
-print("*"*80)
-print("*"*80)
