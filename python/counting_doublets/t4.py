@@ -232,6 +232,8 @@ class T4Maker:
                     "ls_dr_upper": "t4_dr_upper",
                     "ls_dz_lower": "t4_dz_lower",
                     "ls_dz_upper": "t4_dz_upper",
+                    "ls_ok_lower": "t4_ls_ok_lower",
+                    "ls_ok_upper": "t4_ls_ok_upper",
                 }
                 t4s = t4s.rename(columns=rename)
 
