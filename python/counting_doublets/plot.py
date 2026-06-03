@@ -95,7 +95,7 @@ class Plotter:
             # self.plot_layer_occupancy_2d(pdf)
             self.plot_radius_vs_layer(pdf)
             # self.plot_doublet_occupancy(pdf)
-            # self.plot_doublet_features(pdf)
+            self.plot_doublet_features(pdf)
             self.plot_linesegment_features(pdf)
             self.plot_t4_features(pdf)
             if self.signal:
@@ -103,10 +103,10 @@ class Plotter:
                 # self.plot_doublet_efficiency_vs_kinematics(pdf)
                 # self.write_doublet_denominator_info(pdf)
                 # self.plot_doublet_quality_efficiency(pdf)
-                self.plot_segment_efficiency_vs_kinematics(pdf)
-                self.plot_segment_quality_efficiency(pdf)
-                self.plot_t4_efficiency_vs_kinematics(pdf)
-                self.plot_t4_quality_efficiency(pdf)
+                # self.plot_segment_efficiency_vs_kinematics(pdf)
+                # self.plot_segment_quality_efficiency(pdf)
+                # self.plot_t4_efficiency_vs_kinematics(pdf)
+                # self.plot_t4_quality_efficiency(pdf)
 
 
     def plot_numbers_for_comparison(self, pdf: PdfPages):
@@ -637,7 +637,7 @@ class Plotter:
                                                                                        "doublet_doublelayer",
                                                                                        ]):
 
-                        logger.info(f"Plotting signal doublet feature {feature}, system {system}, doublelayer {doublelayer} ...")
+                        # logger.info(f"Plotting signal doublet feature {feature}, system {system}, doublelayer {doublelayer} ...")
                         layers = [doublelayer * 2, doublelayer * 2 + 1]
                         if len(group) == 0:
                             continue
@@ -664,6 +664,7 @@ class Plotter:
                         ax.set_ylabel("Doublets")
                         ax.set_title(f"{NICKNAMES[system]} layers {layers}. N={num}, Mean={mean:{fmt}}, RMS={rms:{fmt}}")
                         ax.text(0.05, 0.95, f"99.7% in {p997:{fmt}}", transform=ax.transAxes)
+                        logger.info(f"{NICKNAMES[system]} doublelayer {doublelayer} {feature}: 99.7% in {p997:{fmt}}")
                         pdf.savefig()
                         plt.close()
 
@@ -812,7 +813,7 @@ class Plotter:
 
 
     def plot_linesegment_features(self, pdf: PdfPages):
-        logger.info("Plotting signal linesegment features ...")
+        logger.info("Plotting linesegment features ...")
         baseline = self.baseline_linesegment_mask() if self.signal else np.ones(len(self.linesegments), dtype=bool)
 
         bins = {
@@ -877,7 +878,7 @@ class Plotter:
                                                                                            "ls_doublelayer",
                                                                                            ]):
 
-                        logger.info(f"Plotting signal linesegment feature {feature}, system {system}, doublelayer {doublelayer} ...")
+                        # logger.info(f"Plotting signal linesegment feature {feature}, system {system}, doublelayer {doublelayer} ...")
 
                         fig, ax = plt.subplots()
                         ax.hist(
@@ -900,8 +901,8 @@ class Plotter:
                         ax.set_xlabel(xlabel[feature])
                         ax.set_ylabel("Line Segments")
                         ax.set_title(f"{NICKNAMES[system]}. DL={doublelayer}. N={num}, Mean={mean:{fmt}}, RMS={rms:{fmt}}")
-                        # ax.set_title(f"{NICKNAMES[system]}, doublelayer={doublelayer}")
                         ax.text(0.30, 0.92, f"99.7% in {p997:{fmt}}", transform=ax.transAxes, fontsize=16)
+                        logger.info(f"{NICKNAMES[system]} doublelayer {doublelayer} {feature}: 99.7% in {p997:{fmt}}")
                         pdf.savefig()
                         plt.close()
 
@@ -1109,7 +1110,7 @@ class Plotter:
 
 
     def plot_t4_features(self, pdf: PdfPages):
-        logger.info("Plotting signal t4 features ...")
+        logger.info("Plotting t4 features ...")
         baseline = self.baseline_t4_mask() if self.signal else np.ones(len(self.t4s), dtype=bool)
 
         bins = {
@@ -1156,7 +1157,7 @@ class Plotter:
                 groupby_cols = ["t4_system", "t4_doublelayer"]
                 for ((system, doublelayer), group) in self.t4s[baseline].groupby(groupby_cols):
 
-                        logger.info(f"Plotting signal linesegment feature {feature}, system {system}, doublelayer {doublelayer} ...")
+                        # logger.info(f"Plotting signal linesegment feature {feature}, system {system}, doublelayer {doublelayer} ...")
 
                         fig, ax = plt.subplots()
                         ax.hist(
@@ -1180,6 +1181,7 @@ class Plotter:
                         ax.set_ylabel("T4s")
                         ax.set_title(f"{NICKNAMES[system]}. DL={doublelayer}. N={num}, Mean={mean:{fmt}}, RMS={rms:{fmt}}")
                         ax.text(0.30, 0.92, f"99.7% in {p997:{fmt}}", transform=ax.transAxes, fontsize=16)
+                        logger.info(f"{NICKNAMES[system]} doublelayer {doublelayer} {feature}: 99.7% in {p997:{fmt}}")
                         pdf.savefig()
                         plt.close()
 
