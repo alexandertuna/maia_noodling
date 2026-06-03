@@ -143,7 +143,7 @@ def gen_command_hbb(events: int, num: int, typeevent: str):
 def sim_command(events: int, num: int, typeevent: str):
     suffix = get_suffix(typeevent)
     inp = f"{typeevent}_gen_{num}.{suffix}"
-    cmd = f"time ddsim \
+    cmd = f"ddsim \
         --inputFile {inp} \
         --steeringFile {STEER_SIM} \
         --compactFile {COMPACT} \

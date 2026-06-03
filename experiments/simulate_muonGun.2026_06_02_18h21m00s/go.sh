@@ -10,7 +10,7 @@ for NUM in {100..100}; do
     done
 
     echo "Launching ${NUM}"
-    python digitize_muons.py --gen --sim --num ${NUM} --typeevent muonGun_pT_2p0_2p1 --events 1000 --data $(pwd) &> log_${NUM}.txt &
+    python digitize_muons.py --gen --sim --num ${NUM} --typeevent muonGun_pT_2p0_2p1 --events 1000 --data $(pwd) # &> log_${NUM}.txt &
 
 done
 
