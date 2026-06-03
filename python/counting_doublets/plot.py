@@ -1111,6 +1111,9 @@ class Plotter:
 
     def plot_t4_features(self, pdf: PdfPages):
         logger.info("Plotting t4 features ...")
+        if len(self.t4s) == 0:
+            logger.info("No T4s to plot")
+            return
         baseline = self.baseline_t4_mask() if self.signal else np.ones(len(self.t4s), dtype=bool)
 
         bins = {
@@ -1187,6 +1190,10 @@ class Plotter:
 
 
     def plot_t4_efficiency_vs_kinematics(self, pdf: PdfPages):
+
+        if len(self.t4s) == 0:
+            logger.info("No T4s to plot")
+            return
 
         bins = {
             "mcp_pt": np.linspace(0.0, 10.0, 201),

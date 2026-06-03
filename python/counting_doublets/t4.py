@@ -275,7 +275,8 @@ class T4Maker:
                     t4s = t4s[t4s["t4_ok"]]
 
                 # save
-                group_t4s.append(t4s)
+                if len(t4s) > 0:
+                    group_t4s.append(t4s)
                 group_cutflows.append(cutflow)
 
             return group_t4s, group_cutflows
@@ -288,14 +289,22 @@ class T4Maker:
         # evaluate
         for i_group, (cols, df) in enumerate(groups):
             logger.info(f"Processing group {i_group+1} / {n_group} for T4s (n={len(df)}) ...")
-
             t4s, cutflow = make_t4s_from_group(df)
             all_t4s.extend(t4s)
             all_cutflows.extend(cutflow)
 
-        # merge them
+        # merge cutflow
+        cutflow = pd.DataFrame(all_cutflows)
+        for col in cutflow.columns:
+            logger.info(f"T4s cutflow, {col}: {cutflow[col].sum()}")
+
+        # merge dataframes
         logger.info(f"Merging {len(all_t4s)} groups of T4s ...")
-        self.df = pd.concat(all_t4s, ignore_index=True)
+        if len(all_t4s) > 0:
+            self.df = pd.concat(all_t4s, ignore_index=True)
+        else:
+            self.df = pd.DataFrame()
+            return
 
         # sort them
         sortby = [
@@ -309,9 +318,4 @@ class T4Maker:
         # announce memory
         memory = self.df.memory_usage(deep=True).sum() * BYTE_TO_MB
         logger.info(f"Memory usage of T4s: {memory:.1f} MB")
-
-        # cutflow
-        cutflow = pd.DataFrame(all_cutflows)
-        for col in cutflow.columns:
-            logger.info(f"T4s cutflow, {col}: {cutflow[col].sum()}")
 
