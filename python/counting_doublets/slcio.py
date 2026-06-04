@@ -16,6 +16,7 @@ from constants import INNER_TRACKER_BARREL_HITS, OUTER_TRACKER_BARREL_HITS
 from constants import INNER_TRACKER_BARREL_RELATIONS, OUTER_TRACKER_BARREL_RELATIONS
 from constants import BYTE_TO_MB, NO_MCP
 from constants import MIN_COSTHETA, MIN_SIMHIT_PT_FRACTION, MAX_TIME
+from constants import INNER_TRACKER_BARREL, OUTER_TRACKER_BARREL
 
 _detector = None
 _surfman = None
@@ -112,6 +113,54 @@ def init_worker():
         _maps = {name: _surfman.map(det.name()) for name, det in dets.items()}
 
 
+# def is_reconstructable(system: int, cellids: list[int]) -> bool:
+#     LAYER_PAIRS = [(0, 1), (2, 3), (4, 5), (6, 7)]
+#     df = pd.DataFrame({"cellid": cellids})
+#     df["system"] = np.right_shift(df["cellid"], 0) & 0b1_1111
+#     df["side"] = np.right_shift(df["cellid"], 5) & 0b11
+#     df["layer"] = np.right_shift(df["cellid"], 7) & 0b11_1111
+#     df["module"] = np.right_shift(df["cellid"], 13) & 0b111_1111_1111
+#     df["sensor"] = np.right_shift(df["cellid"], 24) & 0b1111_1111
+#     df["layer_div_2"] = df["layer"] // 2
+#     df = df[df["system"] == system]
+#     for lo, hi in LAYER_PAIRS:
+#         hits_lo = df[df["layer"] == lo][["module", "sensor"]]
+#         hits_hi = df[df["layer"] == hi][["module", "sensor"]]
+#         shared = hits_lo.merge(hits_hi, on=["module", "sensor"])
+#         print(f"System {system} layer pair {lo}-{hi}: {len(shared)} shared modules/sensors")
+#         if shared.empty:
+#             return False
+#     return True
+
+
+# def is_reconstructable(simhits: pd.DataFrame) -> bool:
+#     if simhits["simhit_system"].nunique() > 1:
+#         raise ValueError("simhits must belong to the same system")
+#     LAYER_PAIRS = [(0, 1), (2, 3), (4, 5), (6, 7)]
+#     for lo, hi in LAYER_PAIRS:
+#         hits_lo = simhits[simhits["simhit_layer"] == lo][["simhit_module", "simhit_sensor"]]
+#         hits_hi = simhits[simhits["simhit_layer"] == hi][["simhit_module", "simhit_sensor"]]
+#         shared = hits_lo.merge(hits_hi, on=["simhit_module", "simhit_sensor"])
+#         # print(f"Layer pair {lo}-{hi}: {len(shared)} shared modules/sensors")
+#         if shared.empty:
+#             return False
+#     return True
+
+
+def is_reconstructable(
+    simhits: pd.DataFrame,
+    layer_lower: int,
+    layer_upper: int,
+) -> bool:
+    if simhits["simhit_system"].nunique() > 1:
+        raise ValueError("simhits must belong to the same system")
+    hits_lo = simhits[simhits["simhit_layer"] == layer_lower][["simhit_module", "simhit_sensor"]]
+    hits_hi = simhits[simhits["simhit_layer"] == layer_upper][["simhit_module", "simhit_sensor"]]
+    shared = hits_lo.merge(hits_hi, on=["simhit_module", "simhit_sensor"])
+    # print(f"Layer pair {layer_lower}-{layer_upper}: {len(shared)} shared modules/sensors")
+    return len(shared) > 0
+
+
 def convert_one_file(
         slcio_file_path: str,
         file_number: int,
@@ -149,6 +198,9 @@ def convert_one_file(
 
     # loop over all events in the slcio file
     for i_event, event in enumerate(reader):
+
+        # if i_event > 0:
+        #     break
 
         # inspect MCParticles
         mcparticles = list(event.getCollection(MCPARTICLE))
@@ -332,6 +384,58 @@ def convert_one_file(
     if signal:
         simhits = postprocess_mcps(simhits)
     simhits = postprocess_simhits(simhits, signal)
+
+    # Bonus feature:
+    # define if a mcp is "reconstructable" or not
+    # a mcp is reconstructable if its associated simhits are reconstructable
+    # a collection of simhits is reconstructable if:
+    #  it has at least one simhit in all tracker layers, and
+    #  even/odd layer pairs are in the same module and sensor.
+    #  a simhit can be categorized by its cellid0, which encodes the system, layer, module, and sensor
+    # mcp_reconstructable_inner = [False] * len(mcparticles)
+    # mcp_reconstructable_outer = [False] * len(mcparticles)
+    # if signal:
+    #     cellids = {}
+    #     for simhit in event.getCollection(OUTER_TRACKER_BARREL_COLLECTION):
+    #         i_mcp = mcparticles.index(simhit.getMCParticle())
+    #         if i_mcp not in cellids:
+    #             cellids[i_mcp] = []
+    #         cellids[i_mcp].append(simhit.getCellID0())
+    #     print(i_event, "*"*80)
+    #     mcp_reconstructable_outer = [is_reconstructable(OUTER_TRACKER_BARREL, cellids[i_mcp]) for i_mcp in cellids]
+    #     print(mcp_reconstructable_outer)
+    reconstructable_outer_01 = [False] * len(mcps)
+    reconstructable_outer_23 = [False] * len(mcps)
+    reconstructable_outer_45 = [False] * len(mcps)
+    reconstructable_outer_67 = [False] * len(mcps)
+    reconstructable_outer = [False] * len(mcps)
+    if signal:
+        logger.info(f"Postprocessing {len(mcps)} reconstructable MCPs ...")
+        for idx, mcp in mcps.iterrows():
+            mask = (
+                (simhits["file"] == mcp["file"]) &
+                (simhits["i_event"] == mcp["i_event"]) &
+                (simhits["i_mcp"] == mcp["i_mcp"]) &
+                (simhits["simhit_first_exit"] == True)
+            )
+            inner = simhits[mask & (simhits["simhit_system"] == INNER_TRACKER_BARREL)]
+            outer = simhits[mask & (simhits["simhit_system"] == OUTER_TRACKER_BARREL)]
+            reconstructable_outer_01[idx] = is_reconstructable(outer, 0, 1)
+            reconstructable_outer_23[idx] = is_reconstructable(outer, 2, 3)
+            reconstructable_outer_45[idx] = is_reconstructable(outer, 4, 5)
+            reconstructable_outer_67[idx] = is_reconstructable(outer, 6, 7)
+        # print("Reconstructable inner:", reconstructable_inner, sum(reconstructable_inner), "/", len(mcps))
+        # print("Reconstructable outer:", reconstructable_outer, sum(reconstructable_outer), "/", len(mcps))
+    mcps["mcp_reconstructable_outer_01"] = np.array(reconstructable_outer_01)
+    mcps["mcp_reconstructable_outer_23"] = np.array(reconstructable_outer_23)
+    mcps["mcp_reconstructable_outer_45"] = np.array(reconstructable_outer_45)
+    mcps["mcp_reconstructable_outer_67"] = np.array(reconstructable_outer_67)
+    mcps["mcp_reconstructable_outer"] = (
+        mcps["mcp_reconstructable_outer_01"] &
+        mcps["mcp_reconstructable_outer_23"] &
+        mcps["mcp_reconstructable_outer_45"] &
+        mcps["mcp_reconstructable_outer_67"]
+    )
 
     return mcps, simhits
 
