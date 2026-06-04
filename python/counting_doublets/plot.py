@@ -100,7 +100,7 @@ class Plotter:
             # self.plot_t4_features(pdf)
             if self.signal:
                 self.write_denominator_info(pdf)
-                self.plot_reconstructable_efficiency_vs_kinematics(pdf)
+                self.plot_detectable_efficiency_vs_kinematics(pdf)
                 # self.plot_doublet_efficiency_vs_kinematics(pdf)
                 # self.write_doublet_denominator_info(pdf)
                 # self.plot_doublet_quality_efficiency(pdf)
@@ -510,7 +510,7 @@ class Plotter:
         plt.close()
 
 
-    def plot_reconstructable_efficiency_vs_kinematics(self, pdf: PdfPages):
+    def plot_detectable_efficiency_vs_kinematics(self, pdf: PdfPages):
 
         bins = {
             "mcp_pt": np.linspace(0.0, 10.0, 201),
@@ -527,13 +527,13 @@ class Plotter:
         dmask = self.get_denominator_mask()
         denom = self.mcps[dmask]
 
-        # numerator: the denominator is reconstructable
+        # numerator: the denominator is detectable
         numers = {}
-        numers["mcp_reconstructable_outer_01"] = self.mcps[dmask & (self.mcps["mcp_reconstructable_outer_01"] == True)]
-        numers["mcp_reconstructable_outer_23"] = self.mcps[dmask & (self.mcps["mcp_reconstructable_outer_23"] == True)]
-        numers["mcp_reconstructable_outer_45"] = self.mcps[dmask & (self.mcps["mcp_reconstructable_outer_45"] == True)]
-        numers["mcp_reconstructable_outer_67"] = self.mcps[dmask & (self.mcps["mcp_reconstructable_outer_67"] == True)]
-        numers["mcp_reconstructable_outer"] = self.mcps[dmask & (self.mcps["mcp_reconstructable_outer"] == True)]
+        numers["mcp_detectable_OTB_01"] = self.mcps[dmask & (self.mcps["mcp_detectable_OTB_01"] == True)]
+        numers["mcp_detectable_OTB_23"] = self.mcps[dmask & (self.mcps["mcp_detectable_OTB_23"] == True)]
+        numers["mcp_detectable_OTB_45"] = self.mcps[dmask & (self.mcps["mcp_detectable_OTB_45"] == True)]
+        numers["mcp_detectable_OTB_67"] = self.mcps[dmask & (self.mcps["mcp_detectable_OTB_67"] == True)]
+        numers["mcp_detectable_OTB"] = self.mcps[dmask & (self.mcps["mcp_detectable_OTB"] == True)]
 
         for kin in ["mcp_pt", "mcp_eta", "mcp_phi"]:
 
@@ -553,7 +553,7 @@ class Plotter:
                     color="dodgerblue",
                 )
                 ax.set_xlabel(xlabel[kin])
-                ax.set_ylabel("Reconstructable efficiency")
+                ax.set_ylabel("Detector efficiency")
                 ax.set_title(f"{numer}")
                 ax.set_ylim(0.7, 1.03)
                 pdf.savefig()

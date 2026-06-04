@@ -17,6 +17,7 @@ from constants import INNER_TRACKER_BARREL_RELATIONS, OUTER_TRACKER_BARREL_RELAT
 from constants import BYTE_TO_MB, NO_MCP
 from constants import MIN_COSTHETA, MIN_SIMHIT_PT_FRACTION, MAX_TIME
 from constants import INNER_TRACKER_BARREL, OUTER_TRACKER_BARREL
+from constants import NICKNAMES
 
 _detector = None
 _surfman = None
@@ -111,20 +112,6 @@ def init_worker():
             OUTER_TRACKER_BARREL_COLLECTION: _detector.detector("OuterTrackerBarrel"),
         }
         _maps = {name: _surfman.map(det.name()) for name, det in dets.items()}
-
-
-def is_reconstructable(
-    simhits: pd.DataFrame,
-    layer_lower: int,
-    layer_upper: int,
-) -> bool:
-    if simhits["simhit_system"].nunique() > 1:
-        raise ValueError("simhits must belong to the same system")
-    hits_lo = simhits[simhits["simhit_layer"] == layer_lower][["simhit_module", "simhit_sensor"]]
-    hits_hi = simhits[simhits["simhit_layer"] == layer_upper][["simhit_module", "simhit_sensor"]]
-    shared = hits_lo.merge(hits_hi, on=["simhit_module", "simhit_sensor"])
-    # print(f"Layer pair {layer_lower}-{layer_upper}: {len(shared)} shared modules/sensors")
-    return len(shared) > 0
 
 
 def convert_one_file(
@@ -351,48 +338,9 @@ def convert_one_file(
         simhits = postprocess_mcps(simhits)
     simhits = postprocess_simhits(simhits, signal)
 
-    # Bonus feature:
-    # define if a mcp is "reconstructable" or not
+    # Bonus features: define if a mcp is "detectable" or not
     if signal:
-        GROUP_COLS = ["file", "i_event", "i_mcp"]
-        MATCH_COLS = GROUP_COLS + ["simhit_module", "simhit_sensor"]
-
-        def get_reconstructable_mcps(
-            simhits_system: pd.DataFrame,
-            layer_lower: int,
-            layer_upper: int,
-        ) -> pd.DataFrame:
-            """
-            Returns a DataFrame of GROUP_COLS rows for every MCP that has at least
-            one (module, sensor) pair with hits in both layer_lower and layer_upper.
-            """
-            lo = simhits_system[simhits_system["simhit_layer"] == layer_lower][MATCH_COLS]
-            hi = simhits_system[simhits_system["simhit_layer"] == layer_upper][MATCH_COLS]
-            return lo.merge(hi, on=MATCH_COLS)[GROUP_COLS].drop_duplicates()
-
-        outer = simhits[ simhits["simhit_first_exit"] & (simhits["simhit_system"] == OUTER_TRACKER_BARREL) ]
-        recon_01 = get_reconstructable_mcps(outer, 0, 1).assign(mcp_reconstructable_outer_01=True)
-        recon_23 = get_reconstructable_mcps(outer, 2, 3).assign(mcp_reconstructable_outer_23=True)
-        recon_45 = get_reconstructable_mcps(outer, 4, 5).assign(mcp_reconstructable_outer_45=True)
-        recon_67 = get_reconstructable_mcps(outer, 6, 7).assign(mcp_reconstructable_outer_67=True)
-
-        mcps = (
-            mcps
-            .merge(recon_01, on=GROUP_COLS, how="left")
-            .merge(recon_23, on=GROUP_COLS, how="left")
-            .merge(recon_45, on=GROUP_COLS, how="left")
-            .merge(recon_67, on=GROUP_COLS, how="left")
-        )
-        mcps["mcp_reconstructable_outer_01"] = mcps["mcp_reconstructable_outer_01"].fillna(False)
-        mcps["mcp_reconstructable_outer_23"] = mcps["mcp_reconstructable_outer_23"].fillna(False)
-        mcps["mcp_reconstructable_outer_45"] = mcps["mcp_reconstructable_outer_45"].fillna(False)
-        mcps["mcp_reconstructable_outer_67"] = mcps["mcp_reconstructable_outer_67"].fillna(False)
-        mcps["mcp_reconstructable_outer"] = (
-            mcps["mcp_reconstructable_outer_01"] &
-            mcps["mcp_reconstructable_outer_23"] &
-            mcps["mcp_reconstructable_outer_45"] &
-            mcps["mcp_reconstructable_outer_67"]
-        )
+        mcps = add_detectable_columns(mcps, simhits)
 
     return mcps, simhits
 
@@ -507,6 +455,52 @@ def sort_simhits(df: pd.DataFrame) -> pd.DataFrame:
         "simhit_sensor",
     ]
     return df.sort_values(by=columns).reset_index(drop=True)
+
+
+def add_detectable_columns(mcps: pd.DataFrame, simhits: pd.DataFrame) -> pd.DataFrame:
+
+    GROUP_COLS = ["file", "i_event", "i_mcp"]
+    MATCH_COLS = GROUP_COLS + ["simhit_module", "simhit_sensor"]
+    SYSTEMS = [INNER_TRACKER_BARREL, OUTER_TRACKER_BARREL]
+    LAYER_PAIRS = [(0, 1), (2, 3), (4, 5), (6, 7)]
+
+    def get_detectable_mcps(
+        simhits_system: pd.DataFrame,
+        layer_lower: int,
+        layer_upper: int,
+    ) -> pd.DataFrame:
+        """
+        Returns a DataFrame of GROUP_COLS rows for every MCP that has at least
+        one (module, sensor) pair with hits in both layer_lower and layer_upper.
+        """
+        lo = simhits_system[simhits_system["simhit_layer"] == layer_lower][MATCH_COLS]
+        hi = simhits_system[simhits_system["simhit_layer"] == layer_upper][MATCH_COLS]
+        return lo.merge(hi, on=MATCH_COLS)[GROUP_COLS].drop_duplicates()
+
+    for system in SYSTEMS:
+
+        nickname = NICKNAMES[system]
+        sysdf = simhits[ simhits["simhit_first_exit"] & (simhits["simhit_system"] == system) ]
+
+        for lo, hi in LAYER_PAIRS:
+
+            column = f"mcp_detectable_{nickname}_{lo}{hi}"
+
+            # get mcps that are detectable in each double layer
+            detectable_mcps = get_detectable_mcps(sysdf, lo, hi).assign(**{column: True})
+
+            # merge detectable mcps with the main mcp df
+            mcps = mcps.merge(detectable_mcps, on=GROUP_COLS, how="left")
+
+            # fill nan with False (not detectable)
+            mcps[column] = mcps[column].fillna(False).astype(bool)
+
+        # combine all double layers to get overall detectable status
+        mcps[f"mcp_detectable_{nickname}"] = np.logical_and.reduce([
+            mcps[f"mcp_detectable_{nickname}_{lo}{hi}"] for (lo, hi) in LAYER_PAIRS
+        ])
+
+    return mcps
 
 
 def announce_inside_bounds(df: pd.DataFrame):
