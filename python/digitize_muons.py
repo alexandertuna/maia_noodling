@@ -1,26 +1,5 @@
 """
-Convert a shell script into python:
-
-# constants
-CODE=/ceph/users/atuna/work/maia
-TYPEEVENT="muonGun_pT_0_10"
-NUM=${1}
-echo "CODE=${CODE}"
-echo "TYPEEVENT=${TYPEEVENT}"
-echo "NUM=${NUM}"
-
-# env
-# it would be cool if setup_mucoll existed out-of-the-box
-# setup_mucoll
-source /opt/spack/opt/spack/__spack_path_placeholder__/__spack_path_placeholder__/__spack_path_placeholder__/__spack_path_placeholder__/linux-x86_64/mucoll-stack-master-2wtmg3ohr26uckseodhqjfjaw7mijwil/setup.sh
-export MARLIN_DLL=$(readlink -e ${CODE}/MyBIBUtils/build/lib/libMyBIBUtils.so):${MARLIN_DLL}
-
-# run
-time source ${CODE}/maia_noodling/shell/gen.sh ${NUM}
-time source ${CODE}/maia_noodling/shell/sim.sh
-mv output_sim.slcio ${TYPEEVENT}_sim_${NUM}.slcio
-time source ${CODE}/maia_noodling/shell/digi.sh ${TYPEEVENT} ${NUM}
-rm -f output_gen.slcio
+A script to bundle generation, simulation, and digitization of datasets for MAIA LST studies.
 """
 
 import argparse
@@ -28,11 +7,12 @@ import os
 from pathlib import Path
 
 CODE = "/ceph/users/atuna/work/maia"
-COMPACT = f"{CODE}/k4geo/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
-STEER_SIM = f"{CODE}/SteeringMacros/Sim/sim_steer_GEN_CONDOR.py"
-STEER_RECO = f"{CODE}/SteeringMacros/k4Reco/steer_reco.py"
+K4GEO_DIR = f"{CODE}/k4geo"
+COMPACT = f"{K4GEO_DIR}/MuColl/MAIA/compact/MAIA_v0/MAIA_v0.xml"
+STEER_SIM = f"{CODE}/SteeringMacrosTuna/Sim/sim_steer_GEN_CONDOR.py"
+STEER_RECO = f"{CODE}/SteeringMacrosTuna/k4Reco/steer_reco.py"
 STEER_WHIZARD_HBB = f"{CODE}/mucoll-benchmarks/generation/signal/whizard/mumu_H_bb_10TeV.sin"
-
+os.environ["k4geo_DIR"] = K4GEO_DIR
 
 def arguments():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -46,6 +26,7 @@ def arguments():
     parser.add_argument("--typeevent", type=str, default="muonGun_pT_0_10", help="Type of event")
     parser.add_argument("--data", type=str, default="", help="Directory where data files are expected")
     parser.add_argument("--uncompressed", action="store_true", help="Use uncompressed output files at digitization")
+    parser.add_argument("--ResolutionUV", default="", help="Position resolution for digitization")
     return parser.parse_args()
 
 def main():
@@ -70,6 +51,7 @@ def main():
              bib=args.bib,
              ip=args.ip,
              uncompressed=args.uncompressed,
+             ResolutionUV=args.ResolutionUV,
              )
 
 
@@ -88,7 +70,7 @@ def sim(events: int, num: int, typeevent: str):
     run(cmd)
 
 
-def digi(events: int, num: int, typeevent: str, data: str, bib: bool, ip: bool, uncompressed: bool):
+def digi(events: int, num: int, typeevent: str, data: str, bib: bool, ip: bool, uncompressed: bool, ResolutionUV: str):
     steer = f"{typeevent}_steer_digi_{num}.py"
     write_local_digi_steer(steer)
     cmd = digi_command(events=events,
@@ -99,7 +81,10 @@ def digi(events: int, num: int, typeevent: str, data: str, bib: bool, ip: bool, 
                        bib=bib,
                        ip=ip,
                        uncompressed=uncompressed,
+                       ResolutionUV=ResolutionUV,
                        )
+    if "k4geo_DIR" not in os.environ:
+        raise EnvironmentError("k4geo_DIR is not set")
     run(cmd)
 
 
@@ -173,22 +158,27 @@ def sim_command(events: int, num: int, typeevent: str):
     return cmd
 
 
-def digi_command(events: int, num: int, typeevent: str, steer: str, data: str, bib: bool, ip: bool, uncompressed: bool):
+def digi_command(events: int, num: int, typeevent: str, steer: str, data: str, bib: bool, ip: bool, uncompressed: bool, ResolutionUV: str):
+    if not ResolutionUV:
+        raise ValueError("Need a valid ResolutionUV")
     enable_bib = "--enableBIB" if bib else ""
     enable_ip = "--enableIP" if ip else ""
     enable_uncompressed = "--compressionLevel 0" if uncompressed else ""
     cmd = f"time k4run \
-        {steer} \
-        {enable_bib} \
-        {enable_ip} \
-        {enable_uncompressed} \
-        -n {events} \
-        --TypeEvent {typeevent} \
-        --InFileName {num} \
-        --skipReco \
-        --skipTrackerConing \
-        --code {CODE} \
-        --data {data}"
+    {steer} \
+    {enable_bib} \
+    {enable_ip} \
+    {enable_uncompressed} \
+    -n {events} \
+    --TypeEvent {typeevent} \
+    --InFileName {num} \
+    --ResolutionUV {ResolutionUV} \
+    --inputFile {typeevent}_sim_{num}.slcio \
+    --outputFile {typeevent}_digi_{num}.slcio \
+    --skipReco \
+    --skipTrackerConing \
+    --code {CODE} \
+    --data {data}"
     return cmd
 
 
@@ -210,13 +200,8 @@ def write_local_digi_steer(local_filename: str):
     steer_path = Path(STEER_RECO)
     steer_text = steer_path.read_text()
 
-    # apply substitutions
-    steer_text = steer_text.replace(r"{the_args.data}/sim/{the_args.TypeEvent}/", "./")
-    steer_text = steer_text.replace(r"{the_args.data}/reco/{the_args.TypeEvent}/", "./")
-    steer_text = steer_text.replace(r"{the_args.data}/recoBIB/{the_args.TypeEvent}/", "./")
-    steer_text = steer_text.replace("_reco_", "_digi_")
-    steer_text = steer_text.replace("detector-simulation/geometries", "k4geo/MuColl/MAIA/compact")
-    # steer_text = steer_text.replace("1666", "16")
+    # apply substitutions if necessary
+    # steer_text = steer_text.replace("1666", "166")
 
     # write the local steering file
     local_path = Path(local_filename)
