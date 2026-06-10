@@ -12,7 +12,12 @@ for RESOLUTIONUV in 0.000 0.005 0.010 0.020; do
 
     mkdir -p ${RESOLUTIONUV}
 
-    for NUM in {310..349}; do
+    for NUM in {300..399}; do
+
+        while (( $(jobs -rp | wc -l) >= MAX_JOBS )); do
+            echo "Waiting at $(date) ..."
+            sleep 1m
+        done
 
         time python digitize_muons.py\
              --gen \
@@ -22,14 +27,14 @@ for RESOLUTIONUV in 0.000 0.005 0.010 0.020; do
              --typeevent muonGun_pT_2p0_2p1 \
              --events 1000 \
              --ResolutionUV ${RESOLUTIONUV} \
-             --data $(pwd) # &> log_${NUM}.txt &
-
-        mv muonGun_pT_2p0_2p1_* ${RESOLUTIONUV}/
+             --data $(pwd) &> muonGun_pT_2p0_2p1_log_${NUM}.txt &
 
     done
 
+    echo "Waiting!"
+    wait
+    mv muonGun_pT_2p0_2p1_* ${RESOLUTIONUV}/
+
 done
 
-echo "Waiting!"
-wait
 echo "Done ^.^"
