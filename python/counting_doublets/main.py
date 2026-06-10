@@ -40,6 +40,9 @@ def main():
             signal=ops.signal,
             background10=ops.background10,
             background100=ops.background100,
+            sim=ops.sim,
+            digi=ops.digi,
+            smear=ops.smear,
         )
     if not fnames:
         raise ValueError("No input files found")
@@ -146,14 +149,14 @@ def main():
     # make t4s
     with Timer() as t4_time:
         t4s = None
-        t4s = T4Maker(
-            geometry_version=ops.geo,
-            sim=ops.sim,
-            smear=ops.smear,
-            signal=signal,
-            t2s=t2s,
-            cut_t4s=cut_t4s,
-        ).df
+        # t4s = T4Maker(
+        #     geometry_version=ops.geo,
+        #     sim=ops.sim,
+        #     smear=ops.smear,
+        #     signal=signal,
+        #     t2s=t2s,
+        #     cut_t4s=cut_t4s,
+        # ).df
 
     # plot stuff
     with Timer() as plot_time:
@@ -243,10 +246,26 @@ def debug_statements(
             "simhit_y",
         ]
         mask = (hits["i_event"] == 5) & (hits["simhit_layer"].isin([0, 1]))
-        logger.info(hits[mask][cols].to_string(index=False))
+        # logger.info(hits[mask][cols].to_string(index=False))
 
     if mds is not None:
-        pass
+        cols = [
+            "file",
+            "i_event",
+            "i_mcp",
+            "doublet_module",
+            "doublet_sensor",
+            "doublet_doublelayer",
+            "doublet_first_exit",
+            "doublet_x_0",
+            "doublet_x_1",
+            "doublet_y_0",
+            "doublet_y_1",
+            "doublet_dz",
+            "doublet_dr",
+        ]
+        mask = (mds["i_event"] == 5) & (mds["doublet_doublelayer"].isin([0, 1]))
+        # logger.info("\n%s", mds[mask][cols].to_string(index=False))
 
     if t2s is not None:
         cols = [
@@ -271,13 +290,15 @@ def debug_statements(
             "ls_dtheta_rz",
             "ls_chi2_012",
         ]
-        mask = (t2s["i_event"] == 5) & (t2s["ls_doublelayer"] == 0)
-        logger.info(t2s[mask][cols].to_string(index=False))
+        # mask = (t2s["i_event"] == 5) & (t2s["ls_doublelayer"] == 0)
+        # logger.info(t2s[mask][cols].to_string(index=False))
+        mask = (t2s["ls_doublelayer"] == 0)
+        logger.info("\n%s", t2s[mask][cols].to_string(index=False))
 
     if t4s is not None:
         cols = ["file", "i_event", "i_mcp", "t4_system", "t4_dr", "t4_dz", "t4_dtheta_rz", "t4_chi2_047"]
         mask = (t4s["i_event"] == 5)
-        logger.info(t4s[mask][cols].to_string(index=False))
+        # logger.info(t4s[mask][cols].to_string(index=False))
 
 
 class Timer:
