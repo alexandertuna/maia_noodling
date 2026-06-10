@@ -51,7 +51,6 @@ background100_filepaths = {
     ("v01", "sim"): [
         "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_n5_p15/neutrinoGun_digi_3.slcio",
     ],
-   
 }
 
 background10_filepaths = {
@@ -76,14 +75,29 @@ def get_filepaths(
     signal: bool,
     background10: bool,
     background100: bool,
+    sim: bool,
+    digi: bool,
+    smear: str,
 ) -> list[str]:
+    if not sim and not digi:
+        raise ValueError("Must specify either sim or digi")
     fpaths = []
-    if signal:
-        fpaths = signal_filepaths[(geometry_version, "sim")]
-    elif background100:
-        fpaths = background100_filepaths[(geometry_version, "sim")]
-    elif background10:
-        fpaths = background10_filepaths[(geometry_version, "sim")]
-    else:
-        raise ValueError("Must specify either signal or background filepaths.")
+    if sim:
+        if signal:
+            fpaths = signal_filepaths[(geometry_version, "sim")]
+        elif background100:
+            fpaths = background100_filepaths[(geometry_version, "sim")]
+        elif background10:
+            fpaths = background10_filepaths[(geometry_version, "sim")]
+        else:
+            raise ValueError("Must specify either signal or background filepaths.")
+    elif digi:
+        if signal:
+            fpaths = signal_filepaths[(geometry_version, "digi", smear)]
+        elif background100:
+            fpaths = background100_filepaths[(geometry_version, "digi", smear)]
+        elif background10:
+            fpaths = background10_filepaths[(geometry_version, "digi", smear)]
+        else:
+            raise ValueError("Must specify either signal or background filepaths.")
     return parse_filepaths(fpaths)
