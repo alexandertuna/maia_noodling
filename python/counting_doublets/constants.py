@@ -70,6 +70,12 @@ MD_DZ_CUT = {
         112, # mm # doublelayer 2
         137, # mm # doublelayer 3
     ]),
+    ("v01", "digi", "00um"): np.array([
+        22, # mm # doublelayer 0
+        29, # mm # doublelayer 1
+        112, # mm # doublelayer 2
+        137, # mm # doublelayer 3
+    ]),
     ("v05", "sim"): np.array([
         22, # mm # doublelayer 0
         43, # mm # doublelayer 1
@@ -79,6 +85,12 @@ MD_DZ_CUT = {
 }
 MD_DR_CUT = {
     ("v01", "sim"): np.array([
+        260, # mm # doublelayer 0
+        313, # mm # doublelayer 1
+        718, # mm # doublelayer 2
+        806, # mm # doublelayer 3
+    ]),
+    ("v01", "digi", "00um"): np.array([
         260, # mm # doublelayer 0
         313, # mm # doublelayer 1
         718, # mm # doublelayer 2
@@ -98,6 +110,11 @@ LS_DZ_CUT = {
         0.0, # mm # doublelayer 1
         120, # mm # doublelayer 2
     ]),
+    ("v01", "digi", "00um"): np.array([
+        24, # mm # doublelayer 0
+        0.0, # mm # doublelayer 1
+        120, # mm # doublelayer 2
+    ]),
     ("v05", "sim"): np.array([
         24, # mm # doublelayer 0
         0.0, # mm # doublelayer 1
@@ -106,6 +123,11 @@ LS_DZ_CUT = {
 }
 LS_DR_CUT = {
     ("v01", "sim"): np.array([
+        281, # mm # doublelayer 0
+        0.0, # mm # doublelayer 1
+        757, # mm # doublelayer 2
+    ]),
+    ("v01", "digi", "00um"): np.array([
         281, # mm # doublelayer 0
         0.0, # mm # doublelayer 1
         757, # mm # doublelayer 2
@@ -122,6 +144,11 @@ LS_DTHETA_RZ_CUT = {
         0.0000, # 0.0453, # doublelayer 1
         0.0130, # doublelayer 2
     ]),
+    ("v01", "digi", "00um"): np.array([
+        0.0075, # doublelayer 0
+        0.0000, # 0.0453, # doublelayer 1
+        0.0130, # doublelayer 2
+    ]),
     ("v05", "sim"): np.array([
         0.0075, # doublelayer 0
         0.0000, # doublelayer 1
@@ -130,6 +157,11 @@ LS_DTHETA_RZ_CUT = {
 }
 LS_DTHETA_XY_CUT = {
     ("v01", "sim"): np.array([
+        0.070, # doublelayer 0
+        0.000, # 0.396, # doublelayer 1
+        0.078, # doublelayer 2
+    ]),
+    ("v01", "digi", "00um"): np.array([
         0.070, # doublelayer 0
         0.000, # 0.396, # doublelayer 1
         0.078, # doublelayer 2
@@ -146,6 +178,11 @@ LS_CHI2_XY_CUT = {
         0.000, # doublelayer 1
         0.040, # doublelayer 2
     ]),
+    ("v01", "digi", "00um"): np.array([
+        0.040, # doublelayer 0
+        0.000, # doublelayer 1
+        0.040, # doublelayer 2
+    ]),
     ("v05", "sim"): np.array([
         0.040, # doublelayer 0
         0.000, # doublelayer 1
@@ -156,12 +193,18 @@ T4_DZ_CUT = {
     ("v01", "sim"): np.array([
         54.0, # doublelayer 0
     ]),
+    ("v01", "digi", "00um"): np.array([
+        54.0, # doublelayer 0
+    ]),
     ("v05", "sim"): np.array([
         0.0, # doublelayer 0
     ]),
 }
 T4_DR_CUT = {
     ("v01", "sim"): np.array([
+        459.0, # doublelayer 0
+    ]),
+    ("v01", "digi", "00um"): np.array([
         459.0, # doublelayer 0
     ]),
     ("v05", "sim"): np.array([
@@ -172,12 +215,18 @@ T4_DTHETA_RZ_CUT = {
     ("v01", "sim"): np.array([
         0.053, # doublelayer 0
     ]),
+    ("v01", "digi", "00um"): np.array([
+        0.053, # doublelayer 0
+    ]),
     ("v05", "sim"): np.array([
         0.0, # doublelayer 0
     ]),
 }
 T4_CHI2_XY_CUT = {
     ("v01", "sim"): np.array([
+        0.352, # doublelayer 0
+    ]),
+    ("v01", "digi", "00um"): np.array([
         0.352, # doublelayer 0
     ]),
     ("v05", "sim"): np.array([
