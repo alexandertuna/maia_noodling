@@ -11,16 +11,16 @@ TYPEEVENT="muonGun_pT_0_10"
 
 for RESOLUTIONUV in 0.000 0.005 0.010 0.020; do
 
-    mkdir -p ${RESOLUTIONUV}
+    mkdir -p v01/${RESOLUTIONUV}
 
-    for NUM in {300..309}; do
+    for NUM in {350..399}; do
 
         while (( $(jobs -rp | wc -l) >= MAX_JOBS )); do
             echo "Waiting at $(date) ..."
-            sleep 1m
+            sleep 10s
         done
 
-        time python digitize_muons.py\
+        time python digitize_muons.py \
              --gen \
              --sim \
              --digi \
@@ -34,7 +34,7 @@ for RESOLUTIONUV in 0.000 0.005 0.010 0.020; do
 
     echo "Waiting!"
     wait
-    mv ${TYPEEVENT}_* ${RESOLUTIONUV}/
+    mv ${TYPEEVENT}_* v01/${RESOLUTIONUV}/
 
 done
 
