@@ -89,7 +89,7 @@ def digi(events: int, num: int, typeevent: str, data: str, bib: bool, ip: bool, 
 
 
 def gen_command(events: int, num: int, typeevent: str):
-    if typeevent in ["muonGun_pT_0_10", "muonGun_pT_2p0_2p1"]:
+    if typeevent in ["muonGun_pT_0_10", "muonGun_pT_2p0_2p1", "muonGun_pT_1p0_1p1"]:
         return gen_command_muongun(events, num, typeevent)
     elif typeevent in ["pionGun_pT_0_10", "pionGun_pT_2p0_2p1"]:
         return gen_command_piongun(events, num, typeevent)
@@ -107,6 +107,8 @@ def gen_command_muongun(events: int, num: int, typeevent: str):
         pt = "0 10"
     elif typeevent == "muonGun_pT_2p0_2p1":
         pt = "2.0 2.1"
+    elif typeevent == "muonGun_pT_1p0_1p1":
+        pt = "1.0 1.1"
     else:
         raise ValueError(f"Unknown muonGun typeevent: {typeevent}")
     particles = "10"
@@ -207,6 +209,7 @@ def digi_command(events: int, num: int, typeevent: str, steer: str, data: str, b
 def get_suffix(typeevent: str):
     if typeevent in ["muonGun_pT_0_10",
                      "muonGun_pT_2p0_2p1",
+                     "muonGun_pT_1p0_1p1",
                      "pionGun_pT_0_10",
                      "pionGun_pT_2p0_2p1",
                      "neutrinoGun",
