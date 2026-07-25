@@ -17,9 +17,9 @@ TYPEEVENT="neutrinoGun"
 # for RESOLUTIONUV in 0.000 0.005 0.010 0.020; do
 for RESOLUTIONUV in 0.010; do
 
-    mkdir -p ${RESOLUTIONUV}
+    mkdir -p v05/${RESOLUTIONUV}
 
-    for NUM in $(seq 10 19); do
+    for NUM in $(seq 20 99); do
 
         # run
         echo "Running ${RESOLUTIONUV} ${NUM} ..."
@@ -34,7 +34,7 @@ for RESOLUTIONUV in 0.010; do
              --typeevent ${TYPEEVENT} &> neutrinoGun_log_${NUM}.txt
 
         echo "Moving ..."
-        mv neutrinoGun_*  ${RESOLUTIONUV}/
+        mv neutrinoGun_*  v05/${RESOLUTIONUV}/
 
     done
 

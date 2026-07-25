@@ -1,5 +1,5 @@
 """
-Temporary local copy with a different compact geometry file
+A script to bundle generation, simulation, and digitization of datasets for MAIA LST studies.
 """
 
 import argparse
@@ -27,6 +27,7 @@ def arguments():
     parser.add_argument("--data", type=str, default="", help="Directory where data files are expected")
     parser.add_argument("--uncompressed", action="store_true", help="Use uncompressed output files at digitization")
     parser.add_argument("--ResolutionUV", default="", help="Position resolution for digitization")
+    parser.add_argument("--overlayMixNumberBackground", default="", help="Overlay mix number for background at digitization")
     return parser.parse_args()
 
 def main():
@@ -52,6 +53,7 @@ def main():
              ip=args.ip,
              uncompressed=args.uncompressed,
              ResolutionUV=args.ResolutionUV,
+             overlayMixNumberBackground=args.overlayMixNumberBackground,
              )
 
 
@@ -70,7 +72,7 @@ def sim(events: int, num: int, typeevent: str):
     run(cmd)
 
 
-def digi(events: int, num: int, typeevent: str, data: str, bib: bool, ip: bool, uncompressed: bool, ResolutionUV: str):
+def digi(events: int, num: int, typeevent: str, data: str, bib: bool, ip: bool, uncompressed: bool, ResolutionUV: str, overlayMixNumberBackground: str):
     steer = f"{typeevent}_steer_digi_{num}.py"
     write_local_digi_steer(steer)
     cmd = digi_command(events=events,
@@ -82,6 +84,7 @@ def digi(events: int, num: int, typeevent: str, data: str, bib: bool, ip: bool, 
                        ip=ip,
                        uncompressed=uncompressed,
                        ResolutionUV=ResolutionUV,
+                       overlayMixNumberBackground=overlayMixNumberBackground,
                        )
     if "k4geo_DIR" not in os.environ:
         raise EnvironmentError("k4geo_DIR is not set")
@@ -89,8 +92,10 @@ def digi(events: int, num: int, typeevent: str, data: str, bib: bool, ip: bool, 
 
 
 def gen_command(events: int, num: int, typeevent: str):
-    if typeevent in ["muonGun_pT_0_10", "muonGun_pT_2p0_2p1"]:
+    if typeevent in ["muonGun_pT_0_10", "muonGun_pT_2p0_2p1", "muonGun_pT_1p0_1p1"]:
         return gen_command_muongun(events, num, typeevent)
+    elif typeevent in ["pionGun_pT_0_10", "pionGun_pT_2p0_2p1"]:
+        return gen_command_piongun(events, num, typeevent)
     elif typeevent == "neutrinoGun":
         return gen_command_neutrinogun(events, num, typeevent)
     elif typeevent == "mumu_H_bb_10TeV":
@@ -105,8 +110,30 @@ def gen_command_muongun(events: int, num: int, typeevent: str):
         pt = "0 10"
     elif typeevent == "muonGun_pT_2p0_2p1":
         pt = "2.0 2.1"
+    elif typeevent == "muonGun_pT_1p0_1p1":
+        pt = "1.0 1.1"
     else:
         raise ValueError(f"Unknown muonGun typeevent: {typeevent}")
+    particles = "10"
+    cmd = f"python {CODE}/mucoll-benchmarks/generation/pgun/pgun_lcio.py \
+    -s {num} \
+    -e {events} \
+    --pdg {pdg} \
+    --pt {pt} \
+    --particles {particles} \
+    --theta 10 170 \
+    -- {typeevent}_gen_{num}.slcio"
+    return cmd
+
+
+def gen_command_piongun(events: int, num: int, typeevent: str):
+    pdg = "211 -211"
+    if typeevent == "pionGun_pT_0_10":
+        pt = "0 10"
+    elif typeevent == "pionGun_pT_2p0_2p1":
+        pt = "2.0 2.1"
+    else:
+        raise ValueError(f"Unknown pionGun typeevent: {typeevent}")
     particles = "10"
     cmd = f"python {CODE}/mucoll-benchmarks/generation/pgun/pgun_lcio.py \
     -s {num} \
@@ -158,14 +185,16 @@ def sim_command(events: int, num: int, typeevent: str):
     return cmd
 
 
-def digi_command(events: int, num: int, typeevent: str, steer: str, data: str, bib: bool, ip: bool, uncompressed: bool, ResolutionUV: str):
+def digi_command(events: int, num: int, typeevent: str, steer: str, data: str, bib: bool, ip: bool, uncompressed: bool, ResolutionUV: str, overlayMixNumberBackground: str):
     if not ResolutionUV:
         raise ValueError("Need a valid ResolutionUV")
     enable_bib = "--enableBIB" if bib else ""
     enable_ip = "--enableIP" if ip else ""
     enable_uncompressed = "--compressionLevel 0" if uncompressed else ""
+    enable_mix = f"--overlayMixNumberBackground {overlayMixNumberBackground}" if overlayMixNumberBackground else ""
     cmd = f"time k4run \
     {steer} \
+    {enable_mix} \
     {enable_bib} \
     {enable_ip} \
     {enable_uncompressed} \
@@ -185,6 +214,9 @@ def digi_command(events: int, num: int, typeevent: str, steer: str, data: str, b
 def get_suffix(typeevent: str):
     if typeevent in ["muonGun_pT_0_10",
                      "muonGun_pT_2p0_2p1",
+                     "muonGun_pT_1p0_1p1",
+                     "pionGun_pT_0_10",
+                     "pionGun_pT_2p0_2p1",
                      "neutrinoGun",
                      ]:
         return "slcio"

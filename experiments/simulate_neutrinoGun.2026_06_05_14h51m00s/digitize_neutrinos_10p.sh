@@ -6,7 +6,7 @@ CODE=/ceph/users/atuna/work/maia
 DATA=${CODE}/maia_noodling/experiments/simulate_bib.2026_01_07_22h00m00s # v01
 # DATA=${CODE}/maia_noodling/experiments/simulate_bib.2026_05_14_12h00m00s # v05
 TYPEEVENT="neutrinoGun"
-# RESOLUTIONUV="0.000"
+BIB_TEN_PERCENT="166"
 
 # env
 # it would be cool if setup_mucoll existed out-of-the-box
@@ -19,7 +19,7 @@ for RESOLUTIONUV in 0.010; do
 
     mkdir -p ${RESOLUTIONUV}
 
-    for NUM in $(seq 20 99); do
+    for NUM in $(seq 10 99); do
 
         # run
         echo "Running ${RESOLUTIONUV} ${NUM} ..."
@@ -30,6 +30,7 @@ for RESOLUTIONUV in 0.010; do
              --bib \
              --num ${NUM} \
              --ResolutionUV ${RESOLUTIONUV} \
+             --overlayMixNumberBackground ${BIB_TEN_PERCENT} \
              --data ${DATA} \
              --typeevent ${TYPEEVENT} &> neutrinoGun_log_${NUM}.txt
 
