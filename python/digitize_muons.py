@@ -27,6 +27,7 @@ def arguments():
     parser.add_argument("--data", type=str, default="", help="Directory where data files are expected")
     parser.add_argument("--uncompressed", action="store_true", help="Use uncompressed output files at digitization")
     parser.add_argument("--ResolutionUV", default="", help="Position resolution for digitization")
+    parser.add_argument("--overlayMixNumberBackground", default="", help="Overlay mix number for background at digitization")
     return parser.parse_args()
 
 def main():
@@ -52,6 +53,7 @@ def main():
              ip=args.ip,
              uncompressed=args.uncompressed,
              ResolutionUV=args.ResolutionUV,
+             overlayMixNumberBackground=args.overlayMixNumberBackground,
              )
 
 
@@ -70,7 +72,7 @@ def sim(events: int, num: int, typeevent: str):
     run(cmd)
 
 
-def digi(events: int, num: int, typeevent: str, data: str, bib: bool, ip: bool, uncompressed: bool, ResolutionUV: str):
+def digi(events: int, num: int, typeevent: str, data: str, bib: bool, ip: bool, uncompressed: bool, ResolutionUV: str, overlayMixNumberBackground: str):
     steer = f"{typeevent}_steer_digi_{num}.py"
     write_local_digi_steer(steer)
     cmd = digi_command(events=events,
@@ -82,6 +84,7 @@ def digi(events: int, num: int, typeevent: str, data: str, bib: bool, ip: bool, 
                        ip=ip,
                        uncompressed=uncompressed,
                        ResolutionUV=ResolutionUV,
+                       overlayMixNumberBackground=overlayMixNumberBackground,
                        )
     if "k4geo_DIR" not in os.environ:
         raise EnvironmentError("k4geo_DIR is not set")
@@ -182,14 +185,16 @@ def sim_command(events: int, num: int, typeevent: str):
     return cmd
 
 
-def digi_command(events: int, num: int, typeevent: str, steer: str, data: str, bib: bool, ip: bool, uncompressed: bool, ResolutionUV: str):
+def digi_command(events: int, num: int, typeevent: str, steer: str, data: str, bib: bool, ip: bool, uncompressed: bool, ResolutionUV: str, overlayMixNumberBackground: str):
     if not ResolutionUV:
         raise ValueError("Need a valid ResolutionUV")
     enable_bib = "--enableBIB" if bib else ""
     enable_ip = "--enableIP" if ip else ""
     enable_uncompressed = "--compressionLevel 0" if uncompressed else ""
+    enable_mix = f"--overlayMixNumberBackground {overlayMixNumberBackground}" if overlayMixNumberBackground else ""
     cmd = f"time k4run \
     {steer} \
+    {enable_mix} \
     {enable_bib} \
     {enable_ip} \
     {enable_uncompressed} \
