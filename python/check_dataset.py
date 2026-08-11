@@ -76,9 +76,12 @@ def main():
     ops = options()
     if not ops.i:
         raise ValueError("Provide input file(s) with -i")
+    randomly_sample = ops.r
+    if randomly_sample:
+        logger.info(f"Randomly sampling only 10 percent of hits ...")
     file_paths = parse_file_paths(ops.i.split(","))
 
-    hits = parse_lcio_files(file_paths)
+    hits = parse_lcio_files(file_paths, randomly_sample)
 
     with PdfPages(ops.pdf) as pdf:
         plot_hits(hits, pdf)
@@ -87,6 +90,7 @@ def main():
 def options():
     parser = argparse.ArgumentParser(usage=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-i", required=True, help="Input slcio file or glob pattern")
+    parser.add_argument("-r", action="store_true", help="Randomly samples only 10 percent of hits")
     parser.add_argument("--pdf", default="check_dataset.pdf", help="Output pdf file")
     return parser.parse_args()
 
@@ -102,8 +106,8 @@ def parse_file_paths(
     return names
 
 
-def parse_lcio_files(file_paths) -> tuple[pd.DataFrame,
-                                          pd.DataFrame]:
+def parse_lcio_files(file_paths, randomly_sample: bool) -> tuple[pd.DataFrame,
+                                                                 pd.DataFrame]:
 
     hits = []
 
@@ -124,6 +128,10 @@ def parse_lcio_files(file_paths) -> tuple[pd.DataFrame,
             # inspect sim hits
             for collection in SIM_COLLECTIONS:
 
+                if collection not in event.getCollectionNames():
+                    if i_fp == 0 and i_event == 0:
+                        logger.warning(f"{collection} not found in {file_path}")
+                    continue
                 col = event.getCollection(collection)
                 n_obj = len(col)
 
@@ -132,6 +140,9 @@ def parse_lcio_files(file_paths) -> tuple[pd.DataFrame,
                     if i_obj > 0 and i_obj % 1e5 == 0:
                         msg = f"Processing {i_fp}, event {i_event}, {collection}, {i_obj}/{n_obj} ..."
                         logger.info(msg)
+
+                    if randomly_sample and np.random.rand() > 0.1:
+                        continue
 
                     position = obj.getPosition()
                     sim_position = position
@@ -149,9 +160,10 @@ def parse_lcio_files(file_paths) -> tuple[pd.DataFrame,
                         'hit_sim_x': sim_position[0],
                         'hit_sim_y': sim_position[1],
                         'hit_sim_z': sim_position[2],
+                        'hit_sim_t': time,
                         'hit_cellid0': cellid0,
                         'hit_t': time,
-                        'hit_t_corrected': time - correction,
+                        'hit_t_correction': correction,
                     })
 
             # inspect digi hits
@@ -163,20 +175,28 @@ def parse_lcio_files(file_paths) -> tuple[pd.DataFrame,
 
                 for i_obj, obj in enumerate(col):
 
-                    if i_obj > 0 and i_obj % 1e5 == 0:
+                    if i_obj > 0 and i_obj % 1e6 == 0:
                         msg = f"Processing {i_fp}, event {i_event}, {collection}, {i_obj}/{n_obj} ..."
                         logger.info(msg)
+                    # if i_obj > 1e5:
+                    #     break
+
+                    if randomly_sample and np.random.rand() > 0.1:
+                        continue
 
                     if use_relation:
                         simhit, hit = obj.getTo(), obj.getFrom()
                         sim_position = simhit.getPosition()
+                        sim_t = simhit.getTime()
                     else:
                         hit = obj
                         sim_position = hit.getPosition()
+                        sim_t = hit.getTime()
 
                     position = hit.getPosition()
                     time = hit.getTime()
                     cellid0 = hit.getCellID0()
+                    correction = np.sqrt(sim_position[0]**2 + sim_position[1]**2 + sim_position[2]**2) / SPEED_OF_LIGHT
                     hits.append({
                         'sim': False,
                         'file': i_fp,
@@ -187,9 +207,10 @@ def parse_lcio_files(file_paths) -> tuple[pd.DataFrame,
                         'hit_sim_x': sim_position[0],
                         'hit_sim_y': sim_position[1],
                         'hit_sim_z': sim_position[2],
+                        'hit_sim_t': sim_t,
                         'hit_cellid0': cellid0,
                         'hit_t': time,
-                        'hit_t_corrected': 0,
+                        'hit_t_correction': correction,
                     })
 
     logger.info(f"Making a dataframe out of {len(hits)} hits ...")
@@ -207,26 +228,33 @@ def postprocess(df):
     df["hit_module"] = np.right_shift(df["hit_cellid0"], 13) & 0b111_1111_1111
     df["hit_sensor"] = np.right_shift(df["hit_cellid0"], 24) & 0b1111_1111
     df["hit_r"] = np.sqrt(df["hit_x"]**2 + df["hit_y"]**2)
+    df["hit_t_corrected"] = df["hit_t"] - df["hit_t_correction"]
     df["hit_dx"] = df["hit_x"] - df["hit_sim_x"]
     df["hit_dy"] = df["hit_y"] - df["hit_sim_y"]
     df["hit_dz"] = df["hit_z"] - df["hit_sim_z"]
+    df["hit_dt"] = df["hit_t"] - (df["hit_sim_t"] - df["hit_t_correction"])
     return df
 
 
 def plot_hits(df, pdf):
     logger.info(f"Plotting hits ... ")
+    has_sim = df["sim"].any()
     write_date(pdf)
     for sim in [True, False]:
         hits = df[df['sim'] == sim]
+        if hits.empty:
+            logger.warning(f"No {'sim' if sim else 'digi'} hits found, skipping plots ...")
+            continue
         plot_time(hits, pdf, sim)
-        # plot_xy(hits, pdf, sim)
-        # plot_xy(hits, pdf, sim, zoom_inner=True)
-        # plot_xy(hits, pdf, sim, zoom_outer=True)
-        # plot_rz(hits, pdf, sim)
-        # plot_rz(hits, pdf, sim, zoom_inner=True)
-        # plot_rz(hits, pdf, sim, zoom_outer=True)
-        if not sim:
+        plot_xy(hits, pdf, sim)
+        plot_xy(hits, pdf, sim, zoom_inner=True)
+        plot_xy(hits, pdf, sim, zoom_outer=True)
+        plot_rz(hits, pdf, sim)
+        plot_rz(hits, pdf, sim, zoom_inner=True)
+        plot_rz(hits, pdf, sim, zoom_outer=True)
+        if not sim and has_sim:
             plot_position_resolution(hits, pdf)
+            plot_time_resolution(hits, pdf)
 
 
 def write_date(pdf: PdfPages):
@@ -346,7 +374,7 @@ def plot_position_resolution(df, pdf):
     logger.info(f"Plotting position resolution ... ")
 
     q1 = 68.3
-    bins = np.linspace(-40, 40, 161)
+    bins = np.linspace(-40, 40, 81)
     subset = df[df["hit_module"] == 0]
 
     for (system, hits) in subset.groupby(f"hit_system"):
@@ -356,6 +384,24 @@ def plot_position_resolution(df, pdf):
         ax.hist(diff, bins=bins)
         ax.set_xlabel("sim y - digi y [um]")
         text = f"{q1}% interval = {one_sigma_quantile:.1f}um"
+        ax.set_title(f"{NICKNAME[system]}, phi module=0: {text}", fontsize=15)
+        pdf.savefig()
+        plt.close()
+
+
+def plot_time_resolution(df, pdf):
+    logger.info(f"Plotting time resolution ... ")
+
+    q1 = 68.3
+    bins = np.linspace(-10, 10, 81)
+
+    for (system, hits) in df.groupby(f"hit_system"):
+        diff = hits["hit_dt"]
+        fig, ax = plt.subplots()
+        one_sigma_quantile = np.percentile(np.abs(diff), q1)
+        ax.hist(diff, bins=bins)
+        ax.set_xlabel("sim t - digi t [ns]")
+        text = f"{q1}% interval = {one_sigma_quantile:.2f} ns"
         ax.set_title(f"{NICKNAME[system]}, phi module=0: {text}", fontsize=15)
         pdf.savefig()
         plt.close()
