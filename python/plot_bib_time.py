@@ -43,17 +43,24 @@ SLCIO_FILE_PATHS = [
     "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_bib.2026_01_07_22h00m00s/BIB10TeV/sim_mp_pruned/BIB_sim_10*",
 ]
 NEUTRINO_FILE_PATHS = [
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_n5_p15_0.10/neutrinoGun_digi_0.slcio",
-    "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_n5_p15_0.10/neutrinoGun_digi_1.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_n5_p15_0.10/neutrinoGun_digi_0.slcio",
+    # "/ceph/users/atuna/work/maia/maia_noodling/samples/v01/neutrinoGun_n5_p15_0.10/neutrinoGun_digi_1.slcio",
+
+    "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2026_06_05_14h51m00s/v01/0.000/neutrinoGun_digi_0.slcio",
 ]
 OFFICIAL_FILE_PATHS = [
     # "/ceph/users/atuna/work/maia/data/DataMuC_MAIA_v0/v8/recoBIB/muonGun_pT_0_50/muonGun_pT_0_50_reco_100.slcio",
-    "/ceph/users/atuna/work/maia/data/DataMuC_MAIA_v0/v8/special/nuGun_filtered_70_110.slcio",
+    # "/ceph/users/atuna/work/maia/data/DataMuC_MAIA_v0/v8/special/nuGun_filtered_70_110.slcio",
+
+    # "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2026_06_05_14h51m00s/v01/0.000/muonGun_pT_2p0_2p1_digi_30*.slcio",
+    "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_neutrinoGun.2026_06_05_14h51m00s/muonGun_pT_2p0_2p1_digi_30*.slcio",
 ]
 
 TRACKER_COLLECTIONS = [
-    "InnerTrackerBarrelCollection",
-    "OuterTrackerBarrelCollection",
+    # "InnerTrackerBarrelCollection",
+    # "OuterTrackerBarrelCollection",
+    "IBTrackerHits",
+    "OBTrackerHits",
 ]
 SPEED_OF_LIGHT = 299.792458  # mm/ns
 BINS = np.linspace(-10, 30, 401)
@@ -68,16 +75,19 @@ def main():
     slcio_file_paths = parse_filepaths(SLCIO_FILE_PATHS)
     neutrino_file_paths = parse_filepaths(NEUTRINO_FILE_PATHS)
     official_file_paths = parse_filepaths(OFFICIAL_FILE_PATHS)
-    particles = parse_fluka(fluka_file_paths)
 
-    bibsim_hits = parse_slcio(slcio_file_paths)
-    neutrino_hits = parse_slcio(neutrino_file_paths)
+    # particles = parse_fluka(fluka_file_paths)
+    # bibsim_hits = parse_slcio(slcio_file_paths)
+    # neutrino_hits = parse_slcio(neutrino_file_paths)
     official_hits = parse_slcio(official_file_paths)
+
     with PdfPages("bib_time.pdf") as pdf:
-        plot_fluka(particles, pdf)
-        plot_slcio(bibsim_hits, pdf, tag="BIB sim")
-        plot_slcio(neutrino_hits, pdf, tag="Alex overlay")
-        plot_slcio(official_hits, pdf, tag="MAIA overlay")
+        # plot_fluka(particles, pdf)
+        # plot_slcio(bibsim_hits, pdf, tag="BIB sim")
+        # plot_slcio(neutrino_hits, pdf, tag="Alex overlay")
+        # plot_slcio(official_hits, pdf, tag="MAIA overlay")
+        # plot_slcio(neutrino_hits, pdf, tag="neutrinoGun")
+        plot_slcio(official_hits, pdf, tag="muonGun")
 
 
 def plot_fluka(particles: pd.DataFrame, pdf: PdfPages):
