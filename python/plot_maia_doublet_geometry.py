@@ -11,7 +11,8 @@ from matplotlib import rcParams
 import xml.etree.ElementTree as ET
 rcParams.update({'font.size': 16})
 
-FNAME = "/ceph/users/atuna/work/maia/maia_noodling/experiments/simulate_muonGun.2025_12_20_17h26m00s/muonGun_pT_0_10_sim_10*.slcio"
+VERSION = "v06"
+FNAME = f"/ceph/users/atuna/work/maia/maia_noodling/samples/{VERSION}/muonGun_pT_2p0_2p1/10um/muonGun_pT_2p0_2p1_digi_30*.slcio"
 
 INNER_TRACKER_BARREL = 3
 OUTER_TRACKER_BARREL = 5
@@ -22,10 +23,12 @@ OuterTracker_Barrel_DoubleLayer_Gap = 2.0 # mm
 TRACKERS = [
     # "VertexBarrelCollection",
     # "VertexEndcapCollection",
-    "InnerTrackerBarrelCollection",
+    # "InnerTrackerBarrelCollection",
     # "InnerTrackerEndcapCollection",
-    "OuterTrackerBarrelCollection",
+    # "OuterTrackerBarrelCollection",
     # "OuterTrackerEndcapCollection",
+    "IBTrackerHits",
+    "OBTrackerHits",
 ]
 
 INNER_XML = "/ceph/users/atuna/work/maia/k4geo/MuColl/MAIA/compact/MAIA_v0/InnerTrackerBarrelModuleDown.xml"
@@ -40,7 +43,7 @@ def options():
                         help="Path to XML file with inner tracker material stack data")
     parser.add_argument("--outer_xml", type=str, default=OUTER_XML,
                         help="Path to XML file with outer tracker material stack data")
-    parser.add_argument("--pdf", type=str, default="maia_doublet_v4.pdf",
+    parser.add_argument("--pdf", type=str, default="maia_doublet_vN.pdf",
                         help="Path to output PDF file")
     parser.add_argument("--plot_xy", action="store_true",
                         help="Enable plotting of XY geometry")
@@ -106,8 +109,8 @@ def get_hits(fnames: list[str]) -> pd.DataFrame:
                         hit.getPositionVec().X(),
                         hit.getPositionVec().Y(),
                         hit.getPositionVec().Z(),
-                        hit.getEDep(),
-                        hit.getPathLength(),
+                        0, # hit.getEDep(),
+                        0, # hit.getPathLength(),
                         hit.getCellID0(),
                     ] )
 
@@ -118,11 +121,25 @@ def post_process(df: pd.DataFrame) -> pd.DataFrame:
     print("Post-processing hits ...")
     df["cellid0"] = df["cellid0"].astype(np.int64)
     df["r"] = np.sqrt(df["x"]**2 + df["y"]**2)
-    df["system"] = np.right_shift(df["cellid0"], 0) & 0b1_1111
-    df["side"] = np.right_shift(df["cellid0"], 5) & 0b11
-    df["layer"] = np.right_shift(df["cellid0"], 7) & 0b11_1111
-    df["module"] = np.right_shift(df["cellid0"], 13) & 0b111_1111_1111
-    df["sensor"] = np.right_shift(df["cellid0"], 24) & 0b1111_1111
+    if VERSION in ["v01", "v05"]:
+        # GlobalTrackerReadoutID: system:5,side:-2,layer:6,module:11,sensor:8"
+        df["system"] = np.right_shift(df["cellid0"], 0) & 0b1_1111
+        df["side"] = np.right_shift(df["cellid0"], 5) & 0b11
+        df["layer"] = np.right_shift(df["cellid0"], 7) & 0b11_1111
+        df["module"] = np.right_shift(df["cellid0"], 13) & 0b111_1111_1111
+        df["sensor"] = np.right_shift(df["cellid0"], 24) & 0b1111_1111
+    elif VERSION in ["v06"]:
+        #### Actual StaggeredTrackerReadoutID: system:5,side:-2,layer:13,module:11,sensor:1
+        # Effective StaggeredTrackerReadoutID: system:5,side:-2,sensor:8,layer:5,module:11,ignore:1
+        df["system"] = np.right_shift(df["cellid0"], 0) & 0b1_1111
+        df["side"] = np.right_shift(df["cellid0"], 5) & 0b11
+        df["sensor"] = np.right_shift(df["cellid0"], 7) & 0b1111_1111
+        df["layer"] = np.right_shift(df["cellid0"], 15) & 0b1_1111
+        df["module"] = np.right_shift(df["cellid0"], 20) & 0b111_1111_1111
+        df["ignore"] = np.right_shift(df["cellid0"], 31) & 0b1
+        assert df["ignore"].sum() == 0, "Hits with ignore=1 should not happen!"
+    else:
+        raise Exception(f"Unknown version: {VERSION}")
     df["module_mod_2"] = df["module"] % 2
     return df
 
@@ -345,8 +362,15 @@ def plot_barrel_xy(df: pd.DataFrame, pdf: PdfPages) -> None:
             # draw entire xy with layer annotations
             ha = "center"
             now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-            ax.text(0, 200, "IT, L0-L3", ha=ha)
-            ax.text(0, 580, "IT, L4-L7", ha=ha)
+            # v1
+            # ax.text(0, 200, "IT, L0-L3", ha=ha)
+            # ax.text(0, 580, "IT, L4-L7", ha=ha)
+            # v2
+            FONTSIZE = 12
+            ax.text(0, 140, "IT, L0-L1", ha=ha, fontsize=FONTSIZE)
+            ax.text(0, 290, "IT, L2-L3", ha=ha, fontsize=FONTSIZE)
+            ax.text(0, 440, "IT, L4-L5", ha=ha, fontsize=FONTSIZE)
+            ax.text(0, 580, "IT, L6-L7", ha=ha, fontsize=FONTSIZE)
             # v1
             # ax.text(0, 920, "OT, L0-L3", ha=ha)
             # ax.text(0, 1200, "OT, L4-L7", ha=ha)
