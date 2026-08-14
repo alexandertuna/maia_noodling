@@ -37,56 +37,67 @@ rcParams.update({
 TWOPI = 2.0 * np.pi
 SPACING_V0 = 12.0
 SPACING_V1 = 4.0
+SPACING_V6 = 8.0
 
 # Units: mm
 NPHIS = [
-    15*2 // 2, 20*2 // 2, 58*2 // 2, 62*2 // 2,
-    15*2 // 2, 30*2 // 2, 46*2 // 2, 62*2 // 2, # Equally spaced layers
-    46*4 // 2, 54*4 // 2, 78*4 // 2, 82*4 // 2,
-    48*2 // 2, 52*2 // 2, 80*2 // 2, 84*2 // 2,
-    48*2 // 2, 60*2 // 2, 72*2 // 2, 84*2 // 2, # Equally spaced layers
-    64*2 // 2, 68*2 // 2, # Third superlayer
+    # 15*2 // 2, 20*2 // 2, 58*2 // 2, 62*2 // 2,
+    15*2 // 2, 30*2 // 2, 46*2 // 2, 62*2 // 2, # Equally spaced layers (v05)
+    15*2 // 2, 30*2 // 2, 46*2 // 2, 62*2 // 2, # Equally spaced layers (v07)
+    # 46*4 // 2, 54*4 // 2, 78*4 // 2, 82*4 // 2,
+    # 48*2 // 2, 52*2 // 2, 80*2 // 2, 84*2 // 2,
+    48*2 // 2, 60*2 // 2, 72*2 // 2, 84*2 // 2, # Equally spaced layers (v05)
+    48*2 // 2, 60*2 // 2, 72*2 // 2, 84*2 // 2, # Equally spaced layers (v07)
+    # 64*2 // 2, 68*2 // 2, # Third superlayer
 ]
 INNER_RADII = [
-    127.0, 167.0, 510.0, 550.0,
-    127.0, 268.0, 409.0, 550.0,
-    819.0, 899.0, 1366.0, 1446.0,
-    819.0, 899.0, 1366.0, 1446.0,
-    819.0, 1028.0, 1237.0, 1446.0,
-    1092.0, 1172.0,
+    # 127.0, 167.0, 510.0, 550.0,
+    127.0, 268.0, 409.0, 550.0, # Equally spaced layers (v05)
+    127.0, 265.333, 403.666, 550.0, # Equally spaced layers (v07)
+    # 819.0, 899.0, 1366.0, 1446.0,
+    # 819.0, 899.0, 1366.0, 1446.0,
+    819.0, 1028.0, 1237.0, 1446.0, # Equally spaced layers (v05)
+    819.0, 1025.333, 1231.666, 1438.0, # Equally spaced layers (v07)
+    # 1092.0, 1172.0,
 ]
 OUTER_RADII = [
-    127.0 + SPACING_V1, 167.0 + SPACING_V1, 510.0 + SPACING_V1, 550.0 + SPACING_V1,
-    127.0 + SPACING_V1, 268.0 + SPACING_V1, 409.0 + SPACING_V1, 550.0 + SPACING_V1,
-    819.0 + SPACING_V0, 899.0 + SPACING_V0, 1366.0 + SPACING_V0, 1446.0 + SPACING_V0,
-    819.0 + SPACING_V1, 899.0 + SPACING_V1, 1366.0 + SPACING_V1, 1446.0 + SPACING_V1,
-    819.0 + SPACING_V1, 1028.0 + SPACING_V1, 1237.0 + SPACING_V1, 1446.0 + SPACING_V1,
-    1092.0 + SPACING_V1, 1172.0 + SPACING_V1,
+    # 127.0 + SPACING_V1, 167.0 + SPACING_V1, 510.0 + SPACING_V1, 550.0 + SPACING_V1,
+    127.0 + SPACING_V1, 268.0 + SPACING_V1, 409.0 + SPACING_V1, 550.0 + SPACING_V1, # Equally spaced layers (v05)
+    127.0 + SPACING_V6, 265.333 + SPACING_V6, 403.666 + SPACING_V6, 550.0 + SPACING_V6, # Equally spaced layers (v07)
+    # 819.0 + SPACING_V0, 899.0 + SPACING_V0, 1366.0 + SPACING_V0, 1446.0 + SPACING_V0,
+    # 819.0 + SPACING_V1, 899.0 + SPACING_V1, 1366.0 + SPACING_V1, 1446.0 + SPACING_V1,
+    819.0 + SPACING_V1, 1028.0 + SPACING_V1, 1237.0 + SPACING_V1, 1446.0 + SPACING_V1, # Equally spaced layers (v05)
+    819.0 + SPACING_V6, 1025.333 + SPACING_V6, 1231.666 + SPACING_V6, 1438.0 + SPACING_V6, # Equally spaced layers (v07)
+    # 1092.0 + SPACING_V1, 1172.0 + SPACING_V1,
 ]
 MODULE_WIDTHS = [
-    30.1, 30.1, 30.1, 30.1,
-    30.1, 30.1, 30.1, 30.1,
-    30.1, 30.1, 30.1, 30.1,
-    60.2, 60.2, 60.2, 60.2,
-    60.2, 60.2, 60.2, 60.2,
-    60.2, 60.2,
+    # 30.1, 30.1, 30.1, 30.1,
+    30.1, 30.1, 30.1, 30.1, # Equally spaced layers (v05)
+    30.1, 30.1, 30.1, 30.1, # Equally spaced layers (v07)
+    # 30.1, 30.1, 30.1, 30.1,
+    # 60.2, 60.2, 60.2, 60.2,
+    60.2, 60.2, 60.2, 60.2, # Equally spaced layers (v05)
+    60.2, 60.2, 60.2, 60.2, # Equally spaced layers (v07)
+    # 60.2, 60.2,
 ]
 TEXTS = [
-    "IT L0", "IT L2", "IT L4", "IT L6",
-    "IT L0", "IT L2", "IT L4", "IT L6",
-    "OT L0", "OT L2", "OT L4", "OT L6",
-    "OT L0", "OT L2", "OT L4", "OT L6",
-    "OT L0", "OT L2", "OT L4", "OT L6",
-    "OT L4.2", "OT L6.2",
+    # "IT L0", "IT L2", "IT L4", "IT L6",
+    "v05 IT L0", "v05 IT L2", "v05 IT L4", "v05 IT L6", # Equally spaced layers (v05)
+    "v07 IT L0", "v07 IT L2", "v07 IT L4", "v07 IT L6", # Equally spaced layers (v07)
+    # "OT L0", "OT L2", "OT L4", "OT L6",
+    # "OT L0", "OT L2", "OT L4", "OT L6",
+    "v05 OT L0", "v05 OT L2", "v05 OT L4", "v05 OT L6", # Equally spaced layers (v05)
+    "v07 OT L0", "v07 OT L2", "v07 OT L4", "v07 OT L6", # Equally spaced layers (v07)
+    # "OT L4.2", "OT L6.2",
 ]
 
 PDF = "phi_modules.pdf"
 
 def main():
     with PdfPages(PDF) as pdf:
-        for (nphi, inner_radius, outer_radius, module_width) in zip(NPHIS, INNER_RADII, OUTER_RADII, MODULE_WIDTHS):
+        for (nphi, inner_radius, outer_radius, module_width, text) in zip(NPHIS, INNER_RADII, OUTER_RADII, MODULE_WIDTHS, TEXTS):
             df = make_modules(nphi, inner_radius, outer_radius, module_width)
-            plot_modules(df, pdf, nphi, inner_radius, outer_radius, module_width, zoom=True)
+            plot_modules(df, pdf, nphi, inner_radius, outer_radius, module_width, text, zoom=True)
 
 
 def make_modules(
@@ -129,11 +140,12 @@ def plot_modules(
         inner_radius: float,
         outer_radius: float,
         module_width: float,
+        text: str,
         zoom: bool,
     ) -> None:
 
     cov = df["dphi"].sum() / TWOPI
-    print(f"Coverage: {cov:.3f}x")
+    print(f"{text} coverage: {cov:.3f}x")
 
     # full view
     linewidth = 0.7 if not zoom else 5
