@@ -11,7 +11,7 @@ from matplotlib import rcParams
 import xml.etree.ElementTree as ET
 rcParams.update({'font.size': 16})
 
-VERSION = "v06"
+VERSION = "v07"
 FNAME = f"/ceph/users/atuna/work/maia/maia_noodling/samples/{VERSION}/muonGun_pT_2p0_2p1/10um/muonGun_pT_2p0_2p1_digi_30*.slcio"
 
 INNER_TRACKER_BARREL = 3
@@ -128,7 +128,7 @@ def post_process(df: pd.DataFrame) -> pd.DataFrame:
         df["layer"] = np.right_shift(df["cellid0"], 7) & 0b11_1111
         df["module"] = np.right_shift(df["cellid0"], 13) & 0b111_1111_1111
         df["sensor"] = np.right_shift(df["cellid0"], 24) & 0b1111_1111
-    elif VERSION in ["v06"]:
+    elif VERSION in ["v06", "v07"]:
         #### Actual StaggeredTrackerReadoutID: system:5,side:-2,layer:13,module:11,sensor:1
         # Effective StaggeredTrackerReadoutID: system:5,side:-2,sensor:8,layer:5,module:11,ignore:1
         df["system"] = np.right_shift(df["cellid0"], 0) & 0b1_1111
